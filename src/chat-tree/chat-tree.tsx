@@ -18,7 +18,7 @@ export interface ChatNode {
   isEntry?: boolean;
   isEditing?: boolean;
   isNextFocus?: boolean;
-  isGenerating?: boolean;
+  abortController?: AbortController;
 }
 
 const INITIAL_USER_NODE = getUserNode(crypto.randomUUID());
@@ -246,10 +246,9 @@ export function ChatTree() {
       if (!e.ctrlKey && !e.shiftKey && !e.altKey && e.key === "Enter") {
         e.preventDefault();
 
-        setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { isGenerating: true })));
-
         const messages = getMessageChain(nodeId);
 
+        const abortController = new AbortController();
         const newUserNode = getUserNode(crypto.randomUUID());
 
         const newAssistantNode: ChatNode = {
@@ -261,19 +260,18 @@ export function ChatTree() {
         };
 
         setTreeNodes((nodes) => {
-          const newNodes = [...nodes, newAssistantNode, newUserNode];
+          const newNodes = [...nodes, newAssistantNode];
           const targetNodeIndex = newNodes.findIndex((node) => node.id === nodeId);
           newNodes[targetNodeIndex] = {
             ...newNodes[targetNodeIndex],
             childIds: [newAssistantNode.id],
-            isEditing: false,
-            isGenerating: false,
-            isLocked: true,
+            abortController,
           };
           return newNodes;
         });
 
-        const stream = await chat(messages);
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        const stream = await chat(messages, abortController.signal);
         for await (const item of stream) {
           console.log(item.choices[0].delta.content);
           setTreeNodes((nodes) =>
@@ -285,6 +283,18 @@ export function ChatTree() {
             )
           );
         }
+
+        setTreeNodes((nodes) => {
+          const newNodes = [...nodes, newUserNode];
+          const targetNodeIndex = newNodes.findIndex((node) => node.id === nodeId);
+          newNodes[targetNodeIndex] = {
+            ...newNodes[targetNodeIndex],
+            abortController: undefined,
+            isEditing: false,
+            isLocked: true,
+          };
+          return newNodes;
+        });
       }
     },
     [chat, treeNodes, getMessageChain]
@@ -304,7 +314,7 @@ export function ChatTree() {
                   <textarea
                     id={node.id}
                     value={node.content}
-                    disabled={node.isGenerating}
+                    disabled={!!node.abortController}
                     onKeyDown={(e) => handleKeydown(node.id, e)}
                     onChange={(e) => handleTextChange(node.id, e.target.value)}
                     placeholder={node.role === "user" ? "Enter to send, Esc to cancel" : "System message"}
@@ -317,9 +327,9 @@ export function ChatTree() {
                 {node.role === "user" ? (
                   <>
                     {" "}
-                    {node.isGenerating ? (
+                    {node.abortController ? (
                       <>
-                        <button onClick={() => {}}>Stop</button>
+                        <button onClick={() => node.abortController!.abort()}>Stop</button>
                         {" · "}
                       </>
                     ) : null}
