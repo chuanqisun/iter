@@ -4,7 +4,7 @@ import { useAccountContext } from "../account/account-context";
 import { ConnectionSetupDialog } from "../account/connection-setup-form";
 import { AutoResize } from "../form/auto-resize";
 import { BasicFormButton } from "../form/form";
-import { getChatResponse, type ChatMessage, type OpenAIChatPayload } from "../openai/chat";
+import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "../openai/chat";
 import { isSucceeded, listDeployments, type ModelDeployment } from "../openai/management";
 import { useDialog } from "../shell/dialog";
 
@@ -43,8 +43,15 @@ function getUserNode(id: string, configOverrides?: Partial<ChatNode>): ChatNode 
   };
 }
 
-function patchNode(predicate: (node: ChatNode) => boolean, patch: Partial<ChatNode>) {
-  return (candidateNode: ChatNode) => (predicate(candidateNode) ? { ...candidateNode, ...patch } : candidateNode);
+function patchNode(predicate: (node: ChatNode) => boolean, patch: Partial<ChatNode> | ((node: ChatNode) => Partial<ChatNode>)) {
+  return (candidateNode: ChatNode) => {
+    if (predicate(candidateNode)) {
+      const patched = patch instanceof Function ? patch(candidateNode) : patch;
+      return { ...candidateNode, ...patched };
+    } else {
+      return candidateNode;
+    }
+  };
 }
 
 const roleIcon = {
@@ -78,10 +85,10 @@ export function ChatTree() {
   const [modelConfig, setModelConfig] = useState<Partial<OpenAIChatPayload>>({ temperature: 0.7, max_tokens: 200 });
 
   const chat = useCallback(
-    async (messages: ChatMessage[]) => {
+    async (messages: ChatMessage[], abortSignal?: AbortSignal) => {
       if (!azureOpenAIConnection || !selectedModelId) throw new Error("Chat endpoint not available");
       const endpoint = `${azureOpenAIConnection.endpoint}openai/deployments/${selectedModelId}/chat/completions?api-version=2023-03-15-preview`;
-      return getChatResponse(azureOpenAIConnection.apiKey, endpoint, messages, modelConfig).then((response) => response.choices[0].message.content ?? "");
+      return getChatStream(azureOpenAIConnection.apiKey, endpoint, messages, modelConfig, abortSignal);
     },
     [azureOpenAIConnection, selectedModelId, modelConfig]
   );
@@ -109,20 +116,20 @@ export function ChatTree() {
 
     focusById(needFocusNodes.at(-1)!.id);
 
-    setTreeNodes((rootNodes) => rootNodes.map(patchNode((node) => node.isNextFocus === true, { isNextFocus: false })));
+    setTreeNodes((nodes) => nodes.map(patchNode((node) => node.isNextFocus === true, { isNextFocus: false })));
   }, [treeNodes]);
 
   const handleTextChange = useCallback((nodeId: string, content: string) => {
-    setTreeNodes((rootNodes) => rootNodes.map(patchNode((node) => node.id === nodeId, { content })));
+    setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { content })));
   }, []);
 
   const handleDelete = useCallback((nodeId: string) => {
-    setTreeNodes((rootNodes) => {
+    setTreeNodes((nodes) => {
       // resurvively find all ids to be deleted
-      const reachableIds = getReachableIds(rootNodes, nodeId);
+      const reachableIds = getReachableIds(nodes, nodeId);
 
       // filter out the node to be deleted
-      const remainingNodes = rootNodes.filter((node) => !reachableIds.includes(node.id));
+      const remainingNodes = nodes.filter((node) => !reachableIds.includes(node.id));
 
       let newUserNodeId = "";
 
@@ -157,8 +164,8 @@ export function ChatTree() {
     // insert a new user node before the forked node
     const newUserNode: ChatNode = getUserNode(crypto.randomUUID(), { content: baseContent });
 
-    setTreeNodes((rootNodes) => {
-      const newNodes = [...rootNodes, newUserNode];
+    setTreeNodes((nodes) => {
+      const newNodes = [...nodes, newUserNode];
       const parentNode = newNodes.find((node) => node.childIds?.includes(siblingId))!; // safe assert: the top most user node is under the system node
       const allSiblingIds = [...(parentNode?.childIds || [])];
       const siblingIndex = allSiblingIds.findIndex((id) => id === siblingId);
@@ -173,11 +180,11 @@ export function ChatTree() {
   }, []);
 
   const handleToggleAccordion = useCallback((nodeId: string) => {
-    setTreeNodes((rootNodes) => {
-      const targetNode = rootNodes.find((node) => node.id === nodeId);
-      if (!targetNode?.childIds?.length) return rootNodes;
+    setTreeNodes((nodes) => {
+      const targetNode = nodes.find((node) => node.id === nodeId);
+      if (!targetNode?.childIds?.length) return nodes;
 
-      const newNodes = [...rootNodes];
+      const newNodes = [...nodes];
       const targetNodeIndex = newNodes.findIndex((node) => node.id === nodeId);
       newNodes[targetNodeIndex] = {
         ...targetNode,
@@ -188,7 +195,7 @@ export function ChatTree() {
   }, []);
 
   const handleStartEdit = useCallback((nodeId: string) => {
-    setTreeNodes((rootNodes) => rootNodes.map(patchNode((node) => node.id === nodeId, { isEditing: true, isNextFocus: true })));
+    setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { isEditing: true, isNextFocus: true })));
   }, []);
 
   const getMessageChain = useCallback(
@@ -228,31 +235,29 @@ export function ChatTree() {
       if (targetNode?.role !== "user") return;
 
       if (e.key === "Escape") {
-        setTreeNodes((rootNodes) => rootNodes.map(patchNode((node) => node.id === nodeId, { isEditing: false })));
+        setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { isEditing: false })));
         return;
       }
 
       if (!e.ctrlKey && !e.shiftKey && !e.altKey && e.key === "Enter") {
         e.preventDefault();
 
-        setTreeNodes((rootNodes) => rootNodes.map(patchNode((node) => node.id === nodeId, { isGenerating: true })));
+        setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { isGenerating: true })));
 
         const messages = getMessageChain(nodeId);
-        const response = await chat(messages);
-        await new Promise((resolve) => setTimeout(resolve, 10000));
 
         const newUserNode = getUserNode(crypto.randomUUID());
 
         const newAssistantNode: ChatNode = {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: response,
+          content: "",
           isLocked: true,
           childIds: [newUserNode.id],
         };
 
-        setTreeNodes((rootNodes) => {
-          const newNodes = [...rootNodes, newAssistantNode, newUserNode];
+        setTreeNodes((nodes) => {
+          const newNodes = [...nodes, newAssistantNode, newUserNode];
           const targetNodeIndex = newNodes.findIndex((node) => node.id === nodeId);
           newNodes[targetNodeIndex] = {
             ...newNodes[targetNodeIndex],
@@ -263,6 +268,19 @@ export function ChatTree() {
           };
           return newNodes;
         });
+
+        const stream = await chat(messages);
+        for await (const item of stream) {
+          console.log(item.choices[0].delta.content);
+          setTreeNodes((nodes) =>
+            nodes.map(
+              patchNode(
+                (node) => node.id === newAssistantNode.id,
+                (node) => ({ content: node.content + (item.choices[0].delta.content ?? "") })
+              )
+            )
+          );
+        }
       }
     },
     [chat, treeNodes, getMessageChain]
