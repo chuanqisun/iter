@@ -18,6 +18,7 @@ export interface ChatNode {
   isEntry?: boolean;
   isEditing?: boolean;
   isNextFocus?: boolean;
+  isGenerating?: boolean;
 }
 
 const INITIAL_USER_NODE = getUserNode(crypto.randomUUID());
@@ -234,8 +235,11 @@ export function ChatTree() {
       if (!e.ctrlKey && !e.shiftKey && !e.altKey && e.key === "Enter") {
         e.preventDefault();
 
+        setTreeNodes((rootNodes) => rootNodes.map(patchNode((node) => node.id === nodeId, { isGenerating: true })));
+
         const messages = getMessageChain(nodeId);
         const response = await chat(messages);
+        await new Promise((resolve) => setTimeout(resolve, 10000));
 
         const newUserNode = getUserNode(crypto.randomUUID());
 
@@ -254,6 +258,7 @@ export function ChatTree() {
             ...newNodes[targetNodeIndex],
             childIds: [newAssistantNode.id],
             isEditing: false,
+            isGenerating: false,
             isLocked: true,
           };
           return newNodes;
@@ -277,6 +282,7 @@ export function ChatTree() {
                   <textarea
                     id={node.id}
                     value={node.content}
+                    disabled={node.isGenerating}
                     onKeyDown={(e) => handleKeydown(node.id, e)}
                     onChange={(e) => handleTextChange(node.id, e.target.value)}
                     placeholder={node.role === "user" ? "Enter to send, Esc to cancel" : "System message"}
@@ -289,6 +295,12 @@ export function ChatTree() {
                 {node.role === "user" ? (
                   <>
                     {" "}
+                    {node.isGenerating ? (
+                      <>
+                        <button onClick={() => {}}>Stop</button>
+                        {" · "}
+                      </>
+                    ) : null}
                     {node.isEditing || node.isLocked ? null : (
                       <>
                         <button onClick={() => handleStartEdit(node.id)}>Edit</button>
