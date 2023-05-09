@@ -77,7 +77,11 @@ export function ChatTree() {
   const treeRootRef = useRef<HTMLDivElement>(null);
 
   const { DialogComponent, open, close } = useDialog();
-  const handleConnectionsButtonClick = () => open();
+  const [isDialogOpened, setIsDialogOpened] = useState(false);
+  const handleConnectionsButtonClick = () => {
+    setIsDialogOpened(true);
+    open();
+  };
 
   const { azureOpenAIConnection } = useAccountContext();
   const [modelOptions, setModelOptions] = useState<ModelDeployment[]>([]);
@@ -354,9 +358,7 @@ export function ChatTree() {
       <div>
         <ModelSelector>
           <BasicFormButton onClick={handleConnectionsButtonClick}>Connections</BasicFormButton>
-          <DialogComponent>
-            <ConnectionSetupDialog onClose={close} />
-          </DialogComponent>
+          <DialogComponent>{isDialogOpened ? <ConnectionSetupDialog onClose={close} /> : null}</DialogComponent>
           <label>
             Model
             <select value={selectedModelId ?? ""} onChange={(e) => setSelectedModelId(e.target.value)}>
