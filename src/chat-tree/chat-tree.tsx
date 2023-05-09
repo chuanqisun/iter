@@ -233,6 +233,22 @@ export function ChatTree() {
     [treeNodes]
   );
 
+  const handleAbort = useCallback((nodeId: string) => {
+    setTreeNodes((nodes) =>
+      nodes.map(
+        patchNode(
+          (node) => node.id === nodeId,
+          (node) => {
+            if (!node?.abortController) return {};
+            node.abortController.abort();
+
+            return { abortController: undefined };
+          }
+        )
+      )
+    );
+  }, []);
+
   const handleKeydown = useCallback(
     async (nodeId: string, e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       const targetNode = treeNodes.find((node) => node.id === nodeId);
@@ -329,7 +345,7 @@ export function ChatTree() {
                     {" "}
                     {node.abortController ? (
                       <>
-                        <button onClick={() => node.abortController!.abort()}>Stop</button>
+                        <button onClick={() => handleAbort(node.id)}>Stop</button>
                         {" · "}
                       </>
                     ) : null}
