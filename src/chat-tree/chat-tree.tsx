@@ -322,7 +322,9 @@ export function ChatTree() {
         <Thread showrail={hasSibling ? "true" : undefined} key={node.id}>
           <MessageLayout>
             <Avatar onClick={() => handleToggleAccordion(node.id)}>
-              {roleIcon[node.role]} {node.childIds?.length && node.isCollapsed ? "🔽" : null}
+              <AvatarIcon>
+                {roleIcon[node.role]} {node.childIds?.length && node.isCollapsed ? "🔽" : null}
+              </AvatarIcon>
             </Avatar>
             <MessageWithActions>
               {node.isEditing ? (
@@ -514,4 +516,8 @@ const Avatar = styled.button`
   &:hover {
     background-color: white;
   }
+`;
+
+const AvatarIcon = styled.span`
+  width: 24px;
 `;
