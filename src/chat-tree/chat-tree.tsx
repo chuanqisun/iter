@@ -19,6 +19,7 @@ export interface ChatNode {
   isEditing?: boolean;
   isNextFocus?: boolean;
   abortController?: AbortController;
+  errorMessage?: string;
 }
 
 const INITIAL_USER_NODE = getUserNode(crypto.randomUUID());
@@ -286,31 +287,51 @@ export function ChatTree() {
           return newNodes;
         });
 
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-        const stream = await chat(messages, abortController.signal);
-        for await (const item of stream) {
-          console.log(item.choices[0].delta.content);
-          setTreeNodes((nodes) =>
-            nodes.map(
-              patchNode(
-                (node) => node.id === newAssistantNode.id,
-                (node) => ({ content: node.content + (item.choices[0].delta.content ?? "") })
+        try {
+          const stream = await chat(messages, abortController.signal);
+          for await (const item of stream) {
+            console.log(item.choices[0].delta.content);
+            setTreeNodes((nodes) =>
+              nodes.map(
+                patchNode(
+                  (node) => node.id === newAssistantNode.id,
+                  (node) => ({ content: node.content + (item.choices[0].delta.content ?? "") })
+                )
               )
-            )
-          );
-        }
+            );
+          }
 
-        setTreeNodes((nodes) => {
-          const newNodes = [...nodes, newUserNode];
-          const targetNodeIndex = newNodes.findIndex((node) => node.id === nodeId);
-          newNodes[targetNodeIndex] = {
-            ...newNodes[targetNodeIndex],
-            abortController: undefined,
-            isEditing: false,
-            isLocked: true,
-          };
-          return newNodes;
-        });
+          setTreeNodes((nodes) => {
+            const newNodes = [...nodes, newUserNode];
+            const targetNodeIndex = newNodes.findIndex((node) => node.id === nodeId);
+            newNodes[targetNodeIndex] = {
+              ...newNodes[targetNodeIndex],
+              abortController: undefined,
+              isEditing: false,
+              isLocked: true,
+            };
+            return newNodes;
+          });
+        } catch (e: any) {
+          setTreeNodes((nodes) => {
+            const newNodes = [...nodes];
+            const targetNodeIndex = newNodes.findIndex((node) => node.id === nodeId);
+            const assistantNodeIndex = newNodes.findIndex((node) => node.id === newAssistantNode.id);
+
+            newNodes[targetNodeIndex] = {
+              ...newNodes[targetNodeIndex],
+              abortController: undefined,
+              isEditing: true,
+            };
+
+            newNodes[assistantNodeIndex] = {
+              ...newNodes[assistantNodeIndex],
+              errorMessage: `${e?.name} ${(e as any).message}`,
+            };
+
+            return newNodes;
+          });
+        }
       }
     },
     [chat, treeNodes, getMessageChain]
@@ -339,7 +360,16 @@ export function ChatTree() {
                   />
                 </AutoResize>
               ) : (
-                <Message draft={!node.isLocked && !node.isEditing && !node.isEditing ? "true" : undefined}>{node.content}</Message>
+                <Message draft={!node.isLocked && !node.isEditing && !node.isEditing ? "true" : undefined}>
+                  {node.content}
+                  {node.errorMessage ? (
+                    <ErrorMessage>
+                      <br />
+                      ️❌
+                      {node.errorMessage}
+                    </ErrorMessage>
+                  ) : null}
+                </Message>
               )}
               <MessageActions>
                 {node.role === "user" ? (
@@ -493,6 +523,10 @@ const Message = styled.span<{ draft?: "true" }>`
   &::before {
     content: ${(props) => (props.draft ? '"*"' : "")};
   }
+`;
+
+const ErrorMessage = styled.span`
+  color: red;
 `;
 
 const MessageLayout = styled.div`
