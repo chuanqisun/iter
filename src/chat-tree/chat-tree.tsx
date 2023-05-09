@@ -514,6 +514,7 @@ const MessageActions = styled.span`
 
 const MessageWithActions = styled.div`
   display: grid;
+  align-content: start;
 `;
 
 const Message = styled.span<{ draft?: "true" }>`
