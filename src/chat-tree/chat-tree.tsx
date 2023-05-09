@@ -266,25 +266,26 @@ export function ChatTree() {
         const messages = getMessageChain(nodeId);
 
         const abortController = new AbortController();
-        const newUserNode = getUserNode(crypto.randomUUID());
 
         const newAssistantNode: ChatNode = {
           id: crypto.randomUUID(),
           role: "assistant",
           content: "",
           isLocked: true,
-          childIds: [newUserNode.id],
         };
 
         setTreeNodes((nodes) => {
           const newNodes = [...nodes, newAssistantNode];
           const targetNodeIndex = newNodes.findIndex((node) => node.id === nodeId);
+
+          const previousChildIds = new Set(...(newNodes[targetNodeIndex].childIds ?? []));
+
           newNodes[targetNodeIndex] = {
             ...newNodes[targetNodeIndex],
             childIds: [newAssistantNode.id],
             abortController,
           };
-          return newNodes;
+          return newNodes.filter((node) => !previousChildIds.has(node.id)); // ensure the previous assistant node is removed
         });
 
         try {
@@ -302,14 +303,23 @@ export function ChatTree() {
           }
 
           setTreeNodes((nodes) => {
+            const newUserNode = getUserNode(crypto.randomUUID());
             const newNodes = [...nodes, newUserNode];
             const targetNodeIndex = newNodes.findIndex((node) => node.id === nodeId);
+            const assistantNodeIndex = newNodes.findIndex((node) => node.id === newAssistantNode.id);
+
             newNodes[targetNodeIndex] = {
               ...newNodes[targetNodeIndex],
               abortController: undefined,
               isEditing: false,
               isLocked: true,
             };
+
+            newNodes[assistantNodeIndex] = {
+              ...newNodes[assistantNodeIndex],
+              childIds: [newUserNode.id],
+            };
+
             return newNodes;
           });
         } catch (e: any) {
