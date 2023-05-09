@@ -1,0 +1,25 @@
+:root {
+  color-scheme: dark;
+  --system-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --input-padding-block: 2px;
+  --input-padding-inline: 4px;
+  --input-border-radius: 4px;
+  --input-border-width: 1px;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--system-font);
+  overflow-y: scroll;
+}
+
+* {
+  box-sizing: border-box;
+  font-size: inherit;
+  font-family: inherit;
+  margin: 0;
+}
