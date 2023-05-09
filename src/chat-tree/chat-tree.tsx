@@ -259,7 +259,7 @@ export function ChatTree() {
         return;
       }
 
-      if (!e.ctrlKey && !e.shiftKey && !e.altKey && e.key === "Enter") {
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key === "Enter") {
         e.preventDefault();
 
         const messages = getMessageChain(nodeId);
@@ -333,7 +333,7 @@ export function ChatTree() {
                     disabled={!!node.abortController}
                     onKeyDown={(e) => handleKeydown(node.id, e)}
                     onChange={(e) => handleTextChange(node.id, e.target.value)}
-                    placeholder={node.role === "user" ? "Enter to send, Esc to cancel" : "System message"}
+                    placeholder={node.role === "user" ? "Ctrl + Enter to send, Esc to cancel" : "System message"}
                   />
                 </AutoResize>
               ) : (
@@ -463,6 +463,8 @@ const MessageList = styled.div`
 `;
 
 const MessageActions = styled.span`
+  padding: 0 3px;
+
   > * {
     opacity: 0.5;
   }
@@ -478,9 +480,13 @@ const MessageActions = styled.span`
   }
 `;
 
-const MessageWithActions = styled.div``;
+const MessageWithActions = styled.div`
+  display: grid;
+`;
 
 const Message = styled.span<{ draft?: "true" }>`
+  padding: 4px 2px;
+  border: 1px solid transparent;
   white-space: pre-wrap;
   &::before {
     content: ${(props) => (props.draft ? '"*"' : "")};
