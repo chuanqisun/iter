@@ -271,37 +271,37 @@ export function ChatTree() {
             <Avatar onClick={() => handleToggleAccordion(node.id)}>
               {roleIcon[node.role]} {node.childIds?.length && node.isCollapsed ? "🔽" : null}
             </Avatar>
-            {node.isEditing ? (
-              <AutoResize data-resize-textarea-content={node.content}>
-                <textarea
-                  id={node.id}
-                  value={node.content}
-                  onKeyDown={(e) => handleKeydown(node.id, e)}
-                  onChange={(e) => handleTextChange(node.id, e.target.value)}
-                  placeholder={node.role === "user" ? "Enter to send, Esc to cancel" : "System message"}
-                />
-              </AutoResize>
-            ) : (
-              <MessageWithActions>
+            <MessageWithActions>
+              {node.isEditing ? (
+                <AutoResize data-resize-textarea-content={node.content}>
+                  <textarea
+                    id={node.id}
+                    value={node.content}
+                    onKeyDown={(e) => handleKeydown(node.id, e)}
+                    onChange={(e) => handleTextChange(node.id, e.target.value)}
+                    placeholder={node.role === "user" ? "Enter to send, Esc to cancel" : "System message"}
+                  />
+                </AutoResize>
+              ) : (
                 <Message draft={!node.isLocked && !node.isEditing && !node.isEditing ? "true" : undefined}>{node.content}</Message>
-                <MessageActions>
-                  {node.role === "user" ? (
-                    <>
-                      {" "}
-                      {node.isLocked ? null : (
-                        <>
-                          <button onClick={() => handleStartEdit(node.id)}>Edit</button>
-                          {" · "}
-                        </>
-                      )}
-                      <button onClick={() => handleFork(node.id, node.content)}>Fork</button>
-                      {" · "}
-                      <button onClick={() => handleDelete(node.id)}>Delete</button>
-                    </>
-                  ) : null}
-                </MessageActions>
-              </MessageWithActions>
-            )}
+              )}
+              <MessageActions>
+                {node.role === "user" ? (
+                  <>
+                    {" "}
+                    {node.isEditing || node.isLocked ? null : (
+                      <>
+                        <button onClick={() => handleStartEdit(node.id)}>Edit</button>
+                        {" · "}
+                      </>
+                    )}
+                    <button onClick={() => handleFork(node.id, node.content)}>Fork</button>
+                    {" · "}
+                    <button onClick={() => handleDelete(node.id)}>Delete</button>
+                  </>
+                ) : null}
+              </MessageActions>
+            </MessageWithActions>
           </MessageLayout>
           {!!node.childIds?.length ? (
             node.isCollapsed ? null : (
@@ -420,9 +420,7 @@ const MessageActions = styled.span`
   }
 `;
 
-const MessageWithActions = styled.div`
-  position: relative;
-`;
+const MessageWithActions = styled.div``;
 
 const Message = styled.span<{ draft?: "true" }>`
   white-space: pre-wrap;
