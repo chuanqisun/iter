@@ -506,7 +506,7 @@ const MessageList = styled.div`
 `;
 
 const MessageActions = styled.span`
-  padding: 0 3px;
+  padding: 0 5px;
 
   > * {
     opacity: 0.5;
