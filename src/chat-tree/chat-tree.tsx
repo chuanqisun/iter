@@ -85,29 +85,30 @@ export function ChatTree() {
     open();
   };
 
-  const { azureOpenAIConnection } = useAccountContext();
+  const { connections } = useAccountContext();
   const [modelOptions, setModelOptions] = useState<ModelDeployment[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
   const [modelConfig, setModelConfig] = useState<Partial<OpenAIChatPayload>>({ temperature: 0.7, max_tokens: 200 });
 
   const chat = useCallback(
     async (messages: ChatMessage[], abortSignal?: AbortSignal) => {
-      if (!azureOpenAIConnection || !selectedModelId) throw new Error("Chat endpoint not available");
-      const endpoint = `${azureOpenAIConnection.endpoint}openai/deployments/${selectedModelId}/chat/completions?api-version=2023-03-15-preview`;
-      return getChatStream(azureOpenAIConnection.apiKey, endpoint, messages, modelConfig, abortSignal);
+      if (!connections || !selectedModelId) throw new Error("Chat endpoint not available");
+      const endpoint = `${connections.endpoint}openai/deployments/${selectedModelId}/chat/completions?api-version=2023-03-15-preview`;
+      return getChatStream(connections.apiKey, endpoint, messages, modelConfig, abortSignal);
     },
-    [azureOpenAIConnection, selectedModelId, modelConfig]
+    [connections, selectedModelId, modelConfig]
   );
 
   useEffect(() => {
-    if (azureOpenAIConnection) {
-      listDeployments(azureOpenAIConnection.apiKey, azureOpenAIConnection.endpoint).then((deployments) => {
+    return;
+    if (connections) {
+      listDeployments(connections.apiKey, connections.endpoint).then((deployments) => {
         const validModels = deployments.filter(isSucceeded).filter((maybeModel) => ["gpt-35-turbo", "gpt-4", "gpt-4-32k"].includes(maybeModel.model));
         setModelOptions(validModels);
         setSelectedModelId(validModels[0]?.id ?? null);
       });
     }
-  }, [azureOpenAIConnection]);
+  }, [connections]);
 
   const focusById = useCallback((nodeId: string) => {
     setTimeout(() => {

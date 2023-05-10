@@ -4,7 +4,7 @@ import { preventDefault } from "../form/event";
 import { BasicForm, BasicFormField } from "../form/form";
 import { deduplicateByModelName, isNeeded, isSucceeded, listDeployments, newerFirst, type ModelDeployment } from "../openai/management";
 import { DialogActionGroup, DialogLayout, DialogTitle } from "../shell/dialog";
-import { useAccountContext } from "./account-context";
+import { useAccountContext, type Connection } from "./account-context";
 
 export interface ValidModel {
   id: string;
@@ -15,62 +15,84 @@ function toDisplayModel(deployment: ModelDeployment): ValidModel {
   return { id: deployment.id, displayName: deployment.model };
 }
 
+export interface ConnectionDiscovery {
+  connection: Connection;
+  validModels: ValidModel[] | undefined;
+  errorMessage?: string;
+}
+
 export const ConnectionSetupDialog: React.FC<{ onClose: () => any }> = (props) => {
   const accountContext = useAccountContext();
 
-  const [formData, setFormData] = useState({
-    endpoint: accountContext.azureOpenAIConnection?.endpoint ?? "",
-    key: accountContext.azureOpenAIConnection?.apiKey ?? "",
-  });
+  const [formData, setFormData] = useState({ endpoint: "", key: "" });
 
-  const [availableModels, setAvailableModels] = useState<ValidModel[]>();
-  const [message, setMessage] = useState<string | null>("");
+  const [discoveries, setDiscoveries] = useState<Record<string, ConnectionDiscovery>>({});
+  const [messages, setMessages] = useState<string[]>([]);
 
   useEffect(() => {
-    setAvailableModels(undefined);
+    if (!accountContext.connections?.length) return;
+    setDiscoveries(accountContext.connections.reduce((prev, connection) => ({ ...prev, [connection.id]: { connection, validModels: undefined } }), {}));
 
-    setMessage(`⏳ Loading models...`);
-    if (!accountContext.azureOpenAIConnection) {
-      setAvailableModels([]);
-      setMessage("");
-    } else {
-      listDeployments(accountContext.azureOpenAIConnection.apiKey, accountContext.azureOpenAIConnection.endpoint)
-        .then((deployments) => {
-          setMessage("");
-          const validModels = deployments.filter(isSucceeded).filter(isNeeded).sort(newerFirst).filter(deduplicateByModelName).map(toDisplayModel);
-          setAvailableModels(validModels);
-          if (!validModels.length) {
-            setMessage(`⚠️ No models available`);
-          }
-        })
-        .catch((e) => {
-          setAvailableModels([]);
-          console.error(e);
-          setMessage(`⚠️ Error loading models: ${e.message}`);
-        });
-    }
-  }, [accountContext.azureOpenAIConnection]);
+    Promise.all(
+      accountContext.connections.map((connection) =>
+        listDeployments(connection.apiKey, connection.endpoint)
+          .then((deployments) => {
+            const validModels = deployments.filter(isSucceeded).filter(isNeeded).sort(newerFirst).filter(deduplicateByModelName).map(toDisplayModel);
+            setDiscoveries((prev) => ({ ...prev, [connection.id]: { connection, validModels } }));
+
+            if (!validModels.length) {
+              setDiscoveries((prev) => ({ ...prev, [connection.id]: { connection, validModels, errorMessage: `⚠️ No models found` } }));
+            }
+          })
+          .catch((e) => {
+            setDiscoveries((prev) => ({ ...prev, [connection.id]: { connection, validModels: [], errorMessage: `⚠️ Error loading models` } }));
+            console.error(e);
+          })
+      )
+    );
+  }, [accountContext.connections]);
 
   const handleConnect: FormEventHandler = (e) => {
     const valid = (e.target as HTMLElement).closest("form")?.checkValidity();
     if (!valid) return;
 
-    accountContext.setAzureOpenAIConnection?.({
-      type: "azure-openai",
-      endpoint: formData.endpoint,
-      apiKey: formData.key,
-    });
+    // TODO handle deduplication
+    accountContext.setConnections?.((prevConnections) => [
+      ...prevConnections,
+      {
+        id: crypto.randomUUID(),
+        endpoint: formData.endpoint,
+        apiKey: formData.key,
+      },
+    ]);
   };
 
   const handleDisconnect: FormEventHandler = () => {
     setFormData({ endpoint: "", key: "" });
-    accountContext.setAzureOpenAIConnection?.(null);
+    accountContext.setConnections?.([]);
   };
+
+  console.log(Object.values(discoveries));
 
   return (
     <DialogLayout>
       <DialogTitle>Connections</DialogTitle>
       <BasicForm onSubmit={preventDefault}>
+        <BasicFormField>
+          <UnstyledList>
+            {Object.values(discoveries).map((discovery) => (
+              <li key={discovery.connection.id}>
+                <div>{discovery.connection.endpoint}</div>
+                <button>Delete</button>
+                <UnstyledList>
+                  {discovery.validModels?.map((model) => (
+                    <li key={model.id}>✅ {model.displayName}</li>
+                  ))}
+                </UnstyledList>
+              </li>
+            ))}
+          </UnstyledList>
+        </BasicFormField>
         <BasicFormField>
           <label htmlFor="aoai-endpoint">Endpoint</label>
           <input
@@ -92,21 +114,12 @@ export const ConnectionSetupDialog: React.FC<{ onClose: () => any }> = (props) =
             onChange={(e) => setFormData((prev) => ({ ...prev, key: e.target.value }))}
           />
         </BasicFormField>
-        {availableModels?.length ? (
-          <UnstyledList>
-            {availableModels.map((model) => (
-              <li key={model.id}>
-                ✅ {model.id} ({model.displayName})
-              </li>
-            ))}
-          </UnstyledList>
-        ) : null}
-        {message ? <div>{message}</div> : null}
+
+        {messages ? <div>{messages}</div> : null}
         <DialogActionGroup>
           <button type="submit" onClick={handleConnect}>
-            {accountContext.azureOpenAIConnection ? "Update" : "Connect"}
+            Add
           </button>
-          {accountContext.azureOpenAIConnection && <button onClick={handleDisconnect}>Disconnect</button>}
           <button onClick={props.onClose}>Close</button>
         </DialogActionGroup>
       </BasicForm>
