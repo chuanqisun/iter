@@ -129,6 +129,7 @@ export function ChatTree() {
   }, []);
 
   const handleDelete = useCallback((nodeId: string) => {
+    handleAbort(nodeId);
     setTreeNodes((nodes) => {
       // resurvively find all ids to be deleted
       const reachableIds = getReachableIds(nodes, nodeId);
@@ -363,7 +364,6 @@ export function ChatTree() {
                   <textarea
                     id={node.id}
                     value={node.content}
-                    disabled={!!node.abortController}
                     onKeyDown={(e) => handleKeydown(node.id, e)}
                     onChange={(e) => handleTextChange(node.id, e.target.value)}
                     placeholder={node.role === "user" ? "Ctrl + Enter to send, Esc to cancel" : "System message"}
