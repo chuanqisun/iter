@@ -315,7 +315,6 @@ export function ChatTree() {
         try {
           const stream = await chat(messages, abortController.signal);
           for await (const item of stream) {
-            console.log(item.choices[0].delta.content);
             setTreeNodes((nodes) =>
               nodes.map(
                 patchNode(
