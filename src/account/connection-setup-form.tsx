@@ -27,12 +27,12 @@ export const ConnectionSetupDialog: React.FC<{ onClose: () => any }> = (props) =
       if (!valid) return;
 
       accountContext.setConnections?.((prevConnections) => [
-        ...prevConnections,
         {
           id: crypto.randomUUID(),
           endpoint: formData.endpoint,
           apiKey: formData.key,
         },
+        ...prevConnections,
       ]);
 
       setFormData({ endpoint: "", key: "" });
@@ -99,6 +99,7 @@ export const ConnectionSetupDialog: React.FC<{ onClose: () => any }> = (props) =
                         ))}
                       </UnstyledList>
                     ) : null}
+                    {connection.errorMessage ? <ErrorMessage>❌ {connection.errorMessage}</ErrorMessage> : null}
                     <BasicActionGroup>
                       <button type="button" onClick={() => handleDisconnect(connection.id)}>
                         Delete
@@ -128,4 +129,8 @@ const EndpointName = styled.legend`
 const ConnectionList = styled(UnstyledList)`
   display: grid;
   gap: 8px;
+`;
+
+const ErrorMessage = styled.div`
+  color: red;
 `;

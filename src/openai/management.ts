@@ -13,10 +13,16 @@ export interface ModelDeployment {
 }
 
 export async function listDeployments(apiKey: string, endpoint: string): Promise<ModelDeployment[]> {
-  const response: ListDeploymentsResponse = await fetch(`${removeTrailingSlash(endpoint)}/openai/deployments?api-version=2022-12-01`, {
+  const response = await fetch(`${removeTrailingSlash(endpoint)}/openai/deployments?api-version=2022-12-01`, {
     headers: { "api-key": apiKey },
-  }).then((res) => res.json());
-  return response.data;
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to list deployments: ${[response.status, response.statusText, await response.text()].join(" ")}`);
+  }
+
+  const responseObject: ListDeploymentsResponse = await response.json();
+  return responseObject.data;
 }
 
 export function isSucceeded(deployment: ModelDeployment): boolean {
@@ -27,8 +33,21 @@ export function isChatModel(deployment: ModelDeployment): boolean {
   return ["gpt-35-turbo", "gpt-4", "gpt-4-32k"].includes(deployment.model);
 }
 
+export function smartSort(a: ModelDeployment, b: ModelDeployment): number {
+  const alphabeticalOrder = alphabetical(a, b);
+  if (alphabeticalOrder !== 0) {
+    return alphabeticalOrder;
+  }
+
+  return newerFirst(a, b);
+}
+
 export function newerFirst(a: ModelDeployment, b: ModelDeployment): number {
   return b.updated_at - a.updated_at;
+}
+
+export function alphabetical(a: ModelDeployment, b: ModelDeployment): number {
+  return a.model.localeCompare(b.model);
 }
 
 export function deduplicateByModelName(deployment: ModelDeployment, index: number, array: ModelDeployment[]) {

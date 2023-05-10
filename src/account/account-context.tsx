@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { deduplicateByModelName, isChatModel, isSucceeded, listDeployments, newerFirst, type ModelDeployment } from "../openai/management";
+import { deduplicateByModelName, isChatModel, isSucceeded, listDeployments, smartSort, type ModelDeployment } from "../openai/management";
 
 export interface Connection {
   id: string;
@@ -77,7 +77,7 @@ export const AccountContextProvider = (props: { children?: JSX.Element | JSX.Ele
             const validModels = deployments
               .filter(isSucceeded)
               .filter(isChatModel)
-              .sort(newerFirst)
+              .sort(smartSort)
               .filter(deduplicateByModelName)
               .map(toDisplayModel.bind(null, connection));
             setRuntimeConnections((prev) =>
@@ -86,12 +86,25 @@ export const AccountContextProvider = (props: { children?: JSX.Element | JSX.Ele
                   ? {
                       ...prevConnection,
                       models: validModels,
+                      errorMessage: validModels.length ? undefined : "No chat models found",
                     }
                   : prevConnection
               )
             );
           })
-          .catch((e) => {})
+          .catch((e) => {
+            setRuntimeConnections((prev) =>
+              prev.map((prevConnection) =>
+                prevConnection.id === connection.id
+                  ? {
+                      ...prevConnection,
+                      models: [],
+                      errorMessage: e.message,
+                    }
+                  : prevConnection
+              )
+            );
+          })
       )
     );
   }, [storedContext.connections]);
