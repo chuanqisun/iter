@@ -118,8 +118,13 @@ export async function* getChatStream(
     signal: abortSignal,
   }).catch((e) => {
     console.error(e);
+    debugger;
     throw e;
   });
+
+  if (!stream.ok) {
+    throw new Error(`Request failed: ${[stream.status, stream.statusText, await stream.text()].join(" ")}`);
+  }
 
   if (!stream.body) throw new Error("Request failed");
 
