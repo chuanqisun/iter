@@ -253,6 +253,11 @@ export function ChatTree() {
       const targetNode = treeNodes.find((node) => node.id === nodeId);
       if (targetNode?.role !== "user") return;
 
+      if (e.key === "Escape") {
+        e.preventDefault();
+        handleAbort(nodeId);
+      }
+
       if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key === "Enter") {
         e.preventDefault();
 
@@ -393,9 +398,7 @@ export function ChatTree() {
                   {node.content}
                   {node.errorMessage ? (
                     <ErrorMessage>
-                      <br />
-                      ️❌
-                      {node.errorMessage}
+                      {node.content.length ? <br /> : null}❌ {node.errorMessage}
                     </ErrorMessage>
                   ) : null}
                 </Message>
