@@ -200,10 +200,6 @@ export function ChatTree() {
     });
   }, []);
 
-  const handleStartEdit = useCallback((nodeId: string) => {
-    setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { isEditing: true, isNextFocus: true })));
-  }, []);
-
   const getMessageChain = useCallback(
     (id: string) => {
       const treeDict = new Map(treeNodes.map((node) => [node.id, node]));
@@ -255,11 +251,6 @@ export function ChatTree() {
     async (nodeId: string, e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       const targetNode = treeNodes.find((node) => node.id === nodeId);
       if (targetNode?.role !== "user") return;
-
-      if (e.key === "Escape") {
-        setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { isEditing: false })));
-        return;
-      }
 
       if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key === "Enter") {
         e.preventDefault();
@@ -397,12 +388,6 @@ export function ChatTree() {
                         <span> · </span>
                       </>
                     ) : null}
-                    {node.isEditing || node.isLocked ? null : (
-                      <>
-                        <button onClick={() => handleStartEdit(node.id)}>Edit</button>
-                        <span> · </span>
-                      </>
-                    )}
                     <button onClick={() => handleFork(node.id, node.content)}>Fork</button>
                     <span> · </span>
                     <button onClick={() => handleDelete(node.id)}>Delete</button>
