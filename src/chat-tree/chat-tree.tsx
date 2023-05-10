@@ -388,17 +388,17 @@ export function ChatTree() {
                     {node.abortController ? (
                       <>
                         <button onClick={() => handleAbort(node.id)}>Stop</button>
-                        {" · "}
+                        <span> · </span>
                       </>
                     ) : null}
                     {node.isEditing || node.isLocked ? null : (
                       <>
                         <button onClick={() => handleStartEdit(node.id)}>Edit</button>
-                        {" · "}
+                        <span> · </span>
                       </>
                     )}
                     <button onClick={() => handleFork(node.id, node.content)}>Fork</button>
-                    {" · "}
+                    <span> · </span>
                     <button onClick={() => handleDelete(node.id)}>Delete</button>
                   </>
                 ) : null}
