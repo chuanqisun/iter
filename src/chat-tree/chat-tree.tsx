@@ -484,10 +484,6 @@ export function ChatTree() {
 const GhostTextArea = styled.textarea`
   background-color: var(--textarea-background);
   border-radius: 2px;
-
-  &:focus {
-    background-color: transparent;
-  }
 `;
 
 const ChatAppLayout = styled.div`
@@ -544,11 +540,11 @@ const MessageActions = styled.span`
 const MessageWithActions = styled.div`
   display: grid;
   align-content: start;
-  padding: 2px 0;
+  /* padding: 2px 0; */
 `;
 
 const Message = styled.span<{ draft?: "true" }>`
-  padding: 2px 4px;
+  padding: var(--input-padding-block) var(--input-padding-block);
   border: 1px solid transparent;
   white-space: pre-wrap;
   &::before {
@@ -570,19 +566,20 @@ const Avatar = styled.button`
   padding: 0;
   background: none;
   border: 1px solid transparent;
-  border-radius: 2px;
+  border-radius: var(--input-border-radius);
   cursor: pointer;
-  font-size: 20px;
+  font-size: 22px;
   width: 28px;
   display: flex;
   align-items: baseline;
   justify-content: center;
 
   &:hover {
-    background-color: ButtonFace;
+    border-color: ButtonBorder;
   }
 `;
 
 const AvatarIcon = styled.span`
-  width: 24px;
+  width: 28px;
+  text-align: center;
 `;
