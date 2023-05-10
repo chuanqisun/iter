@@ -20,6 +20,7 @@ export interface ChatNode {
   isNextFocus?: boolean;
   abortController?: AbortController;
   errorMessage?: string;
+  lastSubmittedContent?: string;
 }
 
 const INITIAL_USER_NODE = getUserNode(crypto.randomUUID());
@@ -270,6 +271,7 @@ export function ChatTree() {
             ...targetNode,
             id: crypto.randomUUID(), // reserve id for original node so focus can be kept
             childIds: [...targetNode.childIds],
+            content: targetNode.lastSubmittedContent ?? targetNode.content,
           };
         }
 
@@ -299,6 +301,7 @@ export function ChatTree() {
           newNodes[targetNodeIndex] = {
             ...newNodes[targetNodeIndex],
             childIds: [newAssistantNode.id], // ok to override since we just cloned the node
+            lastSubmittedContent: targetNode.content,
             abortController,
           };
           return newNodes;
