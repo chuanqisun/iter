@@ -270,14 +270,8 @@ export function ChatTree() {
 
         // TODO - auto fork when resubmit
 
-        // 1. when there is no child, append the assistant node
-        // activeNode = targetNode
-
-        // 2. when there is first child is error, regen
-        // activeNode = targetNode
-
-        // 3. when firt child is non-error, fork and regen
-        // activeNode = forkedNode
+        // 1. Check if there are existing children
+        // 2. If yes, clone the node, together with its children, and append as sibling of the new node
 
         const newAssistantNode: ChatNode = {
           id: crypto.randomUUID(),
@@ -297,7 +291,7 @@ export function ChatTree() {
             childIds: [newAssistantNode.id],
             abortController,
           };
-          return newNodes.filter((node) => !previousChildIds.has(node.id)); // ensure the previous assistant node is removed
+          return newNodes.filter((node) => !previousChildIds.has(node.id)); // HACK: ensure the previous assistant node is removed. This could leak when there is additional descendents
         });
 
         try {
@@ -537,6 +531,7 @@ const MessageActions = styled.span`
 const MessageWithActions = styled.div`
   display: grid;
   align-content: start;
+  padding: 2px 0;
 `;
 
 const Message = styled.span<{ draft?: "true" }>`
