@@ -23,8 +23,8 @@ export function isSucceeded(deployment: ModelDeployment): boolean {
   return deployment.status === "succeeded";
 }
 
-export function isNeeded(deployment: ModelDeployment): boolean {
-  return ["gpt-35-turbo", "gpt-4", "gpt-4-32k", "text-embedding-ada-002"].includes(deployment.model);
+export function isChatModel(deployment: ModelDeployment): boolean {
+  return ["gpt-35-turbo", "gpt-4", "gpt-4-32k"].includes(deployment.model);
 }
 
 export function newerFirst(a: ModelDeployment, b: ModelDeployment): number {

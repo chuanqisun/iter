@@ -5,6 +5,11 @@ export const BasicActionGroup = styled.div`
   gap: 8px;
 `;
 
+export const BasicFieldset = styled.fieldset`
+  display: grid;
+  gap: 8px;
+`;
+
 export const BasicForm = styled.form`
   display: grid;
   gap: 8px;
@@ -13,6 +18,15 @@ export const BasicForm = styled.form`
 export const BasicFormField = styled.div`
   display: grid;
   gap: 4px;
+`;
+
+export const ContentWithAction = styled.div`
+  display: grid;
+  gap: 8px;
+
+  > :last-child {
+    margin-top: 8px;
+  }
 `;
 
 export const BasicFormButton = styled.button`

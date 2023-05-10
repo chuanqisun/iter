@@ -5,7 +5,6 @@ import { ConnectionSetupDialog } from "../account/connection-setup-form";
 import { AutoResize } from "../form/auto-resize";
 import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "../openai/chat";
-import { isSucceeded, listDeployments, type ModelDeployment } from "../openai/management";
 import { useDialog } from "../shell/dialog";
 
 export interface ChatNode {
@@ -85,30 +84,29 @@ export function ChatTree() {
     open();
   };
 
-  const { connections } = useAccountContext();
-  const [modelOptions, setModelOptions] = useState<ModelDeployment[]>([]);
-  const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
+  const { connections, getChatEndpoint } = useAccountContext();
+  const [selectedModelConnectionId, setSelectedModelConnectionId] = useState<string | null>(null);
   const [modelConfig, setModelConfig] = useState<Partial<OpenAIChatPayload>>({ temperature: 0.7, max_tokens: 200 });
 
   const chat = useCallback(
     async (messages: ChatMessage[], abortSignal?: AbortSignal) => {
-      if (!connections || !selectedModelId) throw new Error("Chat endpoint not available");
-      const endpoint = `${connections.endpoint}openai/deployments/${selectedModelId}/chat/completions?api-version=2023-03-15-preview`;
-      return getChatStream(connections.apiKey, endpoint, messages, modelConfig, abortSignal);
+      const chatEndpoint = getChatEndpoint?.(selectedModelConnectionId ?? "");
+      if (!chatEndpoint) throw new Error(`API connection is not set up`);
+
+      return getChatStream(chatEndpoint.apiKey, chatEndpoint.endpoint, messages, modelConfig, abortSignal);
     },
-    [connections, selectedModelId, modelConfig]
+    [selectedModelConnectionId, getChatEndpoint, modelConfig]
   );
 
+  // intiialize
   useEffect(() => {
-    return;
+    if (selectedModelConnectionId) return;
     if (connections) {
-      listDeployments(connections.apiKey, connections.endpoint).then((deployments) => {
-        const validModels = deployments.filter(isSucceeded).filter((maybeModel) => ["gpt-35-turbo", "gpt-4", "gpt-4-32k"].includes(maybeModel.model));
-        setModelOptions(validModels);
-        setSelectedModelId(validModels[0]?.id ?? null);
-      });
+      const defaultConnection = connections.find((connection) => !!connection.models?.length);
+      if (!defaultConnection) return;
+      setSelectedModelConnectionId(defaultConnection.models?.at(0)!.id ?? "");
     }
-  }, [connections]);
+  }, [selectedModelConnectionId, connections]);
 
   const focusById = useCallback((nodeId: string) => {
     setTimeout(() => {
@@ -443,16 +441,27 @@ export function ChatTree() {
         <ModelSelector>
           <BasicFormButton onClick={handleConnectionsButtonClick}>Connections</BasicFormButton>
           <DialogComponent>{isDialogOpened ? <ConnectionSetupDialog onClose={close} /> : null}</DialogComponent>
-          <label>
-            Model
-            <BasicSelect value={selectedModelId ?? ""} onChange={(e) => setSelectedModelId(e.target.value)}>
-              {modelOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.model}
-                </option>
-              ))}
-            </BasicSelect>
-          </label>
+          {connections?.length ? (
+            <label>
+              Model
+              <BasicSelect value={selectedModelConnectionId ?? ""} onChange={(e) => setSelectedModelConnectionId(e.target.value)}>
+                {connections.map((connection) => (
+                  <optgroup key={connection.id} label={connection.displayName}>
+                    {connection.models?.map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.displayName}
+                      </option>
+                    ))}
+                    {!connection.models?.length ? (
+                      <option value="" disabled>
+                        No models available
+                      </option>
+                    ) : null}
+                  </optgroup>
+                ))}
+              </BasicSelect>
+            </label>
+          ) : null}
           <label>
             Temperature
             <BasicFormInput
@@ -483,7 +492,6 @@ export function ChatTree() {
 }
 
 const GhostTextArea = styled.textarea`
-  background-color: var(--textarea-background);
   border-radius: 2px;
 `;
 

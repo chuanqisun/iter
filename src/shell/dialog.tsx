@@ -31,6 +31,17 @@ export const DialogLayout = styled.div`
 
 export const DialogTitle = styled.h1`
   font-size: 20px;
+  display: grid;
+  grid-auto-flow: column;
+  gap: 8px;
+`;
+
+export const DialogTitleButton = styled.button`
+  font-size: 16px;
+
+  &:first-of-type {
+    margin-left: auto;
+  }
 `;
 
 export const DialogActionGroup = styled.div`

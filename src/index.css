@@ -7,14 +7,16 @@
   --input-border-width: 1px;
 
   --body-background: #eeeeee;
-  --textarea-background: #ffffff;
+  --input-background: transparent;
+  --input-active-background: #ffffff;
   --ghost-button-hover-background: #eeeeee;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --body-background: #333;
-    --textarea-background: #2a2a2a;
+    --body-background: #242424;
+    --input-background: transparent;
+    --input-active-background: #1a1a1a;
     --ghost-button-hover-background: #2a2a2a;
   }
 }
@@ -35,4 +37,11 @@ body {
   font-size: inherit;
   font-family: inherit;
   margin: 0;
+}
+
+*:where(input, select, textarea) {
+  /* background-color: var(--input-background); */
+}
+*:where(input, select, textarea):focus {
+  background-color: var(--input-active-background);
 }
