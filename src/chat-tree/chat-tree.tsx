@@ -268,6 +268,17 @@ export function ChatTree() {
 
         const abortController = new AbortController();
 
+        // TODO - auto fork when resubmit
+
+        // 1. when there is no child, append the assistant node
+        // activeNode = targetNode
+
+        // 2. when there is first child is error, regen
+        // activeNode = targetNode
+
+        // 3. when firt child is non-error, fork and regen
+        // activeNode = forkedNode
+
         const newAssistantNode: ChatNode = {
           id: crypto.randomUUID(),
           role: "assistant",
