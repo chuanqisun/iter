@@ -264,6 +264,15 @@ export function ChatTree() {
         // 1. Check if there are existing children
         // 2. If yes, clone the node, together with its children, and append as sibling of the new node
 
+        let clonedNode: ChatNode | undefined;
+        if (targetNode.childIds?.length) {
+          clonedNode = {
+            ...targetNode,
+            id: crypto.randomUUID(), // reserve id for original node so focus can be kept
+            childIds: [...targetNode.childIds],
+          };
+        }
+
         const newAssistantNode: ChatNode = {
           id: crypto.randomUUID(),
           role: "assistant",
@@ -274,15 +283,25 @@ export function ChatTree() {
         setTreeNodes((nodes) => {
           const newNodes = [...nodes, newAssistantNode];
           const targetNodeIndex = newNodes.findIndex((node) => node.id === nodeId);
-
-          const previousChildIds = new Set(...(newNodes[targetNodeIndex].childIds ?? []));
+          // append cloned node as sibling of targetNode
+          if (clonedNode) {
+            newNodes.push(clonedNode);
+            const parentNode = newNodes.find((node) => node.childIds?.includes(nodeId))!;
+            const siblingIndex = parentNode.childIds!.findIndex((id) => id === nodeId);
+            const allSiblingIds = [...(parentNode?.childIds || [])];
+            allSiblingIds.splice(siblingIndex + 1, 0, clonedNode.id);
+            newNodes[newNodes.findIndex((node) => node.id === parentNode.id)!] = {
+              ...parentNode,
+              childIds: allSiblingIds,
+            };
+          }
 
           newNodes[targetNodeIndex] = {
             ...newNodes[targetNodeIndex],
-            childIds: [newAssistantNode.id],
+            childIds: [newAssistantNode.id], // ok to override since we just cloned the node
             abortController,
           };
-          return newNodes.filter((node) => !previousChildIds.has(node.id)); // HACK: ensure the previous assistant node is removed. This could leak when there is additional descendents
+          return newNodes;
         });
 
         try {
@@ -520,7 +539,7 @@ const MessageWithActions = styled.div`
 `;
 
 const Message = styled.span<{ draft?: "true" }>`
-  padding: 4px 2px;
+  padding: 2px 4px;
   border: 1px solid transparent;
   white-space: pre-wrap;
   &::before {
