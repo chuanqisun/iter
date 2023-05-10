@@ -19,5 +19,7 @@ export const AutoResize = styled.div`
     visibility: hidden;
     padding: var(--input-padding-block) var(--input-padding-inline);
     border-width: var(--input-border-width);
+    border-style: solid;
+    border-color: transparent;
   }
 `;
