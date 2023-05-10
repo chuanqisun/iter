@@ -359,11 +359,12 @@ export function ChatTree() {
               </AvatarIcon>
             </Avatar>
             <MessageWithActions>
-              {node.isEditing ? (
+              {node.role === "user" || node.role === "system" ? (
                 <AutoResize data-resize-textarea-content={node.content}>
                   <textarea
                     id={node.id}
                     value={node.content}
+                    rows={1}
                     onKeyDown={(e) => handleKeydown(node.id, e)}
                     onChange={(e) => handleTextChange(node.id, e.target.value)}
                     placeholder={node.role === "user" ? "Ctrl + Enter to send, Esc to cancel" : "System message"}
