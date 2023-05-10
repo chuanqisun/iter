@@ -26,3 +26,7 @@ export const BasicFormInput = styled.input`
 export const BasicFormTextarea = styled.textarea`
   padding: var(--input-padding-block) var(--input-padding-inline);
 `;
+
+export const BasicSelect = styled.select`
+  padding: var(--input-padding-block) var(--input-padding-inline);
+`;

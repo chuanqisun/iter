@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { useAccountContext } from "../account/account-context";
 import { ConnectionSetupDialog } from "../account/connection-setup-form";
 import { AutoResize } from "../form/auto-resize";
-import { BasicFormButton } from "../form/form";
+import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "../openai/chat";
 import { isSucceeded, listDeployments, type ModelDeployment } from "../openai/management";
 import { useDialog } from "../shell/dialog";
@@ -379,7 +379,7 @@ export function ChatTree() {
             <MessageWithActions>
               {node.role === "user" || node.role === "system" ? (
                 <AutoResize data-resize-textarea-content={node.content}>
-                  <textarea
+                  <GhostTextArea
                     id={node.id}
                     value={node.content}
                     rows={1}
@@ -442,17 +442,17 @@ export function ChatTree() {
           <DialogComponent>{isDialogOpened ? <ConnectionSetupDialog onClose={close} /> : null}</DialogComponent>
           <label>
             Model
-            <select value={selectedModelId ?? ""} onChange={(e) => setSelectedModelId(e.target.value)}>
+            <BasicSelect value={selectedModelId ?? ""} onChange={(e) => setSelectedModelId(e.target.value)}>
               {modelOptions.map((option) => (
                 <option key={option.id} value={option.id}>
                   {option.model}
                 </option>
               ))}
-            </select>
+            </BasicSelect>
           </label>
           <label>
             Temperature
-            <input
+            <BasicFormInput
               type="number"
               min={0}
               max={1}
@@ -463,7 +463,7 @@ export function ChatTree() {
           </label>
           <label>
             Max tokens
-            <input
+            <BasicFormInput
               type="number"
               min={0}
               max={32000}
@@ -478,6 +478,15 @@ export function ChatTree() {
     </ChatAppLayout>
   );
 }
+
+const GhostTextArea = styled.textarea`
+  background-color: var(--textarea-background);
+  border-radius: 2px;
+
+  &:focus {
+    background-color: transparent;
+  }
+`;
 
 const ChatAppLayout = styled.div`
   display: grid;
@@ -496,11 +505,6 @@ const ModelSelector = styled.menu`
     display: flex;
     align-items: center;
     gap: 4px;
-  }
-
-  input,
-  select {
-    padding: 2px 4px;
   }
 `;
 
@@ -573,7 +577,7 @@ const Avatar = styled.button`
   justify-content: center;
 
   &:hover {
-    background-color: white;
+    background-color: ButtonFace;
   }
 `;
 
