@@ -2,8 +2,6 @@
 
 A minimalist frontend for Azure OpenAI Chat models, optimized for rapid prompt iteration.
 
-![Screenshot](./designs/screenshots/ui-dark-v1.png)
-
 - **🔒 Privacy first**  
   Credentials are stored in your browser. All requests directly sent to API with no middleman. Absolutely no tracking.
 - **⏰ Fork-able history**  
@@ -16,3 +14,5 @@ A minimalist frontend for Azure OpenAI Chat models, optimized for rapid prompt i
   Dark theme for happy night owls
 
 \*This project is still an early experiment. Please share product feedback vis GitHub Issues page. Thank you!
+
+![Screenshot](./designs/screenshots/ui-dark-v1.png)
