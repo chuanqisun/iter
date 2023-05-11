@@ -5,14 +5,14 @@ A minimalist fontend for Azure OpenAI Chat models, optimized for rapid prompt it
 ![Screenshot](./designs/screenshots/ui-dark-v1.png)
 
 - **🔒 Privacy first**  
-  Credentials stored in your browser. All requests directly sent to API without no middleman server
+  Credentials are stored in your browser. All requests directly sent to API with no middleman. Absolutely no tracking.
 - **⏰ Fork-able history**  
-  So you can explore different variantions of the prompt that share the same history
+  Explore different variantions of the prompt that share the same history.
 - **🔀 Parallel chat**  
-  Streaming chat response from multiple submissions at the same time
+  Gain extra productivity by streaming chat response from multiple submissions at the same time
 - **⚡ API endpoint and model hot-swap**  
   Switch between different APIs and models without losing any chat progress
-- **🌗 Adapts to OS/Browser default theme**  
-  Dark theme for night owls
+- **🦉 Adapts to OS/Browser default theme**  
+  Dark theme for happy night owls
 
 \*This project is still an early experiment. Please share product feedback vis GitHub Issues page. Thank you!
