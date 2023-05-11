@@ -438,7 +438,7 @@ export function ChatTree() {
   return (
     <ChatAppLayout>
       <div>
-        <ModelSelector>
+        <ConfigMenu>
           <BasicFormButton onClick={handleConnectionsButtonClick}>Connections</BasicFormButton>
           <DialogComponent>{isDialogOpened ? <ConnectionSetupDialog onClose={close} /> : null}</DialogComponent>
           {connections?.length ? (
@@ -484,7 +484,10 @@ export function ChatTree() {
               onChange={(e) => setModelConfig((prev) => ({ ...prev, max_tokens: parseInt(e.target.value) }))}
             />
           </label>
-        </ModelSelector>
+          <a href="https://github.com/chuanqisun/iter" target="_blank">
+            GitHub
+          </a>
+        </ConfigMenu>
       </div>
       <MessageList ref={treeRootRef}>{treeNodes.filter((node) => node.isEntry).map((node) => renderNode(node))}</MessageList>
     </ChatAppLayout>
@@ -500,12 +503,13 @@ const ChatAppLayout = styled.div`
   gap: 16px;
 `;
 
-const ModelSelector = styled.menu`
+const ConfigMenu = styled.menu`
   padding: 0;
   display: flex;
   gap: 12px;
   padding-left: 32px;
   flex-wrap: wrap;
+  align-items: center;
 
   label {
     font-weight: 600;
