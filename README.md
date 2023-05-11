@@ -13,6 +13,6 @@ A minimalist frontend for Azure OpenAI Chat models, optimized for rapid prompt i
 - **🦉 Adapts to OS/Browser default theme**  
   Dark theme for happy night owls
 
-\*This project is still an early experiment. Please share product feedback vis GitHub Issues page. Thank you!
+\*This project is still an early experiment. Please share ideas, feedback, or file bugs via GitHub Issues page. Thank you!
 
 ![Screenshot](./designs/screenshots/ui-dark-v1.png)
