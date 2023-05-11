@@ -85,28 +85,28 @@ export function ChatTree() {
   };
 
   const { connections, getChatEndpoint } = useAccountContext();
-  const [selectedModelConnectionId, setSelectedModelConnectionId] = useState<string | null>(null);
+  const [selectedModelDisplayId, setSelectedModelDisplayId] = useState<string | null>(null);
   const [modelConfig, setModelConfig] = useState<Partial<OpenAIChatPayload>>({ temperature: 0.7, max_tokens: 200 });
 
   const chat = useCallback(
     async (messages: ChatMessage[], abortSignal?: AbortSignal) => {
-      const chatEndpoint = getChatEndpoint?.(selectedModelConnectionId ?? "");
+      const chatEndpoint = getChatEndpoint?.(selectedModelDisplayId ?? "");
       if (!chatEndpoint) throw new Error(`API connection is not set up`);
 
       return getChatStream(chatEndpoint.apiKey, chatEndpoint.endpoint, messages, modelConfig, abortSignal);
     },
-    [selectedModelConnectionId, getChatEndpoint, modelConfig]
+    [selectedModelDisplayId, getChatEndpoint, modelConfig]
   );
 
   // intiialize
   useEffect(() => {
-    if (selectedModelConnectionId) return;
+    if (selectedModelDisplayId && connections?.some((connection) => connection.models?.some((model) => model.displayId === selectedModelDisplayId))) return;
     if (connections) {
       const defaultConnection = connections.find((connection) => !!connection.models?.length);
       if (!defaultConnection) return;
-      setSelectedModelConnectionId(defaultConnection.models?.at(0)!.id ?? "");
+      setSelectedModelDisplayId(defaultConnection.models?.at(0)!.displayId ?? "");
     }
-  }, [selectedModelConnectionId, connections]);
+  }, [selectedModelDisplayId, connections]);
 
   const focusById = useCallback((nodeId: string) => {
     setTimeout(() => {
@@ -444,11 +444,11 @@ export function ChatTree() {
           {connections?.length ? (
             <label>
               Model
-              <BasicSelect value={selectedModelConnectionId ?? ""} onChange={(e) => setSelectedModelConnectionId(e.target.value)}>
+              <BasicSelect value={selectedModelDisplayId ?? ""} onChange={(e) => setSelectedModelDisplayId(e.target.value)}>
                 {connections.map((connection) => (
                   <optgroup key={connection.id} label={connection.displayName}>
                     {connection.models?.map((model) => (
-                      <option key={model.id} value={model.id}>
+                      <option key={model.displayId} value={model.displayId}>
                         {model.displayName}
                       </option>
                     ))}

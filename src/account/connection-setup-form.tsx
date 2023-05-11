@@ -2,6 +2,7 @@ import React, { useCallback, useState, type FormEventHandler } from "react";
 import { styled } from "styled-components";
 import { preventDefault } from "../form/event";
 import { BasicActionGroup, BasicFieldset, BasicForm, BasicFormField, ContentWithAction } from "../form/form";
+import { removeTrailingSlash } from "../openai/management";
 import { DialogLayout, DialogTitle, DialogTitleButton } from "../shell/dialog";
 import { useAccountContext, type Connection } from "./account-context";
 
@@ -26,23 +27,30 @@ export const ConnectionSetupDialog: React.FC<{ onClose: () => any }> = (props) =
       const valid = (e.target as HTMLElement).closest("form")?.reportValidity();
       if (!valid) return;
 
-      accountContext.setConnections?.((prevConnections) => [
-        {
-          id: crypto.randomUUID(),
-          endpoint: formData.endpoint,
-          apiKey: formData.key,
-        },
-        ...prevConnections,
-      ]);
+      accountContext.addConnection?.({
+        id: crypto.randomUUID(),
+        endpoint: removeTrailingSlash(formData.endpoint),
+        apiKey: formData.key,
+      });
 
       setFormData({ endpoint: "", key: "" });
     },
-    [formData]
+    [accountContext.addConnection, formData]
   );
 
-  const handleDisconnect = useCallback((id: string) => {
-    accountContext.setConnections?.((connections) => connections.filter((connection) => connection.id !== id));
-  }, []);
+  const handleRefresh = useCallback(
+    async (id: string) => {
+      accountContext.refreshConnection?.(id);
+    },
+    [accountContext.refreshConnection]
+  );
+
+  const handleDisconnect = useCallback(
+    (id: string) => {
+      accountContext.deleteConnection?.(id);
+    },
+    [accountContext.deleteConnection]
+  );
 
   return (
     <DialogLayout>
@@ -90,17 +98,21 @@ export const ConnectionSetupDialog: React.FC<{ onClose: () => any }> = (props) =
             {accountContext.connections.map((connection) => (
               <li key={connection.id}>
                 <BasicFieldset>
-                  <EndpointName>{connection.displayName}</EndpointName>{" "}
+                  <EndpointName>{connection.endpoint}</EndpointName>{" "}
                   <ContentWithAction>
+                    {connection.models === undefined ? <span>⌛ Loading...</span> : null}
                     {connection.models?.length ? (
                       <UnstyledList>
                         {connection.models?.map((model) => (
-                          <li key={model.id}>✅ {model.displayName}</li>
+                          <li key={model.displayId}>✅ {model.displayName}</li>
                         ))}
                       </UnstyledList>
                     ) : null}
                     {connection.errorMessage ? <ErrorMessage>❌ {connection.errorMessage}</ErrorMessage> : null}
                     <BasicActionGroup>
+                      <button type="button" onClick={() => handleRefresh(connection.id)}>
+                        Refresh
+                      </button>
                       <button type="button" onClick={() => handleDisconnect(connection.id)}>
                         Delete
                       </button>
