@@ -1,6 +1,6 @@
 # Iter
 
-A minimalist fontend for Azure OpenAI Chat models, optimized for rapid prompt iteration.
+A minimalist frontend for Azure OpenAI Chat models, optimized for rapid prompt iteration.
 
 ![Screenshot](./designs/screenshots/ui-dark-v1.png)
 
