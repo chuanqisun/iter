@@ -401,22 +401,19 @@ export function ChatTree() {
                   ) : null}
                 </Message>
               )}
-              <MessageActions>
-                {node.role === "user" ? (
-                  <>
-                    {" "}
-                    {node.abortController ? (
-                      <>
-                        <button onClick={() => handleAbort(node.id)}>Stop</button>
-                        <span> · </span>
-                      </>
-                    ) : null}
-                    <button onClick={() => handleFork(node.id, node.content)}>Fork</button>
-                    <span> · </span>
-                    <button onClick={() => handleDelete(node.id)}>Delete</button>
-                  </>
-                ) : null}
-              </MessageActions>
+              {node.role === "user" ? (
+                <MessageActions>
+                  {node.abortController ? (
+                    <>
+                      <button onClick={() => handleAbort(node.id)}>Stop</button>
+                      <span> · </span>
+                    </>
+                  ) : null}
+                  <button onClick={() => handleFork(node.id, node.content)}>Fork</button>
+                  <span> · </span>
+                  <button onClick={() => handleDelete(node.id)}>Delete</button>
+                </MessageActions>
+              ) : null}
             </MessageWithActions>
           </MessageLayout>
           {!!node.childIds?.length ? (
@@ -464,7 +461,7 @@ export function ChatTree() {
           ) : null}
           <label>
             Temperature
-            <BasicFormInput
+            <FixedWidthInput
               type="number"
               min={0}
               max={1}
@@ -475,7 +472,7 @@ export function ChatTree() {
           </label>
           <label>
             Max tokens
-            <BasicFormInput
+            <FixedWidthInput
               type="number"
               min={0}
               max={32000}
@@ -553,7 +550,7 @@ const MessageActions = styled.span`
 const MessageWithActions = styled.div`
   display: grid;
   align-content: start;
-  /* padding: 2px 0; */
+  gap: 4px;
 `;
 
 const Message = styled.span<{ draft?: "true" }>`
@@ -595,4 +592,8 @@ const Avatar = styled.button`
 const AvatarIcon = styled.span`
   width: 28px;
   text-align: center;
+`;
+
+const FixedWidthInput = styled(BasicFormInput)`
+  width: 72px;
 `;
