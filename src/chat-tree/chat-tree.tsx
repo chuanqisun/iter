@@ -229,14 +229,28 @@ export function ChatTree() {
   const handleKeydown = useCallback(
     async (nodeId: string, e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       const targetNode = treeNodes.find((node) => node.id === nodeId);
-      if (targetNode?.role !== "user") return;
 
       if (e.key === "Escape") {
+        if (targetNode?.role !== "user") return;
         e.preventDefault();
         handleAbort(nodeId);
       }
 
-      if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key === "Enter") {
+      // up/down arrow
+      if (!e.ctrlKey && !e.shiftKey && !e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+        const textarea = e.target as HTMLTextAreaElement;
+
+        if (e.key === "ArrowUp" && textarea.selectionStart === 0 && textarea.selectionEnd === 0) {
+          e.preventDefault();
+          console.log("move up");
+        } else if (e.key === "ArrowDown" && textarea.selectionStart === textarea.value.length && textarea.selectionEnd === textarea.value.length) {
+          e.preventDefault();
+          console.log("move down");
+        }
+      }
+
+      if (!e.ctrlKey && !e.shiftKey && !e.altKey && e.key === "Enter") {
+        if (targetNode?.role !== "user") return;
         e.preventDefault();
 
         const messages = getMessageChain(nodeId);
@@ -365,7 +379,7 @@ export function ChatTree() {
                     rows={1}
                     onKeyDown={(e) => handleKeydown(node.id, e)}
                     onChange={(e) => handleTextChange(node.id, e.target.value)}
-                    placeholder={node.role === "user" ? "Ctrl + Enter to send, Esc to cancel" : "System message"}
+                    placeholder={node.role === "user" ? "Enter to send, Esc to cancel" : "System message"}
                   />
                 </AutoResize>
               ) : (
