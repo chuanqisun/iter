@@ -374,7 +374,7 @@ export function ChatTree() {
                   />
                 </AutoResize>
               ) : (
-                <Message draft={!node.isLocked && !node.isEditing && !node.isEditing ? "true" : undefined}>
+                <Message>
                   {node.content}
                   {node.errorMessage ? (
                     <ErrorMessage>
