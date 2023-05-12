@@ -15,7 +15,6 @@ export interface ChatNode {
   isLocked?: boolean;
   isCollapsed?: boolean;
   isEntry?: boolean;
-  isEditing?: boolean;
   abortController?: AbortController;
   errorMessage?: string;
   lastSubmittedContent?: string;
@@ -27,7 +26,6 @@ const INITIAL_SYSTEM_NODE: ChatNode = {
   role: "system",
   content: "",
   isEntry: true,
-  isEditing: true,
   childIds: [INITIAL_USER_NODE.id],
 };
 const INITIAL_NODES = [INITIAL_SYSTEM_NODE, INITIAL_USER_NODE];
@@ -37,7 +35,6 @@ function getUserNode(id: string, configOverrides?: Partial<ChatNode>): ChatNode 
     id,
     role: "user",
     content: "",
-    isEditing: true,
     ...configOverrides,
   };
 }
@@ -315,7 +312,6 @@ export function ChatTree() {
             newNodes[targetNodeIndex] = {
               ...newNodes[targetNodeIndex],
               abortController: undefined,
-              isEditing: false,
               isLocked: true,
             };
 
@@ -335,7 +331,6 @@ export function ChatTree() {
             newNodes[targetNodeIndex] = {
               ...newNodes[targetNodeIndex],
               abortController: undefined,
-              isEditing: true,
             };
 
             newNodes[assistantNodeIndex] = {
