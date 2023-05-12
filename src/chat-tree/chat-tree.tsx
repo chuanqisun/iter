@@ -549,6 +549,10 @@ const MessageList = styled.div`
 
 const MessageActions = styled.span`
   padding: 0 5px;
+  line-height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 
   > * {
     opacity: 0.5;
@@ -568,7 +572,6 @@ const MessageActions = styled.span`
 const MessageWithActions = styled.div`
   display: grid;
   align-content: start;
-  gap: 2px;
 `;
 
 const Message = styled.span`
@@ -594,6 +597,7 @@ const Avatar = styled.button`
   border-radius: var(--input-border-radius);
   cursor: pointer;
   font-size: 22px;
+  line-height: 30px;
   width: 28px;
   display: flex;
   align-items: baseline;
