@@ -503,7 +503,7 @@ const Thread = styled.div<{ showrail?: "true" }>`
   gap: 8px;
   margin-left: ${(props) => (props.showrail ? "14px" : "0")};
   padding-left: ${(props) => (props.showrail ? "13px" : "0")};
-  border-left: 1px solid ${(props) => (props.showrail ? "#aaa" : "transparent")};
+  border-left: ${(props) => (props.showrail ? "1px solid #aaa" : "none")};
 `;
 
 const MessageList = styled.div`
@@ -535,13 +535,10 @@ const MessageWithActions = styled.div`
   gap: 4px;
 `;
 
-const Message = styled.span<{ draft?: "true" }>`
+const Message = styled.span`
   padding: var(--input-padding-block) var(--input-padding-block);
   border: 1px solid transparent;
   white-space: pre-wrap;
-  &::before {
-    content: ${(props) => (props.draft ? '"*"' : "")};
-  }
 `;
 
 const ErrorMessage = styled.span`
