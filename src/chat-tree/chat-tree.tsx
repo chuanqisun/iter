@@ -63,6 +63,17 @@ function getReachableIds(nodes: ChatNode[], rootId: string): string[] {
   return [rootId, ...(rootNode.childIds ?? []).flatMap((childId) => getReachableIds(nodes, childId))];
 }
 
+function getPrevId(currentId: string): string | null {
+  const allTextAreas = [...document.querySelectorAll<HTMLTextAreaElement>(`.js-focusable`)];
+  const currentIndex = allTextAreas.findIndex((item) => item.id === currentId);
+  return allTextAreas.at(currentIndex - 1)?.id ?? null;
+}
+function getPostId(currentId: string): string | null {
+  const allTextAreas = [...document.querySelectorAll<HTMLTextAreaElement>(`.js-focusable`)];
+  const currentIndex = allTextAreas.findIndex((item) => item.id === currentId);
+  return allTextAreas.at((currentIndex + 1) % allTextAreas.length)?.id ?? null;
+}
+
 export interface ChatConnection {
   endpoint: string;
   apiKey: string;
@@ -240,12 +251,27 @@ export function ChatTree() {
       if (!e.ctrlKey && !e.shiftKey && !e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
         const textarea = e.target as HTMLTextAreaElement;
 
-        if (e.key === "ArrowUp" && textarea.selectionStart === 0 && textarea.selectionEnd === 0) {
+        if (e.key === "ArrowUp" && textarea.selectionStart === 0 && (textarea.selectionEnd === 0 || textarea.selectionEnd === textarea.value.length)) {
           e.preventDefault();
-          console.log("move up");
-        } else if (e.key === "ArrowDown" && textarea.selectionStart === textarea.value.length && textarea.selectionEnd === textarea.value.length) {
+          const targetId = getPrevId(nodeId);
+          if (targetId) {
+            const targetTextarea = document.getElementById(targetId) as HTMLTextAreaElement | null;
+            targetTextarea?.focus();
+            targetTextarea?.select();
+          }
+        } else if (
+          e.key === "ArrowDown" &&
+          (textarea.selectionStart === 0 || textarea.selectionStart === textarea.value.length) &&
+          textarea.selectionEnd === textarea.value.length
+        ) {
           e.preventDefault();
-          console.log("move down");
+          e.preventDefault();
+          const targetId = getPostId(nodeId);
+          if (targetId) {
+            const targetTextarea = document.getElementById(targetId) as HTMLTextAreaElement | null;
+            targetTextarea?.focus();
+            targetTextarea?.select();
+          }
         }
       }
 
@@ -257,7 +283,7 @@ export function ChatTree() {
 
         const abortController = new AbortController();
 
-        // TODO - auto fork when resubmit
+        // Auto fork when resubmit
 
         // 1. Check if there are existing children
         // 2. If yes, clone the node, together with its children, and append as sibling of the new node
@@ -374,6 +400,7 @@ export function ChatTree() {
               {node.role === "user" || node.role === "system" ? (
                 <AutoResize data-resize-textarea-content={node.content}>
                   <GhostTextArea
+                    className="js-focusable"
                     id={node.id}
                     value={node.content}
                     rows={1}
