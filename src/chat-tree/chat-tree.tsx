@@ -526,8 +526,8 @@ const MessageActions = styled.span`
 
 const MessageWithActions = styled.div`
   display: grid;
-  align-content: start;
-  gap: 4px;
+  align-content: center;
+  gap: 2px;
 `;
 
 const Message = styled.span`
