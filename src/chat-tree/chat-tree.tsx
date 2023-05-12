@@ -16,7 +16,6 @@ export interface ChatNode {
   isCollapsed?: boolean;
   isEntry?: boolean;
   isEditing?: boolean;
-  isNextFocus?: boolean;
   abortController?: AbortController;
   errorMessage?: string;
   lastSubmittedContent?: string;
@@ -39,7 +38,6 @@ function getUserNode(id: string, configOverrides?: Partial<ChatNode>): ChatNode 
     role: "user",
     content: "",
     isEditing: true,
-    isNextFocus: true,
     ...configOverrides,
   };
 }
@@ -107,22 +105,6 @@ export function ChatTree() {
       setSelectedModelDisplayId(defaultConnection.models?.at(0)!.displayId ?? "");
     }
   }, [selectedModelDisplayId, connections]);
-
-  const focusById = useCallback((nodeId: string) => {
-    setTimeout(() => {
-      document.getElementById(nodeId)?.focus();
-      (document.getElementById(nodeId) as HTMLTextAreaElement)?.select();
-    }, 0);
-  }, []);
-
-  useEffect(() => {
-    const needFocusNodes = treeNodes.filter((node) => node.isNextFocus);
-    if (!needFocusNodes.length) return;
-
-    focusById(needFocusNodes.at(-1)!.id);
-
-    setTreeNodes((nodes) => nodes.map(patchNode((node) => node.isNextFocus === true, { isNextFocus: false })));
-  }, [treeNodes]);
 
   const handleTextChange = useCallback((nodeId: string, content: string) => {
     setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { content })));
