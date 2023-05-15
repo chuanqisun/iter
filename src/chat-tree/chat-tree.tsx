@@ -95,7 +95,7 @@ export function ChatTree() {
   const [modelConfig, setModelConfig] = useState<Partial<OpenAIChatPayload>>({ temperature: 0.7, max_tokens: 200 });
 
   const chat = useCallback(
-    async (messages: ChatMessage[], abortSignal?: AbortSignal) => {
+    (messages: ChatMessage[], abortSignal?: AbortSignal) => {
       const chatEndpoint = getChatEndpoint?.(selectedModelDisplayId ?? "");
       if (!chatEndpoint) throw new Error(`API connection is not set up`);
 
@@ -331,7 +331,7 @@ export function ChatTree() {
         });
 
         try {
-          const stream = await chat(messages, abortController.signal);
+          const stream = chat(messages, abortController.signal);
           for await (const item of stream) {
             setTreeNodes((nodes) =>
               nodes.map(
