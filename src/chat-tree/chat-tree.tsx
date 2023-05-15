@@ -275,7 +275,7 @@ export function ChatTree() {
         }
       }
 
-      if (!e.ctrlKey && !e.shiftKey && !e.altKey && e.key === "Enter") {
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key === "Enter") {
         if (targetNode?.role !== "user") return;
         e.preventDefault();
 
@@ -406,7 +406,7 @@ export function ChatTree() {
                     rows={1}
                     onKeyDown={(e) => handleKeydown(node.id, e)}
                     onChange={(e) => handleTextChange(node.id, e.target.value)}
-                    placeholder={node.role === "user" ? "Enter to send, Esc to cancel" : "System message"}
+                    placeholder={node.role === "user" ? "Ctrl + Enter to send, Esc to cancel" : "System message"}
                   />
                 </AutoResize>
               ) : (
