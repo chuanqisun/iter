@@ -157,6 +157,7 @@ export function ChatTree() {
   }, []);
 
   const handleFork = useCallback((siblingId: string, baseContent: string) => {
+    // Note: when forking, original node should revert to last submitted content
     // insert a new user node before the forked node
     const newUserNode: ChatNode = getUserNode(crypto.randomUUID(), { content: baseContent });
 
@@ -165,6 +166,13 @@ export function ChatTree() {
       const parentNode = newNodes.find((node) => node.childIds?.includes(siblingId))!; // safe assert: the top most user node is under the system node
       const allSiblingIds = [...(parentNode?.childIds || [])];
       const siblingIndex = allSiblingIds.findIndex((id) => id === siblingId);
+      // revert to last submitted content
+      const originalNodeIndex = newNodes.findIndex((node) => node.id === siblingId)!;
+      newNodes[originalNodeIndex] = {
+        ...newNodes[originalNodeIndex],
+        content: newNodes[originalNodeIndex].lastSubmittedContent ?? newNodes[originalNodeIndex].content,
+      };
+
       allSiblingIds.splice(siblingIndex, 0, newUserNode.id);
       newNodes[newNodes.findIndex((node) => node.id === parentNode.id)!] = {
         ...parentNode,
@@ -283,20 +291,9 @@ export function ChatTree() {
 
         const abortController = new AbortController();
 
-        // Auto fork when resubmit
-
-        // 1. Check if there are existing children
-        // 2. If yes, clone the node, together with its children, and append as sibling of the new node
-
-        let clonedNode: ChatNode | undefined;
-        if (targetNode.childIds?.length) {
-          clonedNode = {
-            ...targetNode,
-            id: crypto.randomUUID(), // reserve id for original node so focus can be kept
-            childIds: [...targetNode.childIds],
-            content: targetNode.lastSubmittedContent ?? targetNode.content,
-          };
-        }
+        // clean up all downstream node
+        // resurvively find all ids to be deleted
+        handleAbort(nodeId);
 
         const newAssistantNode: ChatNode = {
           id: crypto.randomUUID(),
@@ -306,27 +303,20 @@ export function ChatTree() {
         };
 
         setTreeNodes((nodes) => {
-          const newNodes = [...nodes, newAssistantNode];
-          const targetNodeIndex = newNodes.findIndex((node) => node.id === nodeId);
-          // append cloned node as sibling of targetNode
-          if (clonedNode) {
-            newNodes.push(clonedNode);
-            const parentNode = newNodes.find((node) => node.childIds?.includes(nodeId))!;
-            const siblingIndex = parentNode.childIds!.findIndex((id) => id === nodeId);
-            const allSiblingIds = [...(parentNode?.childIds || [])];
-            allSiblingIds.splice(siblingIndex + 1, 0, clonedNode.id);
-            newNodes[newNodes.findIndex((node) => node.id === parentNode.id)!] = {
-              ...parentNode,
-              childIds: allSiblingIds,
-            };
-          }
+          const reachableIds = getReachableIds(nodes, nodeId);
 
+          // delete all reachable nodes, make sure the node itself remains
+          const remainingNodes = nodes.filter((node) => node.id === nodeId || !reachableIds.includes(node.id));
+
+          const newNodes = [...remainingNodes, newAssistantNode];
+          const targetNodeIndex = newNodes.findIndex((node) => node.id === nodeId);
           newNodes[targetNodeIndex] = {
             ...newNodes[targetNodeIndex],
             childIds: [newAssistantNode.id], // ok to override since we just cloned the node
             lastSubmittedContent: targetNode.content,
             abortController,
           };
+
           return newNodes;
         });
 
