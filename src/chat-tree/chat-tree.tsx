@@ -66,12 +66,12 @@ function getReachableIds(nodes: ChatNode[], rootId: string): string[] {
 function getPrevId(currentId: string): string | null {
   const allTextAreas = [...document.querySelectorAll<HTMLTextAreaElement>(`.js-focusable`)];
   const currentIndex = allTextAreas.findIndex((item) => item.id === currentId);
-  return allTextAreas.at(currentIndex - 1)?.id ?? null;
+  return allTextAreas.at(Math.max(0, currentIndex - 1))?.id ?? null;
 }
 function getPostId(currentId: string): string | null {
   const allTextAreas = [...document.querySelectorAll<HTMLTextAreaElement>(`.js-focusable`)];
   const currentIndex = allTextAreas.findIndex((item) => item.id === currentId);
-  return allTextAreas.at((currentIndex + 1) % allTextAreas.length)?.id ?? null;
+  return allTextAreas.at(Math.min((allTextAreas.length - 1, currentIndex + 1)))?.id ?? null;
 }
 
 export interface ChatConnection {
