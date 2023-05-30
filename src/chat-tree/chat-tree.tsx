@@ -388,7 +388,7 @@ export function ChatTree() {
             </Avatar>
             <MessageWithActions>
               {node.role === "user" || node.role === "system" ? (
-                <AutoResize data-resize-textarea-content={node.content}>
+                <AutoResize data-resize-textarea-content={node.content} maxHeight={400}>
                   <GhostTextArea
                     className="js-focusable"
                     id={node.id}
