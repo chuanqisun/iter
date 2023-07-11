@@ -118,7 +118,6 @@ export async function* getChatStream(
     signal: abortSignal,
   }).catch((e) => {
     console.error(e);
-    debugger;
     throw e;
   });
 
