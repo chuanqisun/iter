@@ -139,7 +139,10 @@ export async function* getChatStream(
     const chunk = decoder.decode(value);
     const matches = chunk.matchAll(/^data: (\{.*\})$/gm);
     for (const match of matches) {
-      yield JSON.parse(match[1]);
+      const item = JSON.parse(match[1]) as ChatStreamItem;
+      if ((item as any)?.error?.message) throw new Error((item as any).error.message);
+      if (!Array.isArray(item?.choices)) throw new Error("Invalid response");
+      yield item;
     }
   }
 }
