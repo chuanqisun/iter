@@ -327,7 +327,7 @@ export function ChatTree() {
               nodes.map(
                 patchNode(
                   (node) => node.id === newAssistantNode.id,
-                  (node) => ({ content: node.content + (item.choices[0].delta?.content ?? "") })
+                  (node) => ({ content: node.content + (item.choices?.[0].delta?.content ?? "") })
                 )
               )
             );
