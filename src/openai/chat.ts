@@ -60,7 +60,7 @@ export async function getChatResponse(
       title: `Chat ${result.usage.total_tokens} tokens`,
       messages: payload.messages,
       response: result,
-      topChoice: result.choices[0].message?.content ?? "",
+      topChoice: result.choices?.[0].message?.content ?? "",
       tokenUsage: result.usage.total_tokens,
     });
 
