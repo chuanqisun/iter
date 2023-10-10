@@ -81,7 +81,7 @@ export interface ChatStreamItem {
   created: number;
   model: string;
   choices: {
-    delta: {
+    delta?: {
       content?: string;
     };
     index: number;
