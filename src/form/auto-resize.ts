@@ -12,6 +12,7 @@ export const AutoResize = styled.div<{ maxHeight?: number }>`
     resize: none;
     ${(props) => props.maxHeight && `max-height: ${props.maxHeight}px;`}
     overflow-y: auto;
+    scrollbar-gutter: stable;
   }
 
   &::after {
@@ -23,6 +24,8 @@ export const AutoResize = styled.div<{ maxHeight?: number }>`
     border-width: var(--input-border-width);
     border-style: solid;
     border-color: transparent;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
     ${(props) => props.maxHeight && `max-height: ${props.maxHeight}px;`}
   }
 `;
