@@ -93,7 +93,7 @@ export const AccountContextProvider = (props: { children?: JSX.Element | JSX.Ele
       const model = connection.models?.find((model) => model.modelId === modelId);
       if (!model) return null;
 
-      const endpoint = `${removeTrailingSlash(connection.endpoint)}/openai/deployments/${modelId}/chat/completions?api-version=2023-08-01-preview`;
+      const endpoint = `${removeTrailingSlash(connection.endpoint)}/openai/deployments/${modelId}/chat/completions?api-version=2023-09-01-preview`;
 
       return { endpoint, apiKey: connection.apiKey };
     },
