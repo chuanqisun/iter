@@ -2,7 +2,7 @@ export interface ListDeploymentsResponse {
   data: ModelDeployment[];
 }
 
-type OfficialModel = "gpt-35-turbo" | "gpt-4" | "gpt-4-32k" | "text-embedding-ada-002";
+type OfficialModel = "gpt-35-turbo" | "gpt-4" | "gpt-4-32k" | "gpt-4o" | "text-embedding-ada-002";
 
 export interface ModelDeployment {
   id: string;
@@ -30,7 +30,7 @@ export function isSucceeded(deployment: ModelDeployment): boolean {
 }
 
 export function isChatModel(deployment: ModelDeployment): boolean {
-  return ["gpt-35-turbo", "gpt-35-turbo-16k", "gpt-4", "gpt-4-32k"].includes(deployment.model);
+  return ["gpt-35-turbo", "gpt-35-turbo-16k", "gpt-4", "gpt-4-32k", "gpt-4o"].includes(deployment.model);
 }
 
 export function smartSort(a: ModelDeployment, b: ModelDeployment): number {
