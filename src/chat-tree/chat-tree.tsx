@@ -400,14 +400,22 @@ export function ChatTree() {
                   />
                 </AutoResize>
               ) : (
-                <Message>
-                  {node.content}
+                <>
+                  <AutoResize data-resize-textarea-content={node.content} maxHeight={400}>
+                    <GhostTextArea
+                      className="js-focusable"
+                      id={node.id}
+                      value={node.content}
+                      rows={1}
+                      onChange={(e) => handleTextChange(node.id, e.target.value)}
+                    />
+                  </AutoResize>
                   {node.errorMessage ? (
                     <ErrorMessage>
                       {node.content.length ? <br /> : null}❌ {node.errorMessage}
                     </ErrorMessage>
                   ) : null}
-                </Message>
+                </>
               )}
               {node.role === "user" ? (
                 <MessageActions>
@@ -562,12 +570,6 @@ const MessageActions = styled.span`
 const MessageWithActions = styled.div`
   display: grid;
   align-content: start;
-`;
-
-const Message = styled.span`
-  padding: var(--input-padding-block) var(--input-padding-block);
-  border: 1px solid transparent;
-  white-space: pre-wrap;
 `;
 
 const ErrorMessage = styled.span`
