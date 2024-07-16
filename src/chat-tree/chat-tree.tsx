@@ -480,7 +480,7 @@ export function ChatTree() {
             <FixedWidthInput
               type="number"
               min={0}
-              max={1}
+              max={2}
               value={modelConfig.temperature}
               step={0.05}
               onChange={(e) => setModelConfig((prev) => ({ ...prev, temperature: parseFloat(e.target.value) }))}
