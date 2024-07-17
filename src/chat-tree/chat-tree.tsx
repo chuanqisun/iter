@@ -20,6 +20,7 @@ export interface ChatNode {
   childIds?: string[];
   isLocked?: boolean;
   isCollapsed?: boolean;
+  isShowMore?: boolean;
   isEntry?: boolean;
   abortController?: AbortController;
   errorMessage?: string;
@@ -128,6 +129,13 @@ export function ChatTree() {
 
   const handleDelete = useCallback((nodeId: string) => {
     handleAbort(nodeId);
+
+    // if delete root
+    if (treeNodes[0].id === nodeId) {
+      setTreeNodes(INITIAL_NODES); // thanks to immutability, we can reuse
+      return;
+    }
+
     setTreeNodes((nodes) => {
       // resurvively find all ids to be deleted
       const reachableIds = getReachableIds(nodes, nodeId);
@@ -442,6 +450,17 @@ export function ChatTree() {
     );
   }, []);
 
+  const handleToggleShowMore = useCallback((nodeId: string) => {
+    setTreeNodes((nodes) =>
+      nodes.map(
+        patchNode(
+          (node) => node.id === nodeId,
+          (node) => ({ isShowMore: !node.isShowMore })
+        )
+      )
+    );
+  }, []);
+
   const renderNode = useCallback(
     (node: ChatNode, hasSibling?: boolean) => {
       return (
@@ -455,7 +474,7 @@ export function ChatTree() {
             <MessageWithActions>
               {node.role === "user" || node.role === "system" ? (
                 <>
-                  <AutoResize data-resize-textarea-content={node.content} $maxHeight={400}>
+                  <AutoResize data-resize-textarea-content={node.content} $maxHeight={node.isShowMore ? undefined : 400}>
                     <GhostTextArea
                       className="js-focusable"
                       id={node.id}
@@ -480,7 +499,7 @@ export function ChatTree() {
               ) : (
                 <>
                   {node.viewFormat === "Text" ? (
-                    <AutoResize data-resize-textarea-content={node.content} $maxHeight={400}>
+                    <AutoResize data-resize-textarea-content={node.content} $maxHeight={node.isShowMore ? undefined : 400}>
                       <GhostTextArea
                         className="js-focusable"
                         id={node.id}
@@ -491,10 +510,12 @@ export function ChatTree() {
                       />
                     </AutoResize>
                   ) : (
-                    <MarkdownPreview dangerouslySetInnerHTML={{ __html: previews[node.id] ?? "" }} />
+                    <MarkdownPreview $maxHeight={node.isShowMore ? undefined : 400} dangerouslySetInnerHTML={{ __html: previews[node.id] ?? "" }} />
                   )}
                   <MessageActions>
                     <button onClick={() => handleToggleViewFormat(node.id)}>{node.viewFormat ?? "Raw"}</button>
+                    <span> · </span>
+                    <button onClick={() => handleToggleShowMore(node.id)}>{node.isShowMore ? "Less" : "More"}</button>
                   </MessageActions>
                   {node.errorMessage ? (
                     <ErrorMessage>
@@ -503,6 +524,13 @@ export function ChatTree() {
                   ) : null}
                 </>
               )}
+              {node.role === "system" ? (
+                <MessageActions>
+                  <button onClick={() => handleDelete(node.id)}>Delete</button>
+                  <span> · </span>
+                  <button onClick={() => handleToggleShowMore(node.id)}>{node.isShowMore ? "Less" : "More"}</button>
+                </MessageActions>
+              ) : null}
               {node.role === "user" ? (
                 <MessageActions>
                   {node.abortController ? (
@@ -514,6 +542,8 @@ export function ChatTree() {
                   <button onClick={() => handleFork(node.id, node.content)}>Fork</button>
                   <span> · </span>
                   <button onClick={() => handleDelete(node.id)}>Delete</button>
+                  <span> · </span>
+                  <button onClick={() => handleToggleShowMore(node.id)}>{node.isShowMore ? "Less" : "More"}</button>
                 </MessageActions>
               ) : null}
             </MessageWithActions>
@@ -711,9 +741,9 @@ const AttachmentPreview = styled.button`
   }
 `;
 
-const MarkdownPreview = styled.div`
+const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
   min-height: 31px; // match that of single line textarea
-  max-height: 400px;
+  ${(props) => props.$maxHeight && `max-height: ${props.$maxHeight}px;`}
   scrollbar-gutter: stable;
   overflow-y: auto;
   padding: var(--input-padding-block) var(--input-padding-inline);
