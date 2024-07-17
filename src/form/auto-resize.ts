@@ -1,6 +1,6 @@
 import styled from "styled-components";
 
-export const AutoResize = styled.div<{ maxHeight?: number }>`
+export const AutoResize = styled.div<{ $maxHeight?: number }>`
   display: grid;
 
   textarea {
@@ -10,7 +10,7 @@ export const AutoResize = styled.div<{ maxHeight?: number }>`
     padding: var(--input-padding-block) var(--input-padding-inline);
     border-width: var(--input-border-width);
     resize: none;
-    ${(props) => props.maxHeight && `max-height: ${props.maxHeight}px;`}
+    ${(props) => props.$maxHeight && `max-height: ${props.$maxHeight}px;`}
     overflow-y: auto;
     scrollbar-gutter: stable;
   }
@@ -26,6 +26,6 @@ export const AutoResize = styled.div<{ maxHeight?: number }>`
     border-color: transparent;
     overflow-y: auto;
     scrollbar-gutter: stable;
-    ${(props) => props.maxHeight && `max-height: ${props.maxHeight}px;`}
+    ${(props) => props.$maxHeight && `max-height: ${props.$maxHeight}px;`}
   }
 `;

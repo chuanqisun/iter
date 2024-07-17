@@ -438,7 +438,7 @@ export function ChatTree() {
             <MessageWithActions>
               {node.role === "user" || node.role === "system" ? (
                 <>
-                  <AutoResize data-resize-textarea-content={node.content} maxHeight={400}>
+                  <AutoResize data-resize-textarea-content={node.content} $maxHeight={400}>
                     <GhostTextArea
                       className="js-focusable"
                       id={node.id}
@@ -453,7 +453,7 @@ export function ChatTree() {
                   {node.attachments?.length ? (
                     <AttachmentList>
                       {node.attachments.map((url) => (
-                        <AttachmentPreview onClick={(_) => handleRemoveAttachment(node.id, url)}>
+                        <AttachmentPreview key={url} onClick={(_) => handleRemoveAttachment(node.id, url)}>
                           <img key={url} src={url} alt="attachment" />
                         </AttachmentPreview>
                       ))}
@@ -462,7 +462,7 @@ export function ChatTree() {
                 </>
               ) : (
                 <>
-                  <AutoResize data-resize-textarea-content={node.content} maxHeight={400}>
+                  <AutoResize data-resize-textarea-content={node.content} $maxHeight={400}>
                     <GhostTextArea
                       className="js-focusable"
                       id={node.id}
