@@ -245,14 +245,31 @@ export function ChatTree() {
     );
   }, []);
 
+  // Nearest user message that can be submitted/stopped
+  const getActiveUserNodeId = useCallback(
+    (currentNode?: ChatNode) => {
+      let activeUserNodeId: string | null = null;
+      if (currentNode?.role === "system") {
+        activeUserNodeId = treeNodes.at(1)?.id ?? null;
+      } else if (currentNode?.role === "user") {
+        activeUserNodeId = currentNode.id;
+      }
+      return activeUserNodeId;
+    },
+    [treeNodes]
+  );
+
   const handleKeydown = useCallback(
     async (nodeId: string, e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       const targetNode = treeNodes.find((node) => node.id === nodeId);
+      if (!targetNode) return;
+
+      const activeUserNodeId = getActiveUserNodeId(targetNode);
 
       if (e.key === "Escape") {
-        if (targetNode?.role !== "user") return;
+        if (!activeUserNodeId) return;
         e.preventDefault();
-        handleAbort(nodeId);
+        handleAbort(activeUserNodeId);
       }
 
       // up/down arrow
@@ -284,17 +301,18 @@ export function ChatTree() {
         }
       }
 
+      // submit message
       if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key === "Enter") {
-        if (targetNode?.role !== "user") return;
+        if (!activeUserNodeId) return;
         e.preventDefault();
 
-        const messages = getMessageChain(nodeId);
+        const messages = getMessageChain(activeUserNodeId);
 
         const abortController = new AbortController();
 
         // clean up all downstream node
         // resurvively find all ids to be deleted
-        handleAbort(nodeId);
+        handleAbort(activeUserNodeId);
 
         const newAssistantNode: ChatNode = {
           id: crypto.randomUUID(),
@@ -304,13 +322,13 @@ export function ChatTree() {
         };
 
         setTreeNodes((nodes) => {
-          const reachableIds = getReachableIds(nodes, nodeId);
+          const reachableIds = getReachableIds(nodes, activeUserNodeId);
 
           // delete all reachable nodes, make sure the node itself remains
-          const remainingNodes = nodes.filter((node) => node.id === nodeId || !reachableIds.includes(node.id));
+          const remainingNodes = nodes.filter((node) => node.id === activeUserNodeId || !reachableIds.includes(node.id));
 
           const newNodes = [...remainingNodes, newAssistantNode];
-          const targetNodeIndex = newNodes.findIndex((node) => node.id === nodeId);
+          const targetNodeIndex = newNodes.findIndex((node) => node.id === activeUserNodeId);
           newNodes[targetNodeIndex] = {
             ...newNodes[targetNodeIndex],
             childIds: [newAssistantNode.id], // ok to override since we just cloned the node
@@ -337,7 +355,7 @@ export function ChatTree() {
           setTreeNodes((nodes) => {
             const newUserNode = getUserNode(crypto.randomUUID());
             const newNodes = [...nodes, newUserNode];
-            const targetNodeIndex = newNodes.findIndex((node) => node.id === nodeId);
+            const targetNodeIndex = newNodes.findIndex((node) => node.id === activeUserNodeId);
             const assistantNodeIndex = newNodes.findIndex((node) => node.id === newAssistantNode.id);
 
             newNodes[targetNodeIndex] = {
@@ -356,7 +374,7 @@ export function ChatTree() {
         } catch (e: any) {
           setTreeNodes((nodes) => {
             const newNodes = [...nodes];
-            const targetNodeIndex = newNodes.findIndex((node) => node.id === nodeId);
+            const targetNodeIndex = newNodes.findIndex((node) => node.id === activeUserNodeId);
             const assistantNodeIndex = newNodes.findIndex((node) => node.id === newAssistantNode.id);
 
             newNodes[targetNodeIndex] = {
@@ -408,6 +426,7 @@ export function ChatTree() {
                       id={node.id}
                       value={node.content}
                       rows={1}
+                      onKeyDown={(e) => handleKeydown(node.id, e)}
                       onChange={(e) => handleTextChange(node.id, e.target.value)}
                     />
                   </AutoResize>
