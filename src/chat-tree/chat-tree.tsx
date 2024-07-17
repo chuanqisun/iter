@@ -222,7 +222,7 @@ export function ChatTree() {
         if (!node) throw new Error(`Node ${id} not found`);
         const message: ChatMessage = {
           role: node.role,
-          content: node.content,
+          content: [{ type: "text", text: node.content }, ...(node.attachments ?? []).map((url) => ({ type: "image_url" as const, image_url: { url } }))],
         };
 
         return message;
@@ -447,7 +447,7 @@ export function ChatTree() {
                       onKeyDown={(e) => handleKeydown(node.id, e)}
                       onPaste={(e) => handlePaste(node.id, e)}
                       onChange={(e) => handleTextChange(node.id, e.target.value)}
-                      placeholder={node.role === "user" ? "Ctrl + Enter to send, Esc to cancel" : "System message"}
+                      placeholder={node.role === "user" ? "Ctrl + Enter to send, Esc to cancel, paste images as attachments" : "System message"}
                     />
                   </AutoResize>
                   {node.attachments?.length ? (
