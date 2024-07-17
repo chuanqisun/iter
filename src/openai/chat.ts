@@ -10,7 +10,22 @@ export interface OpenAIChatPayload {
 
 export interface ChatMessage {
   role: "assistant" | "user" | "system";
-  content: string;
+  content: ChatMessagePart[] | string;
+}
+
+export type ChatMessagePart = ChatMessageTextPart | ChatMessageImagePart;
+
+export interface ChatMessageImagePart {
+  type: "image_url";
+  image_url: {
+    url: string;
+    detail?: "auto" | "low" | "high";
+  };
+}
+
+export interface ChatMessageTextPart {
+  type: "text";
+  text: string;
 }
 
 export type OpenAIChatResponse = {
