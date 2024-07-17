@@ -6,11 +6,13 @@ import { AutoResize } from "../form/auto-resize";
 import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "../openai/chat";
 import { useDialog } from "../shell/dialog";
+import { getFirstImageDataUrl } from "./clipboard";
 
 export interface ChatNode {
   id: string;
   role: "system" | "user" | "assistant";
   content: string;
+  attachments?: string[];
   childIds?: string[];
   isLocked?: boolean;
   isCollapsed?: boolean;
@@ -395,6 +397,34 @@ export function ChatTree() {
     [chat, treeNodes, getMessageChain]
   );
 
+  const handlePaste = useCallback(async (nodeId: string, e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const activeUserNodeId = getActiveUserNodeId(treeNodes.find((node) => node.id === nodeId));
+    if (!activeUserNodeId) return;
+
+    const imageDataUrl = await getFirstImageDataUrl(e.clipboardData);
+    if (!imageDataUrl) return;
+
+    setTreeNodes((nodes) =>
+      nodes.map(
+        patchNode(
+          (node) => node.id === activeUserNodeId,
+          (node) => ({ attachments: [...new Set([...(node.attachments ?? []), imageDataUrl])] })
+        )
+      )
+    );
+  }, []);
+
+  const handleRemoveAttachment = useCallback((nodeId: string, attachment: string) => {
+    setTreeNodes((nodes) =>
+      nodes.map(
+        patchNode(
+          (node) => node.id === nodeId,
+          (node) => ({ attachments: node.attachments?.filter((url) => url !== attachment) })
+        )
+      )
+    );
+  }, []);
+
   const renderNode = useCallback(
     (node: ChatNode, hasSibling?: boolean) => {
       return (
@@ -407,17 +437,29 @@ export function ChatTree() {
             </Avatar>
             <MessageWithActions>
               {node.role === "user" || node.role === "system" ? (
-                <AutoResize data-resize-textarea-content={node.content} maxHeight={400}>
-                  <GhostTextArea
-                    className="js-focusable"
-                    id={node.id}
-                    value={node.content}
-                    rows={1}
-                    onKeyDown={(e) => handleKeydown(node.id, e)}
-                    onChange={(e) => handleTextChange(node.id, e.target.value)}
-                    placeholder={node.role === "user" ? "Ctrl + Enter to send, Esc to cancel" : "System message"}
-                  />
-                </AutoResize>
+                <>
+                  <AutoResize data-resize-textarea-content={node.content} maxHeight={400}>
+                    <GhostTextArea
+                      className="js-focusable"
+                      id={node.id}
+                      value={node.content}
+                      rows={1}
+                      onKeyDown={(e) => handleKeydown(node.id, e)}
+                      onPaste={(e) => handlePaste(node.id, e)}
+                      onChange={(e) => handleTextChange(node.id, e.target.value)}
+                      placeholder={node.role === "user" ? "Ctrl + Enter to send, Esc to cancel" : "System message"}
+                    />
+                  </AutoResize>
+                  {node.attachments?.length ? (
+                    <AttachmentList>
+                      {node.attachments.map((url) => (
+                        <AttachmentPreview onClick={(_) => handleRemoveAttachment(node.id, url)}>
+                          <img key={url} src={url} alt="attachment" />
+                        </AttachmentPreview>
+                      ))}
+                    </AttachmentList>
+                  ) : null}
+                </>
               ) : (
                 <>
                   <AutoResize data-resize-textarea-content={node.content} maxHeight={400}>
@@ -627,4 +669,18 @@ const AvatarIcon = styled.span`
 
 const FixedWidthInput = styled(BasicFormInput)`
   width: 72px;
+`;
+
+const AttachmentList = styled.div`
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+`;
+const AttachmentPreview = styled.button`
+  img {
+    height: 40px;
+    width: 60px;
+    object-fit: contain;
+  }
 `;
