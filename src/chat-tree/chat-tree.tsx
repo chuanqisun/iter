@@ -7,6 +7,7 @@ import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "../openai/chat";
 import { useDialog } from "../shell/dialog";
 import { getFirstImageDataUrl } from "./clipboard";
+import { handleCopyClickEvent } from "./copy-code-block";
 import { markdownToHtml } from "./markdown-to-html";
 import { useMarkdownPreview } from "./use-markdown-preview";
 
@@ -112,6 +113,10 @@ export function ChatTree() {
     },
     [selectedModelDisplayId, getChatEndpoint, modelConfig]
   );
+
+  useEffect(() => {
+    window?.addEventListener("click", handleCopyClickEvent);
+  }, []);
 
   // intiialize
   useEffect(() => {
@@ -760,5 +765,30 @@ const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
 
   .shiki {
     padding: 8px;
+    position: relative;
+
+    [data-copy] {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      opacity: 0.5;
+      cursor: pointer;
+
+      &:not(.copied) {
+        &:hover {
+          opacity: 1;
+        }
+        .success {
+          display: none;
+        }
+      }
+      &.copied {
+        opacity: 1;
+
+        .ready {
+          display: none;
+        }
+      }
+    }
   }
 `;

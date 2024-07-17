@@ -2,6 +2,7 @@ import DOMPurity from "dompurify";
 import { Marked } from "marked";
 import markedShiki from "marked-shiki";
 import { bundledLanguages, createHighlighter } from "shiki/bundle/web";
+import { addCopyButton } from "./copy-code-block";
 
 const supportedLanguages = Object.keys(bundledLanguages);
 
@@ -14,7 +15,7 @@ async function initializeMarked() {
   const marked = await new Marked().use(
     markedShiki({
       highlight(code, lang, _props) {
-        return highlighter.codeToHtml(code, { lang: supportedLanguages.includes(lang) ? lang : "text", theme: "dark-plus" });
+        return highlighter.codeToHtml(code, { transformers: [addCopyButton()], lang: supportedLanguages.includes(lang) ? lang : "text", theme: "dark-plus" });
       },
     })
   );
