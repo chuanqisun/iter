@@ -7,12 +7,14 @@ import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "../openai/chat";
 import { useDialog } from "../shell/dialog";
 import { getFirstImageDataUrl } from "./clipboard";
-import { markdownToHtml } from "./markdown";
+import { markdownToHtml } from "./markdown-to-html";
+import { useMarkdownPreview } from "./use-markdown-preview";
 
 export interface ChatNode {
   id: string;
   role: "system" | "user" | "assistant";
   content: string;
+  contentHtml?: string;
   attachments?: string[];
   viewFormat?: "Text" | "Markdown";
   childIds?: string[];
@@ -97,6 +99,8 @@ export function ChatTree() {
   const { connections, getChatEndpoint } = useAccountContext();
   const [selectedModelDisplayId, setSelectedModelDisplayId] = useState<string | null>(null);
   const [modelConfig, setModelConfig] = useState<Partial<OpenAIChatPayload>>({ temperature: 0.7, max_tokens: 200 });
+
+  const previews = useMarkdownPreview(treeNodes, markdownToHtml);
 
   const chat = useCallback(
     (messages: ChatMessage[], abortSignal?: AbortSignal) => {
@@ -487,7 +491,7 @@ export function ChatTree() {
                       />
                     </AutoResize>
                   ) : (
-                    <MarkdownPreview dangerouslySetInnerHTML={{ __html: markdownToHtml(node.content) }} />
+                    <MarkdownPreview dangerouslySetInnerHTML={{ __html: previews[node.id] ?? "" }} />
                   )}
                   <MessageActions>
                     <button onClick={() => handleToggleViewFormat(node.id)}>{node.viewFormat ?? "Raw"}</button>
@@ -628,7 +632,7 @@ const MessageList = styled.div`
 `;
 
 const MessageActions = styled.span`
-  padding: 0 5px;
+  padding: 0 calc(1px + var(--input-padding-inline));
   min-height: 30px;
   line-height: 30px;
   display: flex;
@@ -718,4 +722,12 @@ const MarkdownPreview = styled.div`
   border-style: solid;
   border-color: transparent;
   background-color: #333;
+
+  & > * + * {
+    margin-top: 4px;
+  }
+
+  .shiki {
+    padding: 8px;
+  }
 `;
