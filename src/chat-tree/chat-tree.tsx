@@ -7,12 +7,14 @@ import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "../openai/chat";
 import { useDialog } from "../shell/dialog";
 import { getFirstImageDataUrl } from "./clipboard";
+import { markdownToHtml } from "./markdown";
 
 export interface ChatNode {
   id: string;
   role: "system" | "user" | "assistant";
   content: string;
   attachments?: string[];
+  viewFormat?: "Text" | "Markdown";
   childIds?: string[];
   isLocked?: boolean;
   isCollapsed?: boolean;
@@ -425,6 +427,17 @@ export function ChatTree() {
     );
   }, []);
 
+  const handleToggleViewFormat = useCallback((nodeId: string) => {
+    setTreeNodes((nodes) =>
+      nodes.map(
+        patchNode(
+          (node) => node.id === nodeId,
+          (node) => ({ viewFormat: node.viewFormat === "Text" ? "Markdown" : "Text" })
+        )
+      )
+    );
+  }, []);
+
   const renderNode = useCallback(
     (node: ChatNode, hasSibling?: boolean) => {
       return (
@@ -462,16 +475,23 @@ export function ChatTree() {
                 </>
               ) : (
                 <>
-                  <AutoResize data-resize-textarea-content={node.content} $maxHeight={400}>
-                    <GhostTextArea
-                      className="js-focusable"
-                      id={node.id}
-                      value={node.content}
-                      rows={1}
-                      onKeyDown={(e) => handleKeydown(node.id, e)}
-                      onChange={(e) => handleTextChange(node.id, e.target.value)}
-                    />
-                  </AutoResize>
+                  {node.viewFormat === "Text" ? (
+                    <AutoResize data-resize-textarea-content={node.content} $maxHeight={400}>
+                      <GhostTextArea
+                        className="js-focusable"
+                        id={node.id}
+                        value={node.content}
+                        rows={1}
+                        onKeyDown={(e) => handleKeydown(node.id, e)}
+                        onChange={(e) => handleTextChange(node.id, e.target.value)}
+                      />
+                    </AutoResize>
+                  ) : (
+                    <MarkdownPreview dangerouslySetInnerHTML={{ __html: markdownToHtml(node.content) }} />
+                  )}
+                  <MessageActions>
+                    <button onClick={() => handleToggleViewFormat(node.id)}>{node.viewFormat ?? "Raw"}</button>
+                  </MessageActions>
                   {node.errorMessage ? (
                     <ErrorMessage>
                       {node.content.length ? <br /> : null}❌ {node.errorMessage}
@@ -609,6 +629,7 @@ const MessageList = styled.div`
 
 const MessageActions = styled.span`
   padding: 0 5px;
+  min-height: 30px;
   line-height: 30px;
   display: flex;
   align-items: center;
@@ -635,6 +656,7 @@ const MessageWithActions = styled.div`
 `;
 
 const ErrorMessage = styled.span`
+  padding-block: 4px;
   color: red;
 `;
 
@@ -683,4 +705,17 @@ const AttachmentPreview = styled.button`
     width: 60px;
     object-fit: contain;
   }
+`;
+
+const MarkdownPreview = styled.div`
+  min-height: 31px; // match that of single line textarea
+  max-height: 400px;
+  scrollbar-gutter: stable;
+  overflow-y: auto;
+  padding: var(--input-padding-block) var(--input-padding-inline);
+  border-width: var(--input-border-width);
+  border-radius: 2px;
+  border-style: solid;
+  border-color: transparent;
+  background-color: #333;
 `;

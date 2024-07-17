@@ -32,7 +32,9 @@ body {
   overflow-y: scroll;
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   font-size: inherit;
   font-family: inherit;
