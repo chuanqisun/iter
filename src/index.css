@@ -6,9 +6,10 @@
   --input-border-radius: 2px;
   --input-border-width: 1px;
 
-  --body-background: #eeeeee;
+  --body-background: #e1e1e1;
   --input-background: transparent;
   --input-active-background: #ffffff;
+  --readonly-text-background: #fafafa;
   --ghost-button-hover-background: #eeeeee;
 }
 
@@ -17,6 +18,7 @@
     --body-background: #242424;
     --input-background: transparent;
     --input-active-background: #1a1a1a;
+    --readonly-text-background: #333333;
     --ghost-button-hover-background: #2a2a2a;
   }
 }

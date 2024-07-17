@@ -750,8 +750,9 @@ const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
   border-width: var(--input-border-width);
   border-radius: 2px;
   border-style: solid;
+  border-color: var(--readonly-text-border-color);
   border-color: transparent;
-  background-color: #333;
+  background-color: var(--readonly-text-background);
 
   & > * + * {
     margin-top: 4px;
