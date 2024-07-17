@@ -256,29 +256,30 @@ export function ChatTree() {
       }
 
       // up/down arrow
-      if (!e.ctrlKey && !e.shiftKey && !e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+      if (!e.ctrlKey && !e.shiftKey && !e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "PageUp" || e.key === "PageDown")) {
         const textarea = e.target as HTMLTextAreaElement;
 
-        if (e.key === "ArrowUp" && textarea.selectionStart === 0 && (textarea.selectionEnd === 0 || textarea.selectionEnd === textarea.value.length)) {
+        if (
+          (e.key === "ArrowUp" || e.key === "PageUp") &&
+          textarea.selectionStart === 0 &&
+          (textarea.selectionEnd === 0 || textarea.selectionEnd === textarea.value.length)
+        ) {
           e.preventDefault();
           const targetId = getPrevId(nodeId);
           if (targetId) {
             const targetTextarea = document.getElementById(targetId) as HTMLTextAreaElement | null;
             targetTextarea?.focus();
-            targetTextarea?.select();
           }
         } else if (
-          e.key === "ArrowDown" &&
+          (e.key === "ArrowDown" || e.key === "PageDown") &&
           (textarea.selectionStart === 0 || textarea.selectionStart === textarea.value.length) &&
           textarea.selectionEnd === textarea.value.length
         ) {
-          e.preventDefault();
           e.preventDefault();
           const targetId = getPostId(nodeId);
           if (targetId) {
             const targetTextarea = document.getElementById(targetId) as HTMLTextAreaElement | null;
             targetTextarea?.focus();
-            targetTextarea?.select();
           }
         }
       }
