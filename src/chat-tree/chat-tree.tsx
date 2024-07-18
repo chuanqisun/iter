@@ -6,10 +6,10 @@ import { AutoResize } from "../form/auto-resize";
 import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "../openai/chat";
 import { useDialog } from "../shell/dialog";
+import { artifactStyles, markdownToHtml, useArtifactActions } from "./artifact";
 import { getFirstImageDataUrl } from "./clipboard";
-import { copyActionStyles, handleCopyClickEvent } from "./code-block-action";
-import { markdownToHtml } from "./markdown-to-html";
-import { useMarkdownPreview } from "./use-markdown-preview";
+import { tableStyles } from "./table";
+import { usePreviewStore } from "./use-preview-store";
 
 export interface ChatNode {
   id: string;
@@ -102,7 +102,9 @@ export function ChatTree() {
   const [selectedModelDisplayId, setSelectedModelDisplayId] = useState<string | null>(null);
   const [modelConfig, setModelConfig] = useState<Partial<OpenAIChatPayload>>({ temperature: 0.7, max_tokens: 200 });
 
-  const previews = useMarkdownPreview(treeNodes, markdownToHtml);
+  const previews = usePreviewStore(treeNodes, markdownToHtml);
+
+  useArtifactActions();
 
   const chat = useCallback(
     (messages: ChatMessage[], abortSignal?: AbortSignal) => {
@@ -113,10 +115,6 @@ export function ChatTree() {
     },
     [selectedModelDisplayId, getChatEndpoint, modelConfig]
   );
-
-  useEffect(() => {
-    window?.addEventListener("click", handleCopyClickEvent);
-  }, []);
 
   // intiialize
   useEffect(() => {
@@ -416,22 +414,25 @@ export function ChatTree() {
     [chat, treeNodes, getMessageChain]
   );
 
-  const handlePaste = useCallback(async (nodeId: string, e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const activeUserNodeId = getActiveUserNodeId(treeNodes.find((node) => node.id === nodeId));
-    if (!activeUserNodeId) return;
+  const handlePaste = useCallback(
+    async (nodeId: string, e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const activeUserNodeId = getActiveUserNodeId(treeNodes.find((node) => node.id === nodeId));
+      if (!activeUserNodeId) return;
 
-    const imageDataUrl = await getFirstImageDataUrl(e.clipboardData);
-    if (!imageDataUrl) return;
+      const imageDataUrl = await getFirstImageDataUrl(e.clipboardData);
+      if (!imageDataUrl) return;
 
-    setTreeNodes((nodes) =>
-      nodes.map(
-        patchNode(
-          (node) => node.id === activeUserNodeId,
-          (node) => ({ attachments: [...new Set([...(node.attachments ?? []), imageDataUrl])] })
+      setTreeNodes((nodes) =>
+        nodes.map(
+          patchNode(
+            (node) => node.id === activeUserNodeId,
+            (node) => ({ attachments: [...new Set([...(node.attachments ?? []), imageDataUrl])] })
+          )
         )
-      )
-    );
-  }, []);
+      );
+    },
+    [treeNodes]
+  );
 
   const handleRemoveAttachment = useCallback((nodeId: string, attachment: string) => {
     setTreeNodes((nodes) =>
@@ -518,7 +519,7 @@ export function ChatTree() {
                     <MarkdownPreview $maxHeight={node.isShowFull ? undefined : 400} dangerouslySetInnerHTML={{ __html: previews[node.id] ?? "" }} />
                   )}
                   <MessageActions>
-                    <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "View parsed" : "View source"}</button>
+                    <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "View" : "Edit"}</button>
                     <span> · </span>
                     <button onClick={() => handleToggleShowMore(node.id)}>{node.isShowFull ? "Scroll" : "Full"}</button>
                   </MessageActions>
@@ -763,28 +764,6 @@ const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
     margin-top: 4px;
   }
 
-  /* General table styling */
-  table {
-    width: 100%;
-    border: 1px solid var(--table-border-color);
-    border-collapse: collapse;
-    text-align: left;
-
-    th,
-    td {
-      padding: 2px 8px;
-    }
-
-    tr:hover {
-      background-color: var(--table-hover-color);
-    }
-
-    thead th {
-      font-weight: bold;
-      border-bottom: 1px solid var(--table-border-color);
-    }
-  }
-
   code:not(pre > *) {
     background-color: var(--inline-code-background);
     font-family: var(--monospace-font);
@@ -793,17 +772,17 @@ const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
   }
 
   .shiki {
-    position: relative;
+    overflow-x: auto;
+    padding: 8px;
     color-scheme: dark;
 
     code {
-      overflow-x: auto;
-      padding: 8px;
-      display: block;
       font-size: 14px;
       font-family: var(--monospace-font);
     }
-
-    ${copyActionStyles}
   }
+
+  ${tableStyles}
+
+  ${artifactStyles}
 `;

@@ -3,7 +3,7 @@ import type { ChatNode } from "./chat-tree";
 /**
  * @returns nodeId -> html preview of markdown text
  */
-export function useMarkdownPreview(nodes: ChatNode[], compile: (input: string) => string | Promise<string>): Record<string, string> {
+export function usePreviewStore(nodes: ChatNode[], compile: (input: string) => string | Promise<string>): Record<string, string> {
   const [state, setState] = useState<{ highlighted: Record<string, string>; pending: string[] }>({ highlighted: {}, pending: [] });
 
   const resolveHighlight = (id: string, highlighted: string) =>
