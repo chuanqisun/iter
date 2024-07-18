@@ -763,6 +763,19 @@ const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
     margin-top: 4px;
   }
 
+  /* General table styling */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+
+  /* Table header styling */
+  table thead th {
+    font-weight: bold;
+    border-bottom: 1px solid #ccc;
+  }
+
   code:not(pre > *) {
     background-color: var(--inline-code-background);
     font-family: var(--monospace-font);
