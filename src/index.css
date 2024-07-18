@@ -14,6 +14,8 @@
   --readonly-text-background: #fafafa;
   --inline-code-background: #dedede;
   --ghost-button-hover-background: #eeeeee;
+  --table-border-color: #cccccc;
+  --table-hover-color: #eeeeee;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -24,6 +26,8 @@
     --readonly-text-background: #333333;
     --inline-code-background: #1e1e1e;
     --ghost-button-hover-background: #2a2a2a;
+    --table-border-color: #555555;
+    --table-hover-color: #444444;
   }
 }
 

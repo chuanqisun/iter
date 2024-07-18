@@ -518,7 +518,7 @@ export function ChatTree() {
                     <MarkdownPreview $maxHeight={node.isShowFull ? undefined : 400} dangerouslySetInnerHTML={{ __html: previews[node.id] ?? "" }} />
                   )}
                   <MessageActions>
-                    <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "Parsed" : "Source"}</button>
+                    <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "View parsed" : "View source"}</button>
                     <span> · </span>
                     <button onClick={() => handleToggleShowMore(node.id)}>{node.isShowFull ? "Scroll" : "Full"}</button>
                   </MessageActions>
@@ -766,14 +766,23 @@ const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
   /* General table styling */
   table {
     width: 100%;
+    border: 1px solid var(--table-border-color);
     border-collapse: collapse;
     text-align: left;
-  }
 
-  /* Table header styling */
-  table thead th {
-    font-weight: bold;
-    border-bottom: 1px solid #ccc;
+    th,
+    td {
+      padding: 2px 8px;
+    }
+
+    tr:hover {
+      background-color: var(--table-hover-color);
+    }
+
+    thead th {
+      font-weight: bold;
+      border-bottom: 1px solid var(--table-border-color);
+    }
   }
 
   code:not(pre > *) {
