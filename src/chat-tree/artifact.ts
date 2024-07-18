@@ -4,6 +4,7 @@ import markedShiki from "marked-shiki";
 import { useEffect } from "react";
 import { bundledLanguages, createHighlighter } from "shiki/bundle/web";
 import { css } from "styled-components";
+import { createESPlayDocument } from "./esplay";
 import { runMermaid } from "./mermaid";
 
 const supportedLanguages = Object.keys(bundledLanguages);
@@ -28,7 +29,7 @@ async function initializeMarked() {
           <artifact-preview></artifact-preview>
           <artifact-action>
             ${
-              ["mermaid", "html", "xml", "svg"].includes(lang)
+              ["mermaid", "html", "xml", "svg", "typescript", "javascript", "jsx", "tsx"].includes(lang)
                 ? `
                 <button data-action="run">
                   <span class="ready">Run</span>
@@ -102,6 +103,8 @@ export function handleArtifactActions(event: MouseEvent) {
 
       if (type === "lang/mermaid") runMermaid(trigger, code);
       if (["lang/html", "lang/xml", "lang/svg"].includes(type)) runIframe(trigger, code);
+
+      if (["lang/typescript", "lang/javascript", "lang/jsx", "lang/tsx"].includes(type)) runIframe(trigger, createESPlayDocument(code ?? ""));
       return;
     }
 
@@ -124,6 +127,10 @@ export function handleArtifactActions(event: MouseEvent) {
         };
 
         saveCode(mimeTypeMap[type], code);
+      }
+
+      if (["lang/typescript", "lang/javascript", "lang/jsx", "lang/tsx"].includes(type)) {
+        saveCode("text/html", createESPlayDocument(code ?? ""));
       }
       return;
     }
