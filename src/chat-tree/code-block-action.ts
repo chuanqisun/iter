@@ -1,12 +1,13 @@
 import { h } from "hastscript";
 import type { ShikiTransformer } from "shiki";
+import { css } from "styled-components";
 
 /**
  * Adapted from github.com/joshnuss/shiki-transformer-copy-button
  * Converted to typescript
  * Author: Joshnuss
  */
-export function addCopyButton(): ShikiTransformer {
+export function codeBlockAction(): ShikiTransformer {
   return {
     name: "shiki-transformer-copy-button",
     pre(node) {
@@ -23,6 +24,32 @@ export function addCopyButton(): ShikiTransformer {
     },
   };
 }
+
+export const copyActionStyles = css`
+  [data-copy] {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    opacity: 0.5;
+    cursor: pointer;
+
+    &:not(.copied) {
+      &:hover {
+        opacity: 1;
+      }
+      .success {
+        display: none;
+      }
+    }
+    &.copied {
+      opacity: 1;
+
+      .ready {
+        display: none;
+      }
+    }
+  }
+`;
 
 const timers = new WeakMap<Element, number>();
 export function handleCopyClickEvent(event: MouseEvent) {
