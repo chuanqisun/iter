@@ -27,18 +27,21 @@ async function initializeMarked() {
           <artifact-source>${highlightedHtml}</artifact-source>  
           <artifact-preview></artifact-preview>
           <artifact-action>
+            ${
+              ["mermaid", "html", "xml", "svg"].includes(lang)
+                ? `
+                <button data-action="run">
+                  <span class="ready">Run</span>
+                  <span class="running">Stop</span>
+                </button>
+                <button data-action="save">Save</button>
+              `
+                : ""
+            }
             <button class="copy" data-action="copy">
               <span class="ready">Copy</span>
               <span class="success">✅ Copied</span>
             </button>
-            ${
-              ["mermaid", "html", "xml", "svg"].includes(lang)
-                ? `<button data-action="run">
-              <span class="ready">Run</span>
-              <span class="running">Source</span>
-              </button>`
-                : ""
-            }
           </artifact-action>
         </artifact-element>`;
       },
@@ -101,6 +104,29 @@ export function handleArtifactActions(event: MouseEvent) {
       if (["lang/html", "lang/xml", "lang/svg"].includes(type)) runIframe(trigger, code);
       return;
     }
+
+    case "save": {
+      const type = trigger?.closest("artifact-element")?.getAttribute("type");
+      if (!type) return;
+
+      if (type === "lang/mermaid") {
+        const preview = trigger?.closest("artifact-element")?.querySelector("artifact-preview");
+        if (!preview) return;
+        saveCode("image/svg+xml", preview.innerHTML);
+      }
+
+      if (["lang/html", "lang/xml", "lang/svg"].includes(type)) {
+        // TODO switch soure to standard mime type
+        const mimeTypeMap: Record<string, string> = {
+          "lang/html": "text/html",
+          "lang/xml": "text/xml",
+          "lang/svg": "image/svg+xml",
+        };
+
+        saveCode(mimeTypeMap[type], code);
+      }
+      return;
+    }
   }
 }
 
@@ -127,6 +153,22 @@ function runIframe(trigger: HTMLElement, code?: string) {
     renderContainer.innerHTML = "";
     renderContainer.appendChild(iframe);
   }
+}
+
+function saveCode(mimeType: string, code?: string) {
+  if (!code) return;
+
+  const extMap: Record<string, string> = {
+    "text/html": "html",
+    "text/xml": "xml",
+    "image/svg+xml": "svg",
+  };
+
+  const blob = new Blob([code], { type: mimeType });
+  const anchor = document.createElement("a");
+  anchor.href = URL.createObjectURL(blob);
+  anchor.download = `artifact-${new Date().toISOString()}.${extMap[mimeType]}`;
+  anchor.click();
 }
 
 const artifactActionsStyles = css`
@@ -207,6 +249,12 @@ export const artifactStyles = css`
     }
 
     artifact-action [data-action="copy"] {
+      display: none;
+    }
+  }
+
+  artifact-element:not(:has([data-action="run"].running)) {
+    artifact-action [data-action="save"] {
       display: none;
     }
   }
