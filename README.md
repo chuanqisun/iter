@@ -8,6 +8,7 @@ A minimalist frontend for Azure OpenAI Chat models, optimized for rapid prompt i
 - **⚡ API endpoint and model hot-swap**: Switch between different APIs and models without losing any chat progress
 - **🦉 Adapts to OS/Browser default theme**: Dark theme for happy night owls
 - **💅 Markdown parser**: Built-in syntax highlight and copy button for code blocks
+- **🧭 Artifacts**: Run code blocks for SVG, HTML, Mermaid, and React in JSX
 
 \*This project is still an early experiment. Please share ideas, feedback, or file bugs via GitHub Issues page. Thank you!
 
