@@ -27,6 +27,10 @@ async function initializeMarked() {
           <artifact-source>${highlightedHtml}</artifact-source>  
           <artifact-preview></artifact-preview>
           <artifact-action>
+            <button class="copy" data-action="copy">
+              <span class="ready">Copy</span>
+              <span class="success">✅ Copied</span>
+            </button>
             ${
               ["mermaid", "html", "xml", "svg"].includes(lang)
                 ? `<button data-action="run">
@@ -35,10 +39,6 @@ async function initializeMarked() {
               </button>`
                 : ""
             }
-            <button class="copy" data-action="copy">
-              <span class="ready">Copy</span>
-              <span class="success">✅ Copied</span>
-            </button>
           </artifact-action>
         </artifact-element>`;
       },
