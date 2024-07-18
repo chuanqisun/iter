@@ -27,9 +27,11 @@ export function codeBlockAction(): ShikiTransformer {
 
 export const copyActionStyles = css`
   [data-copy] {
+    font-size: 12px;
+    padding: 0 4px;
     position: absolute;
-    top: 8px;
-    right: 8px;
+    top: 6px;
+    right: 6px;
     opacity: 0.5;
     cursor: pointer;
 

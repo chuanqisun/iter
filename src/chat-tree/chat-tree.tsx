@@ -17,11 +17,11 @@ export interface ChatNode {
   content: string;
   contentHtml?: string;
   attachments?: string[];
-  viewFormat?: "Text" | "Markdown";
+  isViewSource?: boolean;
   childIds?: string[];
   isLocked?: boolean;
   isCollapsed?: boolean;
-  isShowMore?: boolean;
+  isShowFull?: boolean;
   isEntry?: boolean;
   abortController?: AbortController;
   errorMessage?: string;
@@ -449,7 +449,7 @@ export function ChatTree() {
       nodes.map(
         patchNode(
           (node) => node.id === nodeId,
-          (node) => ({ viewFormat: node.viewFormat === "Text" ? "Markdown" : "Text" })
+          (node) => ({ isViewSource: !node.isViewSource })
         )
       )
     );
@@ -460,7 +460,7 @@ export function ChatTree() {
       nodes.map(
         patchNode(
           (node) => node.id === nodeId,
-          (node) => ({ isShowMore: !node.isShowMore })
+          (node) => ({ isShowFull: !node.isShowFull })
         )
       )
     );
@@ -479,7 +479,7 @@ export function ChatTree() {
             <MessageWithActions>
               {node.role === "user" || node.role === "system" ? (
                 <>
-                  <AutoResize data-resize-textarea-content={node.content} $maxHeight={node.isShowMore ? undefined : 400}>
+                  <AutoResize data-resize-textarea-content={node.content} $maxHeight={node.isShowFull ? undefined : 400}>
                     <GhostTextArea
                       className="js-focusable"
                       id={node.id}
@@ -503,8 +503,8 @@ export function ChatTree() {
                 </>
               ) : (
                 <>
-                  {node.viewFormat === "Text" ? (
-                    <AutoResize data-resize-textarea-content={node.content} $maxHeight={node.isShowMore ? undefined : 400}>
+                  {node.isViewSource ? (
+                    <AutoResize data-resize-textarea-content={node.content} $maxHeight={node.isShowFull ? undefined : 400}>
                       <GhostTextArea
                         className="js-focusable"
                         id={node.id}
@@ -515,12 +515,12 @@ export function ChatTree() {
                       />
                     </AutoResize>
                   ) : (
-                    <MarkdownPreview $maxHeight={node.isShowMore ? undefined : 400} dangerouslySetInnerHTML={{ __html: previews[node.id] ?? "" }} />
+                    <MarkdownPreview $maxHeight={node.isShowFull ? undefined : 400} dangerouslySetInnerHTML={{ __html: previews[node.id] ?? "" }} />
                   )}
                   <MessageActions>
-                    <button onClick={() => handleToggleViewFormat(node.id)}>{node.viewFormat ?? "Raw"}</button>
+                    <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "Parsed" : "Source"}</button>
                     <span> · </span>
-                    <button onClick={() => handleToggleShowMore(node.id)}>{node.isShowMore ? "Less" : "More"}</button>
+                    <button onClick={() => handleToggleShowMore(node.id)}>{node.isShowFull ? "Scroll" : "Full"}</button>
                   </MessageActions>
                   {node.errorMessage ? (
                     <ErrorMessage>
@@ -533,7 +533,7 @@ export function ChatTree() {
                 <MessageActions>
                   <button onClick={() => handleDelete(node.id)}>Delete</button>
                   <span> · </span>
-                  <button onClick={() => handleToggleShowMore(node.id)}>{node.isShowMore ? "Less" : "More"}</button>
+                  <button onClick={() => handleToggleShowMore(node.id)}>{node.isShowFull ? "Scroll" : "Full"}</button>
                 </MessageActions>
               ) : null}
               {node.role === "user" ? (
@@ -548,7 +548,7 @@ export function ChatTree() {
                   <span> · </span>
                   <button onClick={() => handleDelete(node.id)}>Delete</button>
                   <span> · </span>
-                  <button onClick={() => handleToggleShowMore(node.id)}>{node.isShowMore ? "Less" : "More"}</button>
+                  <button onClick={() => handleToggleShowMore(node.id)}>{node.isShowFull ? "Scroll" : "Full"}</button>
                 </MessageActions>
               ) : null}
             </MessageWithActions>
@@ -764,8 +764,16 @@ const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
   }
 
   .shiki {
-    padding: 8px;
     position: relative;
+
+    code {
+      overflow-x: auto;
+      padding: 8px;
+      display: block;
+      font-size: 14px;
+      font-family: ui-monospace, Menlo, Monaco, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", "Oxygen Mono", "Ubuntu Monospace", "Source Code Pro",
+        "Fira Mono", "Droid Sans Mono", "Courier New", monospace;
+    }
 
     ${copyActionStyles}
   }
