@@ -763,16 +763,23 @@ const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
     margin-top: 4px;
   }
 
+  code:not(pre > *) {
+    background-color: var(--inline-code-background);
+    font-family: var(--monospace-font);
+    font-size: 14px;
+    padding: 0 2px;
+  }
+
   .shiki {
     position: relative;
+    color-scheme: dark;
 
     code {
       overflow-x: auto;
       padding: 8px;
       display: block;
       font-size: 14px;
-      font-family: ui-monospace, Menlo, Monaco, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", "Oxygen Mono", "Ubuntu Monospace", "Source Code Pro",
-        "Fira Mono", "Droid Sans Mono", "Courier New", monospace;
+      font-family: var(--monospace-font);
     }
 
     ${copyActionStyles}
