@@ -229,6 +229,7 @@ export const artifactStyles = css`
 
   artifact-preview {
     display: block;
+    background-color: white;
 
     &:has(svg) {
       display: grid;
