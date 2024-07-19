@@ -9,7 +9,7 @@ import { useDialog } from "../shell/dialog";
 import { artifactStyles, markdownToHtml, useArtifactActions } from "./artifact";
 import { getFirstImageDataUrl } from "./clipboard";
 import { tableStyles } from "./table";
-import { usePreviewStore } from "./use-preview-store";
+import { useNodeContentTransformStore } from "./use-node-content-transform-store";
 
 export interface ChatNode {
   id: string;
@@ -102,7 +102,7 @@ export function ChatTree() {
   const [selectedModelDisplayId, setSelectedModelDisplayId] = useState<string | null>(null);
   const [modelConfig, setModelConfig] = useState<Partial<OpenAIChatPayload>>({ temperature: 0.7, max_tokens: 200 });
 
-  const previews = usePreviewStore(treeNodes, markdownToHtml);
+  const previews = useNodeContentTransformStore(treeNodes, markdownToHtml);
 
   useArtifactActions();
 
