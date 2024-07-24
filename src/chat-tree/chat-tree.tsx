@@ -5,6 +5,7 @@ import { ConnectionSetupDialog } from "../account/connection-setup-form";
 import { AutoResize } from "../form/auto-resize";
 import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "../openai/chat";
+import { useRouteParameter } from "../router/use-route-parameter";
 import { useDialog } from "../shell/dialog";
 import { artifactStyles, markdownToHtml, useArtifactActions } from "./artifact";
 import { getFirstImageDataUrl } from "./clipboard";
@@ -99,8 +100,10 @@ export function ChatTree() {
   };
 
   const { connections, getChatEndpoint } = useAccountContext();
-  const [selectedModelDisplayId, setSelectedModelDisplayId] = useState<string | null>(null);
-  const [modelConfig, setModelConfig] = useState<Partial<OpenAIChatPayload>>({ temperature: 0.7, max_tokens: 200 });
+
+  const modelDisplayId = useRouteParameter({ name: "modelId", initial: null as null | string, encode: String, decode: String });
+  const temperature = useRouteParameter({ name: "temperature", initial: 0, encode: String, decode: Number });
+  const maxTokens = useRouteParameter({ name: "max_tokens", initial: 200, encode: String, decode: Number });
 
   const previews = useNodeContentTransformStore(treeNodes, markdownToHtml);
 
@@ -108,23 +111,27 @@ export function ChatTree() {
 
   const chat = useCallback(
     (messages: ChatMessage[], abortSignal?: AbortSignal) => {
-      const chatEndpoint = getChatEndpoint?.(selectedModelDisplayId ?? "");
+      const chatEndpoint = getChatEndpoint?.(modelDisplayId.value ?? "");
       if (!chatEndpoint) throw new Error(`API connection is not set up`);
 
+      const modelConfig: Partial<OpenAIChatPayload> = {
+        temperature: temperature.value,
+        max_tokens: maxTokens.value,
+      };
       return getChatStream(chatEndpoint.apiKey, chatEndpoint.endpoint, messages, modelConfig, abortSignal);
     },
-    [selectedModelDisplayId, getChatEndpoint, modelConfig]
+    [modelDisplayId.value, getChatEndpoint, temperature.value, maxTokens.value]
   );
 
   // intiialize
   useEffect(() => {
-    if (selectedModelDisplayId && connections?.some((connection) => connection.models?.some((model) => model.displayId === selectedModelDisplayId))) return;
+    if (modelDisplayId.value && connections?.some((connection) => connection.models?.some((model) => model.displayId === modelDisplayId.value))) return;
     if (connections) {
       const defaultConnection = connections.find((connection) => !!connection.models?.length);
       if (!defaultConnection) return;
-      setSelectedModelDisplayId(defaultConnection.models?.at(0)!.displayId ?? "");
+      modelDisplayId.replace(defaultConnection.models?.at(0)!.displayId ?? "");
     }
-  }, [selectedModelDisplayId, connections]);
+  }, [modelDisplayId.value, modelDisplayId.replace, connections]);
 
   const handleTextChange = useCallback((nodeId: string, content: string) => {
     setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { content })));
@@ -579,7 +586,7 @@ export function ChatTree() {
           {connections?.length ? (
             <label>
               Model
-              <BasicSelect value={selectedModelDisplayId ?? ""} onChange={(e) => setSelectedModelDisplayId(e.target.value)}>
+              <BasicSelect value={modelDisplayId.value ?? ""} onChange={(e) => modelDisplayId.replace(e.target.value)}>
                 {connections.map((connection) => (
                   <optgroup key={connection.id} label={connection.displayName}>
                     {connection.models?.map((model) => (
@@ -603,9 +610,9 @@ export function ChatTree() {
               type="number"
               min={0}
               max={2}
-              value={modelConfig.temperature}
+              value={temperature.value}
               step={0.05}
-              onChange={(e) => setModelConfig((prev) => ({ ...prev, temperature: parseFloat(e.target.value) }))}
+              onChange={(e) => temperature.replace((e.target as HTMLInputElement).valueAsNumber)}
             />
           </label>
           <label>
@@ -615,8 +622,8 @@ export function ChatTree() {
               min={0}
               max={32000}
               step={100}
-              value={modelConfig.max_tokens}
-              onChange={(e) => setModelConfig((prev) => ({ ...prev, max_tokens: parseInt(e.target.value) }))}
+              value={maxTokens.value}
+              onChange={(e) => maxTokens.replace((e.target as HTMLInputElement).valueAsNumber)}
             />
           </label>
           <a href="https://github.com/chuanqisun/iter" target="_blank">
