@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { useAccountContext } from "../account/account-context";
 import { ConnectionSetupDialog } from "../account/connection-setup-form";
 import { artifactStyles, markdownToHtml, useArtifactActions } from "../artifact/artifact";
-import { getFileAccessPostscript } from "../artifact/lib/file-access";
+import { getFileAccessPostscript, respondFileAccess, respondFileList } from "../artifact/lib/file-access";
 import { AutoResize } from "../form/auto-resize";
 import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "../openai/chat";
@@ -483,6 +483,29 @@ export function ChatTree() {
       )
     );
   }, []);
+
+  // expose file access api
+  useEffect(() => {
+    const allFiles = treeNodes.flatMap((node) => node.files ?? []);
+
+    // use reverse to keep the last file
+    const latestFileMap = new Map(
+      allFiles
+        .reverse()
+        .filter((file, index, self) => self.findIndex((f) => f.name === file.name) === index)
+        .reverse()
+        .map((file) => [file.name, file])
+    );
+
+    const handleIframeFileAccessRequest = (event: MessageEvent<any>) => {
+      respondFileAccess((filename) => latestFileMap.get(filename), event);
+      respondFileList(() => [...latestFileMap.values()], event);
+    };
+
+    window.addEventListener("message", handleIframeFileAccessRequest);
+
+    return () => window.removeEventListener("message", handleIframeFileAccessRequest);
+  }, [treeNodes]);
 
   const renderNode = useCallback(
     (node: ChatNode, hasSibling?: boolean) => {

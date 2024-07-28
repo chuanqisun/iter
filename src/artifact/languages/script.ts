@@ -1,4 +1,5 @@
 import { createESPlayDocument } from "../lib/create-esplay-document";
+import { embedFileAccessToDocument, injectIframeFileAccessToDocument } from "../lib/file-access";
 import { runIframe } from "../lib/run-iframe";
 import { saveTextFile } from "../lib/save-text-file";
 import { GenericArtifact } from "./generic";
@@ -10,10 +11,10 @@ export class ScriptArtifact extends GenericArtifact {
   }
 
   onRun({ trigger, code }: ArtifactContext) {
-    runIframe(trigger, createESPlayDocument(code));
+    runIframe(trigger, injectIframeFileAccessToDocument(createESPlayDocument(code)));
   }
 
-  onSave({ code }: ArtifactContext) {
-    saveTextFile("text/html", "html", createESPlayDocument(code));
+  async onSave({ code }: ArtifactContext) {
+    saveTextFile("text/html", "html", await embedFileAccessToDocument(createESPlayDocument(code)));
   }
 }

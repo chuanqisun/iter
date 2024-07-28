@@ -1,3 +1,4 @@
+import { embedFileAccessToDocument, injectIframeFileAccessToDocument } from "../lib/file-access";
 import { runIframe } from "../lib/run-iframe";
 import { saveTextFile } from "../lib/save-text-file";
 import { GenericArtifact } from "./generic";
@@ -14,11 +15,13 @@ export class XmlArtifact extends GenericArtifact {
     return ["html", "xml", "svg"].includes(lang) ? lang : undefined;
   }
 
-  onRun({ trigger, code }: ArtifactContext) {
-    runIframe(trigger, code);
+  onRun({ trigger, code, lang }: ArtifactContext) {
+    return lang === "html" ? runIframe(trigger, injectIframeFileAccessToDocument(code)) : runIframe(trigger, code);
   }
 
-  onSave({ lang, code }: ArtifactContext) {
-    saveTextFile(extensionToMimeType[lang], lang, code);
+  async onSave({ lang, code }: ArtifactContext) {
+    return lang === "html"
+      ? saveTextFile(extensionToMimeType[lang], lang, await embedFileAccessToDocument(code))
+      : saveTextFile(extensionToMimeType[lang], lang, code);
   }
 }
