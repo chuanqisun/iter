@@ -4,10 +4,15 @@ import markedShiki from "marked-shiki";
 import { useEffect } from "react";
 import { bundledLanguages, createHighlighter } from "shiki/bundle/web";
 import { css } from "styled-components";
-import { createESPlayDocument } from "./esplay";
-import { runMermaid } from "./mermaid";
+import { GenericArtifact } from "./languages/generic";
+import { MermaidArtifact } from "./languages/mermaid";
+import { ScriptArtifact } from "./languages/script";
+import { type ArtifactSupport } from "./languages/type";
+import { XmlArtifact } from "./languages/xml";
 
 const supportedLanguages = Object.keys(bundledLanguages);
+
+const supportedArtifacts: ArtifactSupport[] = [new ScriptArtifact(), new XmlArtifact(), new MermaidArtifact(), new GenericArtifact()];
 
 async function initializeMarked() {
   const highlighter = await createHighlighter({
@@ -24,18 +29,18 @@ async function initializeMarked() {
         });
 
         return `
-        <artifact-element type="lang/${lang}">
+        <artifact-element lang="${lang}">
           <artifact-source>${highlightedHtml}</artifact-source>  
           <artifact-preview></artifact-preview>
           <artifact-action>
             ${
-              ["mermaid", "html", "xml", "svg", "typescript", "javascript", "jsx", "tsx"].includes(lang)
+              supportedArtifacts.some((art) => !!art.onRun && art.onMatchLanguage(lang))
                 ? `
                 <button data-action="run">
                   <span class="ready">Run</span>
                   <span class="running">Stop</span>
                 </button>
-                <button data-action="save">Save</button>
+                ${supportedArtifacts.some((art) => art.onSave) ? `<button data-action="save">Save</button>` : ""}
               `
                 : ""
             }
@@ -75,107 +80,31 @@ export function useArtifactActions() {
   }, []);
 }
 
-const timers = new WeakMap<Element, number>();
 export function handleArtifactActions(event: MouseEvent) {
   const trigger = (event.target as HTMLElement).closest(`artifact-action [data-action]`) as HTMLElement;
-  const code = trigger?.closest("artifact-element")?.querySelector("artifact-source")?.textContent ?? undefined;
+  const code = trigger?.closest("artifact-element")?.querySelector("artifact-source")?.textContent ?? "";
   const action = trigger?.dataset.action;
+  const lang = trigger?.closest("artifact-element")?.getAttribute("lang");
+  if (!lang) return;
+  const artifact = supportedArtifacts.find((art) => art.onMatchLanguage(lang));
+  if (!artifact) return;
 
   switch (action) {
     case "copy": {
-      if (code) {
-        navigator.clipboard.writeText(code);
-        trigger.classList.add("copied");
-        const previousTimer = timers.get(trigger);
-        if (previousTimer) clearTimeout(previousTimer);
-
-        timers.set(
-          trigger,
-          setTimeout(() => trigger.classList.remove("copied"), 3000)
-        );
-      }
+      artifact.onCopy({ lang, code, trigger });
       return;
     }
 
     case "run": {
-      const type = trigger?.closest("artifact-element")?.getAttribute("type");
-      if (!type) return;
-
-      if (type === "lang/mermaid") runMermaid(trigger, code);
-      if (["lang/html", "lang/xml", "lang/svg"].includes(type)) runIframe(trigger, code);
-
-      if (["lang/typescript", "lang/javascript", "lang/jsx", "lang/tsx"].includes(type)) runIframe(trigger, createESPlayDocument(code ?? ""));
+      artifact.onRun?.({ lang, code, trigger });
       return;
     }
 
     case "save": {
-      const type = trigger?.closest("artifact-element")?.getAttribute("type");
-      if (!type) return;
-
-      if (type === "lang/mermaid") {
-        const preview = trigger?.closest("artifact-element")?.querySelector("artifact-preview");
-        if (!preview) return;
-        saveCode("image/svg+xml", preview.innerHTML);
-      }
-
-      if (["lang/html", "lang/xml", "lang/svg"].includes(type)) {
-        // TODO switch soure to standard mime type
-        const mimeTypeMap: Record<string, string> = {
-          "lang/html": "text/html",
-          "lang/xml": "text/xml",
-          "lang/svg": "image/svg+xml",
-        };
-
-        saveCode(mimeTypeMap[type], code);
-      }
-
-      if (["lang/typescript", "lang/javascript", "lang/jsx", "lang/tsx"].includes(type)) {
-        saveCode("text/html", createESPlayDocument(code ?? ""));
-      }
+      artifact.onSave?.({ lang, code, trigger });
       return;
     }
   }
-}
-
-function runIframe(trigger: HTMLElement, code?: string) {
-  if (!code) return;
-
-  const renderContainer = trigger.closest("artifact-element")?.querySelector("artifact-preview");
-  if (!renderContainer) return;
-
-  if (trigger.classList.contains("running")) {
-    trigger.classList.remove("running");
-    renderContainer.innerHTML = "";
-  } else {
-    trigger.classList.add("running");
-    const iframe = document.createElement("iframe");
-    iframe.srcdoc = code;
-    iframe.frameBorder = "0";
-    // resize onload
-    iframe.onload = (e) => {
-      const iframe = e.target as HTMLIFrameElement;
-      const calculatedHeight = Math.max(iframe.contentWindow?.document.documentElement.scrollHeight ?? 320, 320);
-      iframe.style.height = `${calculatedHeight}px`;
-    };
-    renderContainer.innerHTML = "";
-    renderContainer.appendChild(iframe);
-  }
-}
-
-function saveCode(mimeType: string, code?: string) {
-  if (!code) return;
-
-  const extMap: Record<string, string> = {
-    "text/html": "html",
-    "text/xml": "xml",
-    "image/svg+xml": "svg",
-  };
-
-  const blob = new Blob([code], { type: mimeType });
-  const anchor = document.createElement("a");
-  anchor.href = URL.createObjectURL(blob);
-  anchor.download = `artifact-${new Date().toISOString()}.${extMap[mimeType]}`;
-  anchor.click();
 }
 
 const artifactActionsStyles = css`
