@@ -516,7 +516,7 @@ export function ChatTree() {
                       ))}
                       {node.files?.map((file) => (
                         <AttachmentPreview key={file.name} onClick={(_) => hanldeRemoveFile(node.id, file.name)}>
-                          <AttachmentFileName title={file.name}>{file.name}</AttachmentFileName>
+                          <AttachmentFileName title={`${file.name}${file.type ? ` (${file.type})` : ""}`}>{file.name}</AttachmentFileName>
                           <AttachmentFileSize>{getReadableFileSize(file.size)}</AttachmentFileSize>
                         </AttachmentPreview>
                       ))}
