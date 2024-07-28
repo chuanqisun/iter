@@ -418,38 +418,41 @@ export function ChatTree() {
     );
   }, []);
 
-  const handleUploadFiles = useCallback(async (nodeId: string) => {
-    const activeUserNodeId = getActiveUserNodeId(treeNodes.find((node) => node.id === nodeId));
-    if (!activeUserNodeId) return;
+  const handleUploadFiles = useCallback(
+    async (nodeId: string) => {
+      const activeUserNodeId = getActiveUserNodeId(treeNodes.find((node) => node.id === nodeId));
+      if (!activeUserNodeId) return;
 
-    const fileInput = document.createElement("input");
-    fileInput.type = "file";
-    fileInput.multiple = true;
-    const files = await new Promise<File[]>((resolve) => {
-      fileInput.onchange = () => {
-        resolve([...fileInput.files!]);
-      };
-      fileInput.click();
-    });
+      const fileInput = document.createElement("input");
+      fileInput.type = "file";
+      fileInput.multiple = true;
+      const files = await new Promise<File[]>((resolve) => {
+        fileInput.onchange = () => {
+          resolve([...fileInput.files!]);
+        };
+        fileInput.click();
+      });
 
-    if (!files.length) return;
-    setTreeNodes((nodes) =>
-      nodes.map(
-        patchNode(
-          (node) => node.id === activeUserNodeId,
-          (node) => {
-            const existingFileMap = new Map(node.files?.map((file) => [file.name, file]));
-            files.forEach((file) => {
-              existingFileMap.delete(file.name);
-              existingFileMap.set(file.name, file);
-            });
-            const newFiles = [...existingFileMap.values()];
-            return { files: newFiles };
-          }
+      if (!files.length) return;
+      setTreeNodes((nodes) =>
+        nodes.map(
+          patchNode(
+            (node) => node.id === activeUserNodeId,
+            (node) => {
+              const existingFileMap = new Map(node.files?.map((file) => [file.name, file]));
+              files.forEach((file) => {
+                existingFileMap.delete(file.name);
+                existingFileMap.set(file.name, file);
+              });
+              const newFiles = [...existingFileMap.values()];
+              return { files: newFiles };
+            }
+          )
         )
-      )
-    );
-  }, []);
+      );
+    },
+    [treeNodes]
+  );
 
   const hanldeRemoveFile = useCallback((nodeId: string, fileName: string) => {
     setTreeNodes((nodes) =>
