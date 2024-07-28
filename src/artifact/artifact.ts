@@ -5,7 +5,6 @@ import { useEffect } from "react";
 import { bundledLanguages, createHighlighter } from "shiki/bundle/web";
 import { css } from "styled-components";
 import { GenericArtifact } from "./languages/generic";
-import { JavascriptManagedArtifact } from "./languages/javascript-managed";
 import { MermaidArtifact } from "./languages/mermaid";
 import { ScriptArtifact } from "./languages/script";
 import { type ArtifactSupport } from "./languages/type";
@@ -13,13 +12,7 @@ import { XmlArtifact } from "./languages/xml";
 
 export const supportedLanguages = Object.keys(bundledLanguages);
 
-const supportedArtifacts: ArtifactSupport[] = [
-  new ScriptArtifact(),
-  new XmlArtifact(),
-  new MermaidArtifact(),
-  new JavascriptManagedArtifact(),
-  new GenericArtifact(),
-];
+const supportedArtifacts: ArtifactSupport[] = [new ScriptArtifact(), new XmlArtifact(), new MermaidArtifact(), new GenericArtifact()];
 
 async function initializeMarked() {
   const highlighter = await createHighlighter({
