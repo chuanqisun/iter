@@ -6,16 +6,23 @@ export class JavascriptManagedArtifact extends ScriptArtifact {
   }
 }
 
-export const getInterpreterSystemMessage = () =>
+export interface InterpreterConfig {
+  injectFSApi?: boolean;
+}
+
+export const getInterpreterSystemMessage = (options?: InterpreterConfig) =>
   `
-First reason about user's goal. Then write single file javascript app to fulfil user's goal.
+First reason about user's goal. Then write single file javascript app to meet user's goal.
 
 Instructions:
-- You can import any browser compatible npm packages. Just assume they are already installed.
-- You can render into <div id="root"> in the body element.
-- You can access uploaded files with a special \`readonlyFS.readFileAsync("/workspace/filename.ext")\` API
-- OK to use JSX or TypeScript
-- OK to append styles to the head element
+${[
+  "Any browser compatible npm package is already installed. Just import and use.",
+  '<div id="root"> is already in the <body>.',
+  ...(options?.injectFSApi ? ['You can access uploaded files with a special `readonlyFS.readFileAsync("/workspace/filename.ext")` API'] : []),
+  "JSX or TypeScript syntax are supported",
+]
+  .map((rule) => `- ${rule}`)
+  .join("\n")}
 
 Respond in this format:
 
