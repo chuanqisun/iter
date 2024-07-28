@@ -21,7 +21,6 @@ export interface ChatNode {
   isViewSource?: boolean;
   childIds?: string[];
   isLocked?: boolean;
-  isCollapsed?: boolean;
   isShowFull?: boolean;
   isEntry?: boolean;
   abortController?: AbortController;
@@ -178,48 +177,6 @@ export function ChatTree() {
         newNodes.push(getUserNode(newUserNodeId));
       }
 
-      return newNodes;
-    });
-  }, []);
-
-  const handleFork = useCallback((siblingId: string, baseContent: string) => {
-    // Note: when forking, original node should revert to last submitted content
-    // insert a new user node before the forked node
-    const newUserNode: ChatNode = getUserNode(crypto.randomUUID(), { content: baseContent });
-
-    setTreeNodes((nodes) => {
-      const newNodes = [...nodes, newUserNode];
-      const parentNode = newNodes.find((node) => node.childIds?.includes(siblingId))!; // safe assert: the top most user node is under the system node
-      const allSiblingIds = [...(parentNode?.childIds || [])];
-      const siblingIndex = allSiblingIds.findIndex((id) => id === siblingId);
-      // revert to last submitted content
-      const originalNodeIndex = newNodes.findIndex((node) => node.id === siblingId)!;
-      newNodes[originalNodeIndex] = {
-        ...newNodes[originalNodeIndex],
-        content: newNodes[originalNodeIndex].lastSubmittedContent ?? newNodes[originalNodeIndex].content,
-      };
-
-      allSiblingIds.splice(siblingIndex, 0, newUserNode.id);
-      newNodes[newNodes.findIndex((node) => node.id === parentNode.id)!] = {
-        ...parentNode,
-        childIds: allSiblingIds,
-      };
-
-      return newNodes;
-    });
-  }, []);
-
-  const handleToggleAccordion = useCallback((nodeId: string) => {
-    setTreeNodes((nodes) => {
-      const targetNode = nodes.find((node) => node.id === nodeId);
-      if (!targetNode?.childIds?.length) return nodes;
-
-      const newNodes = [...nodes];
-      const targetNodeIndex = newNodes.findIndex((node) => node.id === nodeId);
-      newNodes[targetNodeIndex] = {
-        ...targetNode,
-        isCollapsed: !targetNode.isCollapsed,
-      };
       return newNodes;
     });
   }, []);
@@ -479,10 +436,8 @@ export function ChatTree() {
       return (
         <Thread showrail={hasSibling ? "true" : undefined} key={node.id}>
           <MessageLayout>
-            <Avatar onClick={() => handleToggleAccordion(node.id)}>
-              <AvatarIcon>
-                {roleIcon[node.role]} {node.childIds?.length && node.isCollapsed ? "🔽" : null}
-              </AvatarIcon>
+            <Avatar>
+              <AvatarIcon title={node.role}>{roleIcon[node.role]}</AvatarIcon>
             </Avatar>
             <MessageWithActions>
               {node.role === "user" || node.role === "system" ? (
@@ -552,8 +507,6 @@ export function ChatTree() {
                       <span> · </span>
                     </>
                   ) : null}
-                  <button onClick={() => handleFork(node.id, node.content)}>Fork</button>
-                  <span> · </span>
                   <button onClick={() => handleDelete(node.id)}>Delete</button>
                   <span> · </span>
                   <button onClick={() => handleToggleShowMore(node.id)}>{node.isShowFull ? "Scroll" : "Full"}</button>
@@ -562,14 +515,12 @@ export function ChatTree() {
             </MessageWithActions>
           </MessageLayout>
           {!!node.childIds?.length ? (
-            node.isCollapsed ? null : (
-              <MessageList>
-                {node.childIds
-                  ?.map((id) => treeNodes.find((node) => node.id === id))
-                  .filter(Boolean)
-                  .map((childNode) => renderNode(childNode as ChatNode, (node?.childIds ?? []).length > 1))}
-              </MessageList>
-            )
+            <MessageList>
+              {node.childIds
+                ?.map((id) => treeNodes.find((node) => node.id === id))
+                .filter(Boolean)
+                .map((childNode) => renderNode(childNode as ChatNode, (node?.childIds ?? []).length > 1))}
+            </MessageList>
           ) : null}
         </Thread>
       );
@@ -713,22 +664,14 @@ const MessageLayout = styled.div`
   gap: 4px;
 `;
 
-const Avatar = styled.button`
-  padding: 0;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: var(--input-border-radius);
-  cursor: pointer;
+const Avatar = styled.div`
   font-size: 22px;
   line-height: 30px;
   width: 28px;
   display: flex;
   align-items: baseline;
   justify-content: center;
-
-  &:hover {
-    border-color: ButtonBorder;
-  }
+  cursor: default;
 `;
 
 const AvatarIcon = styled.span`
