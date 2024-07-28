@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { useAccountContext } from "../account/account-context";
 import { ConnectionSetupDialog } from "../account/connection-setup-form";
 import { artifactStyles, markdownToHtml, useArtifactActions } from "../artifact/artifact";
+import { getFileAccessPostscript } from "../artifact/lib/file-access";
 import { AutoResize } from "../form/auto-resize";
 import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "../openai/chat";
@@ -203,9 +204,15 @@ export function ChatTree() {
       return getSourcePath(id).map((id) => {
         const node = treeDict.get(id);
         if (!node) throw new Error(`Node ${id} not found`);
+
+        const filePostScript = getFileAccessPostscript(node.files ?? []);
+
         const message: ChatMessage = {
           role: node.role,
-          content: [{ type: "text", text: node.content }, ...(node.images ?? []).map((url) => ({ type: "image_url" as const, image_url: { url } }))],
+          content: [
+            { type: "text", text: `${node.content}${filePostScript}` },
+            ...(node.images ?? []).map((url) => ({ type: "image_url" as const, image_url: { url } })),
+          ],
         };
 
         return message;
