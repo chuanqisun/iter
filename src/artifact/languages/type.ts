@@ -1,5 +1,5 @@
 export interface ArtifactSupport {
-  onMatchLanguage: (lang: string) => boolean;
+  onResolveLanguage: (lang: string) => string | undefined;
   onCopy: ArtifactHandler;
   onRun?: ArtifactHandler;
   onSave?: ArtifactHandler;

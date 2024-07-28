@@ -5,14 +5,21 @@ import { useEffect } from "react";
 import { bundledLanguages, createHighlighter } from "shiki/bundle/web";
 import { css } from "styled-components";
 import { GenericArtifact } from "./languages/generic";
+import { JavascriptManagedArtifact } from "./languages/javascript-managed";
 import { MermaidArtifact } from "./languages/mermaid";
 import { ScriptArtifact } from "./languages/script";
 import { type ArtifactSupport } from "./languages/type";
 import { XmlArtifact } from "./languages/xml";
 
-const supportedLanguages = Object.keys(bundledLanguages);
+export const supportedLanguages = Object.keys(bundledLanguages);
 
-const supportedArtifacts: ArtifactSupport[] = [new ScriptArtifact(), new XmlArtifact(), new MermaidArtifact(), new GenericArtifact()];
+const supportedArtifacts: ArtifactSupport[] = [
+  new ScriptArtifact(),
+  new XmlArtifact(),
+  new MermaidArtifact(),
+  new JavascriptManagedArtifact(),
+  new GenericArtifact(),
+];
 
 async function initializeMarked() {
   const highlighter = await createHighlighter({
@@ -24,7 +31,7 @@ async function initializeMarked() {
     markedShiki({
       highlight(code, lang, _props) {
         const highlightedHtml = highlighter.codeToHtml(code, {
-          lang: supportedLanguages.includes(lang) ? lang : "text",
+          lang: supportedArtifacts.find((art) => art.onResolveLanguage(lang))?.onResolveLanguage(lang) ?? "text",
           theme: "dark-plus",
         });
 
@@ -34,7 +41,7 @@ async function initializeMarked() {
           <artifact-preview></artifact-preview>
           <artifact-action>
             ${
-              supportedArtifacts.some((art) => !!art.onRun && art.onMatchLanguage(lang))
+              supportedArtifacts.some((art) => !!art.onRun && art.onResolveLanguage(lang))
                 ? `
                 <button data-action="run">
                   <span class="ready">Run</span>
@@ -86,7 +93,7 @@ export function handleArtifactActions(event: MouseEvent) {
   const action = trigger?.dataset.action;
   const lang = trigger?.closest("artifact-element")?.getAttribute("lang");
   if (!lang) return;
-  const artifact = supportedArtifacts.find((art) => art.onMatchLanguage(lang));
+  const artifact = supportedArtifacts.find((art) => art.onResolveLanguage(lang));
   if (!artifact) return;
 
   switch (action) {

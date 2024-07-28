@@ -1,10 +1,11 @@
+import { supportedLanguages } from "../artifact";
 import type { ArtifactContext, ArtifactSupport } from "./type";
 
 const timers = new WeakMap<Element, number>();
 
 export class GenericArtifact implements ArtifactSupport {
-  onMatchLanguage(_lang: string) {
-    return true;
+  onResolveLanguage(lang: string): string | undefined {
+    return supportedLanguages.includes(lang) ? lang : "text";
   }
 
   onCopy({ trigger, code }: ArtifactContext) {

@@ -10,8 +10,8 @@ const extensionToMimeType: Record<string, string> = {
 };
 
 export class XmlArtifact extends GenericArtifact {
-  onMatchLanguage(lang: string): boolean {
-    return ["html", "xml", "svg"].includes(lang);
+  onResolveLanguage(lang: string) {
+    return ["html", "xml", "svg"].includes(lang) ? lang : undefined;
   }
 
   onRun({ trigger, code }: ArtifactContext) {

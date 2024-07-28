@@ -4,8 +4,8 @@ import { GenericArtifact } from "./generic";
 import type { ArtifactContext } from "./type";
 
 export class MermaidArtifact extends GenericArtifact {
-  onMatchLanguage(lang: string) {
-    return ["mermaid", "mmd"].includes(lang);
+  onResolveLanguage(lang: string) {
+    return ["mermaid", "mmd"].includes(lang) ? "mermaid" : undefined;
   }
 
   onRun({ trigger, code }: ArtifactContext) {

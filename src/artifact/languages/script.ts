@@ -5,8 +5,8 @@ import { GenericArtifact } from "./generic";
 import type { ArtifactContext } from "./type";
 
 export class ScriptArtifact extends GenericArtifact {
-  onMatchLanguage(lang: string): boolean {
-    return ["typescript", "javascript", "jsx", "tsx"].includes(lang);
+  onResolveLanguage(lang: string): string | undefined {
+    return ["typescript", "javascript", "jsx", "tsx"].includes(lang) ? lang : undefined;
   }
 
   onRun({ trigger, code }: ArtifactContext) {
