@@ -9,6 +9,7 @@ import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "../open
 import { useRouteParameter } from "../router/use-route-parameter";
 import { useDialog } from "../shell/dialog";
 import { getFirstImageDataUrl } from "./clipboard";
+import { getReadableFileSize } from "./file-size";
 import { tableStyles } from "./table";
 import { useNodeContentTransformStore } from "./use-node-content-transform-store";
 
@@ -17,7 +18,8 @@ export interface ChatNode {
   role: "system" | "user" | "assistant";
   content: string;
   contentHtml?: string;
-  attachments?: string[];
+  images?: string[];
+  files?: File[];
   isViewSource?: boolean;
   childIds?: string[];
   isLocked?: boolean;
@@ -203,7 +205,7 @@ export function ChatTree() {
         if (!node) throw new Error(`Node ${id} not found`);
         const message: ChatMessage = {
           role: node.role,
-          content: [{ type: "text", text: node.content }, ...(node.attachments ?? []).map((url) => ({ type: "image_url" as const, image_url: { url } }))],
+          content: [{ type: "text", text: node.content }, ...(node.images ?? []).map((url) => ({ type: "image_url" as const, image_url: { url } }))],
         };
 
         return message;
@@ -390,7 +392,7 @@ export function ChatTree() {
         nodes.map(
           patchNode(
             (node) => node.id === activeUserNodeId,
-            (node) => ({ attachments: [...new Set([...(node.attachments ?? []), imageDataUrl])] })
+            (node) => ({ images: [...new Set([...(node.images ?? []), imageDataUrl])] })
           )
         )
       );
@@ -403,7 +405,51 @@ export function ChatTree() {
       nodes.map(
         patchNode(
           (node) => node.id === nodeId,
-          (node) => ({ attachments: node.attachments?.filter((url) => url !== attachment) })
+          (node) => ({ images: node.images?.filter((url) => url !== attachment) })
+        )
+      )
+    );
+  }, []);
+
+  const handleUploadFiles = useCallback(async (nodeId: string) => {
+    const activeUserNodeId = getActiveUserNodeId(treeNodes.find((node) => node.id === nodeId));
+    if (!activeUserNodeId) return;
+
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.multiple = true;
+    const files = await new Promise<File[]>((resolve) => {
+      fileInput.onchange = () => {
+        resolve([...fileInput.files!]);
+      };
+      fileInput.click();
+    });
+
+    if (!files.length) return;
+    setTreeNodes((nodes) =>
+      nodes.map(
+        patchNode(
+          (node) => node.id === activeUserNodeId,
+          (node) => {
+            const existingFileMap = new Map(node.files?.map((file) => [file.name, file]));
+            files.forEach((file) => {
+              existingFileMap.delete(file.name);
+              existingFileMap.set(file.name, file);
+            });
+            const newFiles = [...existingFileMap.values()];
+            return { files: newFiles };
+          }
+        )
+      )
+    );
+  }, []);
+
+  const hanldeRemoveFile = useCallback((nodeId: string, fileName: string) => {
+    setTreeNodes((nodes) =>
+      nodes.map(
+        patchNode(
+          (node) => node.id === nodeId,
+          (node) => ({ files: node.files?.filter((file) => file.name !== fileName) })
         )
       )
     );
@@ -451,14 +497,20 @@ export function ChatTree() {
                       onKeyDown={(e) => handleKeydown(node.id, e)}
                       onPaste={(e) => handlePaste(node.id, e)}
                       onChange={(e) => handleTextChange(node.id, e.target.value)}
-                      placeholder={node.role === "user" ? "Ctrl + Enter to send, Esc to cancel, paste images as attachments" : "System message"}
+                      placeholder={node.role === "user" ? "Ctrl + Enter to send, Esc to cancel, paste images for vision models" : "System message"}
                     />
                   </AutoResize>
-                  {node.attachments?.length ? (
+                  {node.files?.length || node.images?.length ? (
                     <AttachmentList>
-                      {node.attachments.map((url) => (
+                      {node.images?.map((url) => (
                         <AttachmentPreview key={url} onClick={(_) => handleRemoveAttachment(node.id, url)}>
                           <img key={url} src={url} alt="attachment" />
+                        </AttachmentPreview>
+                      ))}
+                      {node.files?.map((file) => (
+                        <AttachmentPreview key={file.name} onClick={(_) => hanldeRemoveFile(node.id, file.name)}>
+                          <AttachmentFileName title={file.name}>{file.name}</AttachmentFileName>
+                          <AttachmentFileSize>{getReadableFileSize(file.size)}</AttachmentFileSize>
                         </AttachmentPreview>
                       ))}
                     </AttachmentList>
@@ -510,6 +562,8 @@ export function ChatTree() {
                   <button onClick={() => handleDelete(node.id)}>Delete</button>
                   <span> · </span>
                   <button onClick={() => handleToggleShowMore(node.id)}>{node.isShowFull ? "Scroll" : "Full"}</button>
+                  <span> · </span>
+                  <button onClick={() => handleUploadFiles(node.id)}>Upload</button>
                 </MessageActions>
               ) : null}
             </MessageWithActions>
@@ -690,11 +744,33 @@ const AttachmentList = styled.div`
   gap: 8px;
 `;
 const AttachmentPreview = styled.button`
+  display: grid;
+  text-align: start;
+  align-content: center;
+  height: 48px;
+
   img {
+    min-width: 40px;
+    max-width: 60px;
     height: 40px;
-    width: 60px;
+
     object-fit: contain;
   }
+`;
+
+const AttachmentFileName = styled.div`
+  font-size: 14px;
+
+  // text longer than 100px will show ...
+  // no wrap
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+`;
+const AttachmentFileSize = styled.div`
+  opacity: 0.625;
+  font-size: 12px;
 `;
 
 const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
