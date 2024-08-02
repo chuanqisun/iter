@@ -24,7 +24,7 @@ async function initializeMarked() {
     markedShiki({
       highlight(code, lang, _props) {
         const highlightedHtml = highlighter.codeToHtml(code, {
-          lang: supportedArtifacts.find((art) => art.onResolveLanguage(lang))?.onResolveLanguage(lang) ?? "text",
+          lang: supportedLanguages.includes(lang) ? lang : "text",
           theme: "dark-plus",
         });
 
