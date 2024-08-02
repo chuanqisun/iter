@@ -11,4 +11,4 @@ A minimalist frontend for Azure OpenAI Chat models, optimized for rapid prompt i
 
 \*This project is still an early experiment. Please share ideas, feedback, or file bugs via GitHub Issues page. Thank you!
 
-![Screenshot](./designs/screenshots/ui-dark-v1.png)
+![Screenshot](./designs/screenshots/artifact.png)
