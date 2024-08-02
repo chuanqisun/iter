@@ -11,4 +11,10 @@ A minimalist frontend for Azure OpenAI Chat models, optimized for rapid prompt i
 
 \*This project is still an early experiment. Please share ideas, feedback, or file bugs via GitHub Issues page. Thank you!
 
-![Screenshot](./designs/screenshots/artifact.png)
+## Screenshots
+
+Use GPT to write a program
+![Two screenshots of the app, one showing gpt generated code for a todo app, another showing the todo app running live](./designs/screenshots/artifact.png)
+
+Use GPT vision to recreate the UI of Airbnb
+![Two screenshots of the app, one showing gpt generated code based on user uploaded screen, another showing the code running live](./designs/screenshots/vision.png)
