@@ -7,6 +7,7 @@ import { getFileAccessPostscript, respondFileAccess, respondFileList } from "../
 import { AutoResize } from "../form/auto-resize";
 import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "../openai/chat";
+import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
 import { useDialog } from "../shell/dialog";
 import { getFirstImageDataUrl } from "./clipboard";
@@ -110,6 +111,7 @@ export function ChatTree() {
   const previews = useNodeContentTransformStore(treeNodes, markdownToHtml);
 
   useArtifactActions();
+  useRouteCache({ parameters: ["modelId", "temperature", "max_tokens"] });
 
   const chat = useCallback(
     (messages: ChatMessage[], abortSignal?: AbortSignal) => {
