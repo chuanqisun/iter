@@ -130,7 +130,8 @@ export function ChatTree() {
   // intiialize
   useEffect(() => {
     if (modelDisplayId.value && connections?.some((connection) => connection.models?.some((model) => model.displayId === modelDisplayId.value))) return;
-    if (connections) {
+    // once every connection is loaded, update modelDisplayId if it is not present
+    if (connections?.every((connection) => connection.models !== undefined)) {
       const defaultConnection = connections.find((connection) => !!connection.models?.length);
       if (!defaultConnection) return;
       modelDisplayId.replace(defaultConnection.models?.at(0)!.displayId ?? "");
