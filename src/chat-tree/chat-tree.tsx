@@ -268,14 +268,10 @@ export function ChatTree() {
       }
 
       // up/down arrow
-      if (!e.ctrlKey && !e.shiftKey && !e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "PageUp" || e.key === "PageDown")) {
+      if (!e.ctrlKey && !e.shiftKey && !e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
         const textarea = e.target as HTMLTextAreaElement;
 
-        if (
-          (e.key === "ArrowUp" || e.key === "PageUp") &&
-          textarea.selectionStart === 0 &&
-          (textarea.selectionEnd === 0 || textarea.selectionEnd === textarea.value.length)
-        ) {
+        if (e.key === "ArrowUp" && textarea.selectionStart === 0 && (textarea.selectionEnd === 0 || textarea.selectionEnd === textarea.value.length)) {
           e.preventDefault();
           const targetId = getPrevId(nodeId);
           if (targetId) {
@@ -283,7 +279,7 @@ export function ChatTree() {
             targetTextarea?.focus();
           }
         } else if (
-          (e.key === "ArrowDown" || e.key === "PageDown") &&
+          e.key === "ArrowDown" &&
           (textarea.selectionStart === 0 || textarea.selectionStart === textarea.value.length) &&
           textarea.selectionEnd === textarea.value.length
         ) {
