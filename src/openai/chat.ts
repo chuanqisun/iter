@@ -105,6 +105,7 @@ export interface ChatStreamItem {
   usage: null;
 }
 
+// ref: https://til.simonwillison.net/llms/streaming-llm-apis
 export async function* getChatStream(
   apiKey: string,
   endpoint: string,
@@ -153,7 +154,7 @@ export async function* getChatStream(
       break;
     }
     // Massage and parse the chunk of data
-    const chunk = decoder.decode(value);
+    const chunk = decoder.decode(value, { stream: true });
 
     // because the packets can split anywhere, we only process whole lines
     const currentWindow = unfinishedLine + chunk;
