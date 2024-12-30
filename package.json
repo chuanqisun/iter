@@ -21,21 +21,20 @@
   },
   "homepage": "https://github.com/chuanqisun/iter#readme",
   "devDependencies": {
-    "@types/dompurify": "^3.0.5",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react-swc": "^3.7.2",
-    "typescript": "^5.5.3",
+    "typescript": "^5.7.2",
     "vite": "^6.0.6"
   },
   "dependencies": {
-    "dompurify": "^3.1.6",
-    "marked": "^13.0.2",
-    "marked-shiki": "^1.1.0",
-    "mermaid": "^10.9.1",
+    "dompurify": "^3.2.3",
+    "marked": "^15.0.4",
+    "marked-shiki": "^1.1.1",
+    "mermaid": "^11.4.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "shiki": "^1.10.3",
+    "shiki": "^1.24.4",
     "styled-components": "^6.1.13"
   }
 }
