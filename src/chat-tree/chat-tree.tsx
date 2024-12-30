@@ -147,45 +147,66 @@ export function ChatTree() {
   const handleDelete = useCallback((nodeId: string) => {
     handleAbort(nodeId);
 
-    // if delete root
+    // if delete root: only clear its content
     if (treeNodes[0].id === nodeId) {
-      setTreeNodes(INITIAL_NODES); // thanks to immutability, we can reuse
+      setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { content: "" })));
       return;
     }
 
+    // if delete non-root, delete the node itself and fix the linked list
     setTreeNodes((nodes) => {
-      // resurvively find all ids to be deleted
-      const reachableIds = getReachableIds(nodes, nodeId);
+      const remainingNodes = nodes.filter((node) => node.id !== nodeId);
 
-      // filter out the node to be deleted
-      const remainingNodes = nodes.filter((node) => !reachableIds.includes(node.id));
+      const parentId = nodes.find((node) => node.childIds?.includes(nodeId))?.id;
+      const childIds = nodes.find((node) => node.id === nodeId)?.childIds ?? [];
 
-      let newUserNodeId = "";
-
-      // make sure all system/assistant nodes have at least one child
+      // link parents to childIds
       const newNodes = remainingNodes.map((node) => {
-        if (node.childIds?.includes(nodeId)) {
-          const updated: ChatNode = {
-            ...node,
-            childIds: node.childIds?.filter((childId) => childId !== nodeId),
-          };
-
-          if (updated.role !== "user" && updated.childIds?.length === 0) {
-            newUserNodeId = crypto.randomUUID();
-            updated.childIds = [newUserNodeId];
-          }
-
-          return updated;
+        if (node.id === parentId) {
+          return { ...node, childIds: [...(node.childIds ?? []).filter((id) => id !== nodeId), ...childIds] };
         } else {
           return node;
         }
       });
 
-      if (newUserNodeId) {
-        newNodes.push(getUserNode(newUserNodeId));
-      }
+      // make sure the last node is a user node
+      const updatedNodes = newNodes.flatMap((node) => {
+        if (!node.childIds?.length && node.role !== "user") {
+          const newUserNode = getUserNode(crypto.randomUUID());
+          return [{ ...node, childIds: [newUserNode.id] }, newUserNode];
+        }
 
-      return newNodes;
+        return [node];
+      });
+
+      return updatedNodes;
+    });
+  }, []);
+
+  const handleDeleteBelow = useCallback((nodeId: string) => {
+    setTreeNodes((nodes) => {
+      // clear current node childIds
+      const newNodes = nodes.map(
+        patchNode(
+          (node) => node.id === nodeId,
+          (_node) => ({ childIds: [] })
+        )
+      );
+
+      const reachableIds = getReachableIds(newNodes, nodes.at(0)!.id);
+
+      // remove unreachable
+      const remaining = newNodes.filter((node) => reachableIds.includes(node.id));
+
+      // ensure the last node is a user node
+      return remaining.flatMap((node) => {
+        if (!node.childIds?.length && node.role !== "user") {
+          const newUserNode = getUserNode(crypto.randomUUID());
+          return [{ ...node, childIds: [newUserNode.id] }, newUserNode];
+        }
+
+        return [node];
+      });
     });
   }, []);
 
@@ -572,6 +593,10 @@ export function ChatTree() {
                     />
                   )}
                   <MessageActions>
+                    <button onClick={() => handleDelete(node.id)}>Delete</button>
+                    <span> · </span>
+                    <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
+                    <span> · </span>
                     <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "View" : "Edit"}</button>
                     <span> · </span>
                     <button onClick={() => handleToggleShowMore(node.id)}>{node.isCollapsed ? "Expand" : "Collapse"}</button>
@@ -587,6 +612,8 @@ export function ChatTree() {
                 <MessageActions>
                   <button onClick={() => handleDelete(node.id)}>Delete</button>
                   <span> · </span>
+                  <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
+                  <span> · </span>
                   <button onClick={() => handleToggleShowMore(node.id)}>{node.isCollapsed ? "Expand" : "Collapse"}</button>
                 </MessageActions>
               ) : null}
@@ -599,6 +626,8 @@ export function ChatTree() {
                     </>
                   ) : null}
                   <button onClick={() => handleDelete(node.id)}>Delete</button>
+                  <span> · </span>
+                  <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
                   <span> · </span>
                   <button onClick={() => handleToggleShowMore(node.id)}>{node.isCollapsed ? "Expand" : "Collapse"}</button>
                   <span> · </span>
