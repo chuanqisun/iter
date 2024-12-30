@@ -598,8 +598,6 @@ export function ChatTree() {
                     <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
                     <span> · </span>
                     <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "View" : "Edit"}</button>
-                    <span> · </span>
-                    <button onClick={() => handleToggleShowMore(node.id)}>{node.isCollapsed ? "Expand" : "Collapse"}</button>
                   </MessageActions>
                   {node.errorMessage ? (
                     <ErrorMessage>
@@ -613,8 +611,6 @@ export function ChatTree() {
                   <button onClick={() => handleDelete(node.id)}>Delete</button>
                   <span> · </span>
                   <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
-                  <span> · </span>
-                  <button onClick={() => handleToggleShowMore(node.id)}>{node.isCollapsed ? "Expand" : "Collapse"}</button>
                 </MessageActions>
               ) : null}
               {node.role === "user" ? (
@@ -628,8 +624,6 @@ export function ChatTree() {
                   <button onClick={() => handleDelete(node.id)}>Delete</button>
                   <span> · </span>
                   <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
-                  <span> · </span>
-                  <button onClick={() => handleToggleShowMore(node.id)}>{node.isCollapsed ? "Expand" : "Collapse"}</button>
                   <span> · </span>
                   <button onClick={() => handleUploadFiles(node.id)}>Upload</button>
                 </MessageActions>
