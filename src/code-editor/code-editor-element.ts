@@ -4,8 +4,8 @@ import { markdown } from "@codemirror/lang-markdown";
 import { defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
 import { Compartment } from "@codemirror/state";
-import { oneDark } from "@codemirror/theme-one-dark";
 import { drawSelection, EditorView, highlightSpecialChars, keymap } from "@codemirror/view";
+import { githubDark } from "@uiw/codemirror-theme-github/src/index.ts";
 
 import "./code-editor-element.css";
 
@@ -28,7 +28,7 @@ export class CodeEditorElement extends HTMLElement {
         drawSelection(),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         keymap.of([...defaultKeymap, ...historyKeymap]),
-        oneDark,
+        githubDark,
         dynamicLanguage.of([]),
         EditorView.lineWrapping,
         EditorView.focusChangeEffect.of((state, focusing) => {
