@@ -1,0 +1,18 @@
+code-editor-element {
+  display: grid;
+  flex-grow: 1;
+}
+
+.cm-editor {
+  height: 100%;
+  max-height: var(--max-height);
+  overflow: auto;
+
+  padding: var(--input-padding-block) var(--input-padding-inline);
+  border: 1px solid currentColor;
+  border-radius: 2px;
+
+  &.cm-focused {
+    outline: none;
+  }
+}

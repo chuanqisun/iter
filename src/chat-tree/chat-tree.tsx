@@ -556,16 +556,15 @@ export function ChatTree() {
               ) : (
                 <>
                   {node.isViewSource ? (
-                    <AutoResize data-resize-textarea-content={node.content} $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}>
-                      <GhostTextArea
-                        className="js-focusable"
-                        id={node.id}
-                        value={node.content}
-                        rows={1}
-                        onKeyDown={(e) => handleKeydown(node.id, e)}
-                        onChange={(e) => handleTextChange(node.id, e.target.value)}
-                      />
-                    </AutoResize>
+                    <code-editor-element
+                      data-value={node.content}
+                      data-lang="md"
+                      style={{ "--max-height": node.isCollapsed ? `${COLLAPSED_HEIGHT}px` : undefined } as any}
+                      oncontentchange={(e) => {
+                        console.log("cm change");
+                        handleTextChange(node.id, e.detail);
+                      }}
+                    ></code-editor-element>
                   ) : (
                     <MarkdownPreview
                       $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}
