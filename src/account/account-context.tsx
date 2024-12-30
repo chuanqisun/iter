@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { deduplicateByModelName, isChatModel, isSucceeded, listDeployments, removeTrailingSlash, smartSort, type ModelDeployment } from "../openai/management";
 
 export interface Connection {
@@ -41,7 +41,7 @@ const initialRuntimeConnections = validatedInitialValue.connections.map((connect
   models: undefined,
 }));
 
-export const AccountContextProvider = (props: { children?: JSX.Element | JSX.Element[] }) => {
+export const AccountContextProvider = (props: { children?: React.JSX.Element | React.JSX.Element[] }) => {
   const [runtimeConnections, setRuntimeConnections] = useState<RuntimeConnection[]>(initialRuntimeConnections);
 
   useEffect(() => {

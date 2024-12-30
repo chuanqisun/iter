@@ -6,7 +6,7 @@ export function useDialog() {
 
   const open = useCallback(() => dialogRef.current?.showModal(), []);
   const close = useCallback(() => dialogRef.current?.close(), []);
-  const DialogComponent: React.FC<{ children?: JSX.Element | null }> = useCallback(
+  const DialogComponent: React.FC<{ children?: React.JSX.Element | null }> = useCallback(
     (props) => <StyledDialog ref={dialogRef}>{props.children}</StyledDialog>,
     []
   );
