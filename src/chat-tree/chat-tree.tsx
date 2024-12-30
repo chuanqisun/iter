@@ -25,7 +25,7 @@ export interface ChatNode {
   isViewSource?: boolean;
   childIds?: string[];
   isLocked?: boolean;
-  isShowFull?: boolean;
+  isCollapsed?: boolean;
   isEntry?: boolean;
   abortController?: AbortController;
   errorMessage?: string;
@@ -41,6 +41,8 @@ const INITIAL_SYSTEM_NODE: ChatNode = {
   childIds: [INITIAL_USER_NODE.id],
 };
 const INITIAL_NODES = [INITIAL_SYSTEM_NODE, INITIAL_USER_NODE];
+
+const COLLAPSED_HEIGHT = 72;
 
 function getUserNode(id: string, configOverrides?: Partial<ChatNode>): ChatNode {
   return {
@@ -475,15 +477,18 @@ export function ChatTree() {
     );
   }, []);
 
-  const handleToggleShowMore = useCallback((nodeId: string) => {
-    setTreeNodes((nodes) =>
-      nodes.map(
+  const handleToggleShowMore = useCallback((nodeId: string, options?: { toggleAll?: boolean }) => {
+    setTreeNodes((nodes) => {
+      const currentNode = nodes.find((node) => node.id === nodeId);
+      const newState = !currentNode?.isCollapsed;
+
+      return nodes.map(
         patchNode(
-          (node) => node.id === nodeId,
-          (node) => ({ isShowFull: !node.isShowFull })
+          (node) => options?.toggleAll ?? node.id === nodeId,
+          (_node) => ({ isCollapsed: newState })
         )
-      )
-    );
+      );
+    });
   }, []);
 
   // expose file access api
@@ -514,13 +519,13 @@ export function ChatTree() {
       return (
         <Thread showrail={hasSibling ? "true" : undefined} key={node.id}>
           <MessageLayout>
-            <Avatar>
+            <Avatar onClick={(e) => handleToggleShowMore(node.id, e.ctrlKey ? { toggleAll: true } : undefined)}>
               <AvatarIcon title={node.role}>{roleIcon[node.role]}</AvatarIcon>
             </Avatar>
             <MessageWithActions>
               {node.role === "user" || node.role === "system" ? (
                 <>
-                  <AutoResize data-resize-textarea-content={node.content} $maxHeight={node.isShowFull ? undefined : 400}>
+                  <AutoResize data-resize-textarea-content={node.content} $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}>
                     <GhostTextArea
                       className="js-focusable"
                       id={node.id}
@@ -551,7 +556,7 @@ export function ChatTree() {
               ) : (
                 <>
                   {node.isViewSource ? (
-                    <AutoResize data-resize-textarea-content={node.content} $maxHeight={node.isShowFull ? undefined : 400}>
+                    <AutoResize data-resize-textarea-content={node.content} $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}>
                       <GhostTextArea
                         className="js-focusable"
                         id={node.id}
@@ -562,12 +567,15 @@ export function ChatTree() {
                       />
                     </AutoResize>
                   ) : (
-                    <MarkdownPreview $maxHeight={node.isShowFull ? undefined : 400} dangerouslySetInnerHTML={{ __html: previews[node.id] ?? "" }} />
+                    <MarkdownPreview
+                      $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}
+                      dangerouslySetInnerHTML={{ __html: previews[node.id] ?? "" }}
+                    />
                   )}
                   <MessageActions>
                     <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "View" : "Edit"}</button>
                     <span> · </span>
-                    <button onClick={() => handleToggleShowMore(node.id)}>{node.isShowFull ? "Scroll" : "Full"}</button>
+                    <button onClick={() => handleToggleShowMore(node.id)}>{node.isCollapsed ? "Expand" : "Collapse"}</button>
                   </MessageActions>
                   {node.errorMessage ? (
                     <ErrorMessage>
@@ -580,7 +588,7 @@ export function ChatTree() {
                 <MessageActions>
                   <button onClick={() => handleDelete(node.id)}>Delete</button>
                   <span> · </span>
-                  <button onClick={() => handleToggleShowMore(node.id)}>{node.isShowFull ? "Scroll" : "Full"}</button>
+                  <button onClick={() => handleToggleShowMore(node.id)}>{node.isCollapsed ? "Expand" : "Collapse"}</button>
                 </MessageActions>
               ) : null}
               {node.role === "user" ? (
@@ -593,7 +601,7 @@ export function ChatTree() {
                   ) : null}
                   <button onClick={() => handleDelete(node.id)}>Delete</button>
                   <span> · </span>
-                  <button onClick={() => handleToggleShowMore(node.id)}>{node.isShowFull ? "Scroll" : "Full"}</button>
+                  <button onClick={() => handleToggleShowMore(node.id)}>{node.isCollapsed ? "Expand" : "Collapse"}</button>
                   <span> · </span>
                   <button onClick={() => handleUploadFiles(node.id)}>Upload</button>
                 </MessageActions>
@@ -750,14 +758,21 @@ const MessageLayout = styled.div`
   gap: 4px;
 `;
 
-const Avatar = styled.div`
+const Avatar = styled.button`
   font-size: 22px;
   line-height: 30px;
   width: 28px;
   display: flex;
   align-items: baseline;
   justify-content: center;
-  cursor: default;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 2px;
+
+  &:hover {
+    background-color: var(--ghost-button-hover-background);
+  }
 `;
 
 const AvatarIcon = styled.span`
