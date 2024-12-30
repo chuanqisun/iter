@@ -27,7 +27,17 @@ export class CodeEditorElement extends HTMLElement {
         history(),
         drawSelection(),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-        keymap.of([...defaultKeymap, ...historyKeymap]),
+        keymap.of([
+          {
+            key: "Escape",
+            run: () => {
+              this.dispatchEvent(new Event("escape"));
+              return true;
+            },
+          },
+          ...defaultKeymap,
+          ...historyKeymap,
+        ]),
         githubDark,
         dynamicLanguage.of([]),
         EditorView.lineWrapping,
@@ -44,6 +54,10 @@ export class CodeEditorElement extends HTMLElement {
 
     if (this.hasAttribute("data-value")) {
       this.value = this.getAttribute("data-value") ?? "";
+    }
+
+    if (this.hasAttribute("autofocus")) {
+      this.editorView.focus();
     }
   }
 

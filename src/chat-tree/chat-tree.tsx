@@ -82,7 +82,7 @@ function getPrevId(currentId: string): string | null {
   const currentIndex = allTextAreas.findIndex((item) => item.id === currentId);
   return allTextAreas.at(Math.max(0, currentIndex - 1))?.id ?? null;
 }
-function getPostId(currentId: string): string | null {
+function getNextId(currentId: string): string | null {
   const allTextAreas = [...document.querySelectorAll<HTMLTextAreaElement>(`.js-focusable`)];
   const currentIndex = allTextAreas.findIndex((item) => item.id === currentId);
   return allTextAreas.at(Math.min((allTextAreas.length - 1, currentIndex + 1)))?.id ?? null;
@@ -278,7 +278,7 @@ export function ChatTree() {
   );
 
   const handleKeydown = useCallback(
-    async (nodeId: string, e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    async (nodeId: string, e: React.KeyboardEvent<HTMLTextAreaElement | HTMLDivElement>) => {
       const targetNode = treeNodes.find((node) => node.id === nodeId);
       if (!targetNode) return;
 
@@ -290,29 +290,44 @@ export function ChatTree() {
         handleAbort(activeUserNodeId);
       }
 
-      // up/down arrow
-      if (!e.ctrlKey && !e.shiftKey && !e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
-        const textarea = e.target as HTMLTextAreaElement;
+      if (targetNode.role === "assistant" && e.key === "Enter") {
+        // switch to edit mode
+        setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { isViewSource: true })));
+        return;
+      }
 
-        if (e.key === "ArrowUp" && textarea.selectionStart === 0 && (textarea.selectionEnd === 0 || textarea.selectionEnd === textarea.value.length)) {
-          e.preventDefault();
-          const targetId = getPrevId(nodeId);
-          if (targetId) {
-            const targetTextarea = document.getElementById(targetId) as HTMLTextAreaElement | null;
-            targetTextarea?.focus();
-          }
-        } else if (
-          e.key === "ArrowDown" &&
-          (textarea.selectionStart === 0 || textarea.selectionStart === textarea.value.length) &&
-          textarea.selectionEnd === textarea.value.length
-        ) {
-          e.preventDefault();
-          const targetId = getPostId(nodeId);
-          if (targetId) {
-            const targetTextarea = document.getElementById(targetId) as HTMLTextAreaElement | null;
-            targetTextarea?.focus();
+      // up/down arrow
+      let targetId: null | string = null;
+      if ((e.target as HTMLElement).tagName === "TEXTAREA") {
+        if (!e.ctrlKey && !e.shiftKey && !e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+          const textarea = e.target as HTMLTextAreaElement;
+
+          if (e.key === "ArrowUp" && textarea.selectionStart === 0 && (textarea.selectionEnd === 0 || textarea.selectionEnd === textarea.value.length)) {
+            e.preventDefault();
+            targetId = getPrevId(nodeId);
+          } else if (
+            e.key === "ArrowDown" &&
+            (textarea.selectionStart === 0 || textarea.selectionStart === textarea.value.length) &&
+            textarea.selectionEnd === textarea.value.length
+          ) {
+            e.preventDefault();
+            targetId = getNextId(nodeId);
           }
         }
+      } else {
+        // navigate on general elements
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          targetId = getPrevId(nodeId);
+        } else if (e.key === "ArrowDown") {
+          e.preventDefault();
+          targetId = getNextId(nodeId);
+        }
+      }
+
+      if (targetId) {
+        const targetElement = document.getElementById(targetId) as HTMLTextAreaElement | null;
+        targetElement?.focus();
       }
 
       // submit message
@@ -488,14 +503,21 @@ export function ChatTree() {
   }, []);
 
   const handleToggleViewFormat = useCallback((nodeId: string) => {
-    setTreeNodes((nodes) =>
-      nodes.map(
+    setTreeNodes((nodes) => {
+      const isExitEditing = nodes.find((node) => node.id === nodeId)?.isViewSource;
+      if (isExitEditing) {
+        setTimeout(() => {
+          // programmatically focus the textarea
+          document.getElementById(nodeId)?.focus();
+        }, 0);
+      }
+      return nodes.map(
         patchNode(
           (node) => node.id === nodeId,
           (node) => ({ isViewSource: !node.isViewSource })
         )
-      )
-    );
+      );
+    });
   }, []);
 
   const handleToggleShowMore = useCallback((nodeId: string, options?: { toggleAll?: boolean }) => {
@@ -578,9 +600,11 @@ export function ChatTree() {
                 <>
                   {node.isViewSource ? (
                     <code-editor-element
+                      autofocus
                       data-value={node.content}
                       data-lang="md"
                       style={{ "--max-height": node.isCollapsed ? `${COLLAPSED_HEIGHT}px` : undefined } as any}
+                      onescape={() => handleToggleViewFormat(node.id)}
                       oncontentchange={(e) => {
                         console.log("cm change");
                         handleTextChange(node.id, e.detail);
@@ -588,6 +612,10 @@ export function ChatTree() {
                     ></code-editor-element>
                   ) : (
                     <MarkdownPreview
+                      tabIndex={-1}
+                      className="js-focusable"
+                      onKeyDown={(e) => handleKeydown(node.id, e)}
+                      id={node.id}
                       $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}
                       dangerouslySetInnerHTML={{ __html: previews[node.id] ?? "" }}
                     />

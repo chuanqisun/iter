@@ -9,6 +9,7 @@ declare module "react" {
       "code-editor-element": CustomElement<CodeEditorElement> & {
         "data-value"?: string | undefined;
         "data-lang"?: string | undefined;
+        onescape?: (event: Event) => void;
         oncontentchange?: (event: CustomEvent<string>) => void;
       };
     }
