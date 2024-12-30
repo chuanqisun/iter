@@ -854,6 +854,7 @@ const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
   scrollbar-gutter: stable;
   overflow-y: auto;
   padding: var(--input-padding-block) var(--input-padding-inline);
+  line-height: var(--text-line-height);
   border-width: var(--input-border-width);
   border-radius: 2px;
   border-style: solid;
@@ -875,6 +876,7 @@ const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
   .shiki {
     overflow-x: auto;
     padding: 8px;
+    line-height: var(--code-line-height);
     color-scheme: dark;
 
     code {

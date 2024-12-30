@@ -7,6 +7,8 @@
   --input-padding-inline: 8px;
   --input-border-radius: 2px;
   --input-border-width: 1px;
+  --text-line-height: 1.5;
+  --code-line-height: 1.2;
 
   --body-background: #e1e1e1;
   --input-background: transparent;
