@@ -94,18 +94,18 @@ export function ChatTree() {
 
   const handleConnectionsButtonClick = () => document.querySelector("settings-element")?.closest("dialog")?.showModal();
 
-  const modelDisplayId = useRouteParameter({ name: "modelId", initial: null as null | string, encode: String, decode: String });
+  const connectionKey = useRouteParameter({ name: "connection", initial: null as null | string, encode: String, decode: String });
   const temperature = useRouteParameter({ name: "temperature", initial: 0, encode: String, decode: Number });
   const maxTokens = useRouteParameter({ name: "max_tokens", initial: 200, encode: String, decode: Number });
 
   const previews = useNodeContentTransformStore(treeNodes, markdownToHtml);
 
   useArtifactActions();
-  useRouteCache({ parameters: ["modelId", "temperature", "max_tokens"] });
+  useRouteCache({ parameters: ["connection", "temperature", "max_tokens"] });
 
   const chat = useCallback(
     (messages: ChatMessage[], abortSignal?: AbortSignal) => {
-      const chatEndpoint = getChatEndpoint?.(modelDisplayId.value ?? "");
+      const chatEndpoint = getChatEndpoint?.(connectionKey.value ?? "");
       if (!chatEndpoint) throw new Error(`API connection is not set up`);
 
       const modelConfig: Partial<OpenAIChatPayload> = {
@@ -115,7 +115,7 @@ export function ChatTree() {
       };
       return getChatStream(chatEndpoint.apiKey, chatEndpoint.endpoint, messages, modelConfig, abortSignal);
     },
-    [modelDisplayId.value, getChatEndpoint, temperature.value, maxTokens.value]
+    [connectionKey.value, getChatEndpoint, temperature.value, maxTokens.value]
   );
 
   const groupedConnections = useMemo(() => {
@@ -662,7 +662,7 @@ export function ChatTree() {
           {groupedConnections?.length ? (
             <label>
               Model
-              <BasicSelect value={modelDisplayId.value ?? ""} onChange={(e) => modelDisplayId.replace(e.target.value)}>
+              <BasicSelect value={connectionKey.value ?? ""} onChange={(e) => connectionKey.replace(e.target.value)}>
                 {groupedConnections.map(([key, group]) => (
                   <optgroup key={key} label={key}>
                     {group?.map((connection) => (
