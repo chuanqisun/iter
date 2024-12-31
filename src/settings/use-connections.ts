@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import type { BaseConnection } from "../providers/base";
+import { createProvider } from "../providers/factory";
 import { connectionsEvents, listConnections } from "./connections-store";
-import type { BaseConnection } from "./providers/base";
-import { createProvider } from "./providers/factory";
 
 const initialConnections = listConnections();
 

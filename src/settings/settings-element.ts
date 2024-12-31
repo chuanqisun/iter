@@ -1,6 +1,6 @@
+import type { BaseCredential } from "../providers/base";
+import { createProvider } from "../providers/factory";
 import { deleteCredential, listCredentials, upsertCredentials } from "./connections-store";
-import type { BaseCredential } from "./providers/base";
-import { createProvider } from "./providers/factory";
 import "./settings-element.css";
 import templateHtml from "./settings-element.html?raw";
 

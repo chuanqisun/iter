@@ -1,5 +1,5 @@
-import type { BaseConnection, BaseCredential } from "./providers/base";
-import { createProvider } from "./providers/factory";
+import type { BaseConnection, BaseCredential } from "../providers/base";
+import { createProvider } from "../providers/factory";
 
 export const connectionsEvents = new EventTarget();
 
