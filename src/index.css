@@ -44,6 +44,13 @@ body {
   overflow-y: scroll;
 }
 
+dialog {
+  padding: 1rem;
+  margin: auto;
+  width: calc(100% - 2rem);
+  max-width: 60rem;
+}
+
 *,
 ::before,
 ::after {
@@ -53,9 +60,6 @@ body {
   margin: 0;
 }
 
-*:where(input, select, textarea) {
-  /* background-color: var(--input-background); */
-}
 *:where(input, select, textarea):focus {
   background-color: var(--input-active-background);
 }

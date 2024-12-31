@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { useAccountContext } from "../account/account-context";
-import { ConnectionSetupDialog } from "../account/connection-setup-form";
 import { artifactStyles, markdownToHtml, useArtifactActions } from "../artifact/artifact";
 import { getFileAccessPostscript, respondFileAccess, respondFileList } from "../artifact/lib/file-access";
 import { AutoResize } from "../form/auto-resize";
@@ -9,7 +8,6 @@ import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "../openai/chat";
 import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
-import { useDialog } from "../shell/dialog";
 import { getFirstImageDataUrl } from "./clipboard";
 import { getReadableFileSize } from "./file-size";
 import { tableStyles } from "./table";
@@ -97,12 +95,7 @@ export function ChatTree() {
   const [treeNodes, setTreeNodes] = useState(INITIAL_NODES);
   const treeRootRef = useRef<HTMLDivElement>(null);
 
-  const { DialogComponent, open, close } = useDialog();
-  const [isDialogOpened, setIsDialogOpened] = useState(false);
-  const handleConnectionsButtonClick = () => {
-    setIsDialogOpened(true);
-    open();
-  };
+  const handleConnectionsButtonClick = () => document.querySelector("settings-element")?.closest("dialog")?.showModal();
 
   const { connections, getChatEndpoint } = useAccountContext();
 
@@ -677,7 +670,6 @@ export function ChatTree() {
       <div>
         <ConfigMenu>
           <BasicFormButton onClick={handleConnectionsButtonClick}>Connections</BasicFormButton>
-          <DialogComponent>{isDialogOpened ? <ConnectionSetupDialog onClose={close} /> : null}</DialogComponent>
           {connections?.length ? (
             <label>
               Model

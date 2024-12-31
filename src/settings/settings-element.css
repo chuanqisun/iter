@@ -1,0 +1,32 @@
+settings-element {
+  .action-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+
+  form {
+    display: grid;
+    gap: 8px;
+  }
+
+  .form-scroll {
+    max-height: min(calc(100vh - 120px), 600px);
+    overflow: auto;
+  }
+
+  .rows {
+    display: grid;
+    gap: 8px;
+  }
+
+  .field {
+    display: grid;
+    gap: 4px;
+  }
+
+  &:not(:has(input[value="aoai"]:checked)) [data-type="aoai"] {
+    display: none;
+  }
+}
