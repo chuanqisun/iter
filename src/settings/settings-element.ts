@@ -1,4 +1,3 @@
-import "./settings-element.css";
 import {
   deleteConnection,
   getConnectionKey,
@@ -7,7 +6,8 @@ import {
   type ParsedConnection,
   parseOpenAIConnection,
   upsertConnections,
-} from "./settings-store";
+} from "./connections";
+import "./settings-element.css";
 
 export function defineSettingsElement() {
   customElements.define("settings-element", SettingsElement);

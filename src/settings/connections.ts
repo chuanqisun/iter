@@ -6,6 +6,8 @@ export interface ParsedConnection {
   optionName: string;
 }
 
+export const connectionsEvents = new EventTarget();
+
 export function listConnections(): ParsedConnection[] {
   const persistedConnections = tryJSONParse(localStorage.getItem("iter:connections"), [] as ParsedConnection[]);
   return mergeConnections(persistedConnections);
@@ -15,6 +17,9 @@ export function upsertConnections(connections: ParsedConnection[]): ParsedConnec
   const persistedConnections = tryJSONParse(localStorage.getItem("iter:connections"), [] as ParsedConnection[]);
   const mergedConnections = mergeConnections([...persistedConnections, ...connections]);
   localStorage.setItem("iter:connections", JSON.stringify(mergedConnections));
+
+  connectionsEvents.dispatchEvent(new CustomEvent("change", { detail: mergedConnections }));
+
   return mergedConnections;
 }
 
@@ -24,6 +29,8 @@ export function deleteConnection(key: string): ParsedConnection[] {
     return getConnectionKey(connection) !== key;
   });
   localStorage.setItem("iter:connections", JSON.stringify(remaining));
+
+  connectionsEvents.dispatchEvent(new CustomEvent("change", { detail: remaining }));
 
   return remaining;
 }
