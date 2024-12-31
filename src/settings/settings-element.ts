@@ -1,82 +1,24 @@
 import {
-  deleteConnection,
-  getConnectionKey,
-  listConnections,
-  parseAzureOpenAIConnection,
-  type ParsedConnection,
-  parseOpenAIConnection,
-  upsertConnections,
+  deleteCredential,
+  listCredentials,
+  openaiDefaultModels,
+  parseAzureOpenAICredential,
+  parseOpenAICredential,
+  upsertCredentials,
+  type Credential,
 } from "./connections";
+
 import "./settings-element.css";
+import templateHtml from "./settings-element.html?raw";
 
 export function defineSettingsElement() {
   customElements.define("settings-element", SettingsElement);
 }
 
-export interface Settings {}
-export interface OpenAIChatProvider {
-  type: "openai";
-  endpoint: string;
-  apiKey: string;
-}
-
-export interface AOAIChatProvider {
-  type: "aoai";
-  endpoint: string;
-  apiKey: string;
-}
-
 export class SettingsElement extends HTMLElement {
   constructor() {
     super();
-    this.innerHTML = `
-      <form method="dialog">
-        <div class="form-scroll">
-          <fieldset>
-            <legend>Update</legend>
-
-            <div class="rows">
-
-            <div class="field">
-              <div class="radio-group">
-                <label><input name="newType" type="radio" value="openai" checked /> OpenAI</label>
-                <label><input name="newType" type="radio" value="aoai" /> Azure OpenAI</label>
-              </div>
-            </div>
-
-            <div class="field" data-type="aoai">
-              <label for="newEndpoint">Endpoint</label>
-              <input id="newEndpoint" name="newEndpoint" type="url" placeholder="https://project-name.openai.azure.com/" disabled required />
-            </div>
-
-            <div class="field">
-              <label for="newKey">Key</label>
-              <input id="newKey" name="newKey" type="password" required />
-            </div>
-
-            <div class="field" >
-              <label for="newNickname">Nickname (optional)</label>
-              <input id="newNickname" name="newNickname" type="text" placeholder="work" />
-            </div>
-
-            <button type="button" data-action="upsert">Submit</button>
-            </div>
-          </fieldset>
-
-          <fieldset> 
-            <legend>Existing</legend>
-            <div class="rows" id="existing-connections">
-              
-            </div>
-          </fieldset>
-        </div>
-
-
-        <div>
-          <button type="button" data-action="close">OK</button>
-        </div>
-      </form>
-    `;
+    this.innerHTML = templateHtml;
   }
 
   connectedCallback() {
@@ -95,34 +37,34 @@ export class SettingsElement extends HTMLElement {
       const action = targetActionTrigger?.getAttribute("data-action");
 
       switch (action) {
-        case "upsert":
+        case "add":
           {
             const isValid = targetForm.reportValidity();
             if (!isValid) return;
 
+            const type = targetForm.getAttribute("data-type")!;
             const formData = new FormData(targetForm);
-            const { newType, newEndpoint, newKey, newNickname } = Object.fromEntries(formData.entries()) as Record<string, string>;
 
-            let parsed: ParsedConnection[] = [];
-            if (newType === "openai") {
-              parsed = parseOpenAIConnection(newNickname, newKey as string);
-            } else if (newType === "aoai") {
-              parsed = parseAzureOpenAIConnection(newNickname, newEndpoint as string, newKey as string);
+            let parsed: Credential[] = [];
+            if (type === "openai") {
+              parsed = parseOpenAICredential(formData);
+            } else if (type === "aoai") {
+              parsed = parseAzureOpenAICredential(formData);
             }
             if (!parsed) return;
 
             // reset form
             targetForm.reset();
 
-            const updatedConnections = upsertConnections(parsed);
-            existingConnections.innerHTML = toPreviewHTML(updatedConnections);
+            const updatedConnections = upsertCredentials(parsed);
+            existingConnections.innerHTML = renderCredentials(updatedConnections);
           }
           break;
 
         case "delete": {
           const deleteKey = targetActionTrigger?.getAttribute("data-delete")!;
-          const remaining = deleteConnection(deleteKey);
-          existingConnections.innerHTML = toPreviewHTML(remaining);
+          const remaining = deleteCredential(deleteKey);
+          existingConnections.innerHTML = renderCredentials(remaining);
 
           break;
         }
@@ -134,22 +76,35 @@ export class SettingsElement extends HTMLElement {
       }
     });
 
-    existingConnections.innerHTML = toPreviewHTML(listConnections());
+    existingConnections.innerHTML = renderCredentials(listCredentials());
   }
 }
 
-function toPreviewHTML(connections: ParsedConnection[]) {
-  if (!connections.length) return "There are no existing connections.";
-  return connections
-    .map((connection) => {
-      const key = getConnectionKey(connection);
-      return `<div class="action-row">
-      <button data-action="delete" data-delete="${key}">Delete</button>
-      <div>
-        <div>${key}</div>
-        <div>${connection.endpoint}</div>
-      </div>
-    </div>`;
+function renderCredentials(credentials: Credential[]) {
+  if (!credentials.length) return "There are no existing connections.";
+  return credentials
+    .map((credential) => {
+      switch (credential.type) {
+        case "openai":
+          return `
+      <div class="action-row">
+        <button data-action="delete" data-delete="${credential.id}">Delete</button>
+        <div>
+          <div><b>${credential.accountName}</b> (${credential.type})</div>
+          <div>${openaiDefaultModels.join(",")}</div>
+        </div>
+      </div>`;
+
+        case "aoai":
+          return `
+      <div class="action-row"> 
+        <button data-action="delete" data-delete="${credential.id}">Delete</button>
+        <div>
+          <div><b>${new URL(credential.endpoint).hostname}</b></div>
+          <div>${credential.deployments}</div> 
+        </div>
+      </div>`;
+      }
     })
     .join("");
 }

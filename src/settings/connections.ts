@@ -1,84 +1,112 @@
-export interface ParsedConnection {
-  type: "openai" | "aoai";
-  endpoint: string;
+export type Credential = OpenAICredential | AzureOpenAICredential;
+export interface OpenAICredential {
+  id: string;
+  type: "openai";
+  accountName: string;
   apiKey: string;
-  groupName: string;
-  optionName: string;
+}
+
+export interface AzureOpenAICredential {
+  id: string;
+  type: "aoai";
+  endpoint: string;
+  deployments: string;
+  apiKey: string;
+}
+
+export type Connection = OpenAIConnection | AzureOpenAIConnection;
+
+export interface OpenAIConnection {
+  id: string;
+  type: "openai";
+  displayGroup: string;
+  displayName: string;
+  model: string;
+  apiKey: string;
+}
+
+export interface AzureOpenAIConnection {
+  id: string;
+  type: "aoai";
+  displayGroup: string;
+  displayName: string;
+  endpoint: string;
+  deployment: string;
+  apiKey: string;
+  apiVersion: string;
 }
 
 export const connectionsEvents = new EventTarget();
 
-export function listConnections(): ParsedConnection[] {
-  const persistedConnections = tryJSONParse(localStorage.getItem("iter:connections"), [] as ParsedConnection[]);
-  return mergeConnections(persistedConnections);
+export const openaiDefaultModels = ["gpt-4o", "gpt-4o-mini", "o1-mini"];
+
+export function listCredentials(): Credential[] {
+  return tryJSONParse(localStorage.getItem("iter.credentials"), [] as Credential[]);
 }
 
-export function upsertConnections(connections: ParsedConnection[]): ParsedConnection[] {
-  const persistedConnections = tryJSONParse(localStorage.getItem("iter:connections"), [] as ParsedConnection[]);
-  const mergedConnections = mergeConnections([...persistedConnections, ...connections]);
-  localStorage.setItem("iter:connections", JSON.stringify(mergedConnections));
-
-  connectionsEvents.dispatchEvent(new CustomEvent("change", { detail: mergedConnections }));
-
-  return mergedConnections;
+export function listConnections(): Connection[] {
+  const credentials = tryJSONParse(localStorage.getItem("iter.credentials"), [] as Credential[]);
+  return credentialsToConnections(credentials);
 }
 
-export function deleteConnection(key: string): ParsedConnection[] {
-  const persistedConnections = tryJSONParse(localStorage.getItem("iter:connections"), [] as ParsedConnection[]);
-  const remaining = mergeConnections(persistedConnections).filter((connection) => {
-    return getConnectionKey(connection) !== key;
-  });
-  localStorage.setItem("iter:connections", JSON.stringify(remaining));
+export function upsertCredentials(newCredentials: Credential[]): Credential[] {
+  const credentials = tryJSONParse(localStorage.getItem("iter.credentials"), [] as Credential[]);
+  const mergedCredentials = [...credentials, ...newCredentials];
+  localStorage.setItem("iter.credentials", JSON.stringify(mergedCredentials));
 
-  connectionsEvents.dispatchEvent(new CustomEvent("change", { detail: remaining }));
+  const connections = credentialsToConnections(mergedCredentials);
+  connectionsEvents.dispatchEvent(new CustomEvent<Connection[]>("change", { detail: connections }));
+
+  return mergedCredentials;
+}
+
+export function deleteCredential(id: string): Credential[] {
+  const credentials = tryJSONParse(localStorage.getItem("iter.credentials"), [] as Credential[]);
+  const remaining = credentials.filter((credential) => credential.id !== id);
+  localStorage.setItem("iter.credentials", JSON.stringify(remaining));
+
+  const connections = credentialsToConnections(remaining);
+  connectionsEvents.dispatchEvent(new CustomEvent<Connection[]>("change", { detail: connections }));
 
   return remaining;
 }
 
-export function getConnectionKey(connection: ParsedConnection) {
-  return `${connection.groupName}/${connection.optionName}`;
+export function getConnectionKey(connection: Credential) {
+  return connection.id;
 }
 
-export function parseOpenAIConnection(nickname: string, apiKey: string): ParsedConnection[] {
+export function parseOpenAICredential(formData: FormData): OpenAICredential[] {
+  const accountName = formData.get("newAccountName") as string;
+
   return [
     {
+      id: crypto.randomUUID(),
       type: "openai",
-      endpoint: "https://api.openai.com/v1/chat/completions",
-      apiKey,
-      groupName: nickname.length ? nickname : "openai",
-      optionName: "gpt-4o",
-    },
-    {
-      type: "openai",
-      endpoint: "https://api.openai.com/v1/chat/completions",
-      apiKey,
-      groupName: nickname.length ? nickname : "openai",
-      optionName: "gpt-4o-mini",
+      accountName: accountName?.length ? accountName : `openai-${new Date().toISOString()}`,
+      apiKey: formData.get("newKey") as string,
     },
   ];
 }
 
-export function parseAzureOpenAIConnection(nickname: string, endpoint: string, apiKey: string): ParsedConnection[] {
-  // e.g. https://{{project_name}}.openai.azure.com/openai/deployments/{{deployment_name}}/chat/completions?api-version=2024-02-15-preview
-  if (endpoint.includes("openai.azure.com")) {
-    const aoaiURLPattern = /https:\/\/([^.]+)\.openai\.azure\.com\/openai\/deployments\/([^\/]+)(?:(\/.*)|$)/;
+export function parseAzureOpenAICredential(formData: FormData): AzureOpenAICredential[] {
+  const endpoint = ensureTrailingSlash(formData.get("newEndpoint") as string);
+  const apiKey = formData.get("newKey") as string;
+  const deployments = (formData.get("newDeployments") as string)
+    .split(",")
+    .map((deployment) => deployment.trim())
+    .join(",");
 
-    const match = endpoint.match(aoaiURLPattern);
-    if (!match) throw new Error("Invalid AOAI endpoint");
-    const [, projectName, deploymentName] = match;
+  if (!deployments.length) return [];
 
-    return [
-      {
-        type: "aoai",
-        endpoint: `https://${projectName}.openai.azure.com/openai/deployments/${deploymentName}/chat/completions?api-version=2024-02-15-preview`,
-        apiKey,
-        groupName: nickname.length ? nickname : projectName,
-        optionName: deploymentName,
-      },
-    ];
-  }
-
-  return [];
+  return [
+    {
+      id: crypto.randomUUID(),
+      type: "aoai",
+      endpoint,
+      deployments,
+      apiKey,
+    },
+  ];
 }
 
 function tryJSONParse<T>(value: unknown, fallback: T): T {
@@ -87,12 +115,43 @@ function tryJSONParse<T>(value: unknown, fallback: T): T {
   return JSON.parse(value as string) ?? fallback;
 }
 
-function mergeConnections(connections: ParsedConnection[]): ParsedConnection[] {
-  // ensure the combination of all fields are unique, and let newer value overrides older value.
-  const map = new Map<string, ParsedConnection>();
-  connections.forEach((connection) => map.set(getConnectionKey(connection), connection));
-  const items = Array.from(map.values());
-  const sorted = items.sort((a, b) => getConnectionKey(a).localeCompare(getConnectionKey(b)));
+function credentialsToConnections(credentials: Credential[]): Connection[] {
+  return credentials.flatMap((credential) => {
+    switch (credential.type) {
+      case "openai":
+        return openaiDefaultModels.map(
+          (model) =>
+            ({
+              id: `${model}:${credential.id}`,
+              type: "openai",
+              displayGroup: credential.accountName,
+              displayName: model,
+              model,
+              apiKey: credential.apiKey,
+            } satisfies OpenAIConnection)
+        );
 
-  return sorted;
+      case "aoai": {
+        return credential.deployments.split(",").map(
+          (deployment) =>
+            ({
+              id: `${deployment}:${credential.id}`,
+              type: "aoai",
+              displayGroup: new URL(credential.endpoint).hostname.split(".")[0],
+              displayName: deployment,
+              endpoint: credential.endpoint,
+              deployment,
+              apiKey: credential.apiKey,
+              apiVersion: "2024-02-15-preview",
+            } satisfies AzureOpenAIConnection)
+        );
+      }
+      default:
+        return [] as Connection[];
+    }
+  });
+}
+
+function ensureTrailingSlash(url: string) {
+  return url.endsWith("/") ? url : url + "/";
 }

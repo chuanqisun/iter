@@ -1,4 +1,7 @@
 settings-element {
+  display: grid;
+  gap: 8px;
+
   .action-row {
     display: grid;
     grid-template-columns: auto 1fr;
@@ -16,17 +19,33 @@ settings-element {
     overflow: auto;
   }
 
-  .rows {
-    display: grid;
-    gap: 8px;
-  }
-
   .field {
     display: grid;
     gap: 4px;
   }
 
-  &:not(:has(input[value="aoai"]:checked)) [data-type="aoai"] {
-    display: none;
+  .rows {
+    display: grid;
+    gap: 8px;
+  }
+
+  .tabbed-forms {
+    &:has([value="openai"]:checked) {
+      form:not([data-type="openai"]) {
+        display: none;
+      }
+    }
+
+    &:has([value="aoai"]:checked) {
+      form:not([data-type="aoai"]) {
+        display: none;
+      }
+    }
+  }
+
+  .radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
   }
 }

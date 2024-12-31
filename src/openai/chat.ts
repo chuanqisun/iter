@@ -1,11 +1,11 @@
 export interface OpenAIChatPayload {
   messages: ChatMessage[];
-  temperature: number;
-  top_p: number;
-  frequency_penalty: number;
-  presence_penalty: number;
-  max_tokens: number;
-  stop: string | string[];
+  temperature?: number;
+  top_p?: number;
+  frequency_penalty?: number;
+  presence_penalty?: number;
+  max_tokens?: number;
+  stop?: string | string[];
   model?: string;
 }
 
@@ -53,12 +53,6 @@ export async function getChatResponse(
 ): Promise<OpenAIChatResponse> {
   const payload = {
     messages,
-    temperature: 0.7,
-    top_p: 1,
-    frequency_penalty: 0,
-    presence_penalty: 0,
-    max_tokens: 60,
-    stop: "",
     ...config,
   };
 
@@ -113,12 +107,6 @@ export async function* getChatStream(
 ): AsyncGenerator<ChatStreamItem> {
   const payload = {
     messages,
-    temperature: 0.7,
-    top_p: 1,
-    frequency_penalty: 0,
-    presence_penalty: 0,
-    max_tokens: 60,
-    stop: "",
     ...config,
   };
 

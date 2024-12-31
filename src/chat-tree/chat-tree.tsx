@@ -7,7 +7,6 @@ import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "../openai/chat";
 import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
-import { getConnectionKey } from "../settings/connections";
 import { useConnections } from "../settings/use-connections";
 import { getFirstImageDataUrl } from "./clipboard";
 import { getReadableFileSize } from "./file-size";
@@ -108,10 +107,13 @@ export function ChatTree() {
       const chatEndpoint = getChatEndpoint?.(connectionKey.value ?? "");
       if (!chatEndpoint) throw new Error(`API connection is not set up`);
 
+      const supportsMaxToken = !chatEndpoint.model.startsWith("o1");
+      const supportsTemperature = !chatEndpoint.model.startsWith("o1");
+
       const modelConfig: Partial<OpenAIChatPayload> = {
-        temperature: temperature.value,
-        max_tokens: maxTokens.value,
-        model: chatEndpoint.type === "openai" ? chatEndpoint.model : undefined,
+        temperature: supportsTemperature ? temperature.value : undefined,
+        max_tokens: supportsMaxToken ? maxTokens.value : undefined,
+        model: chatEndpoint.model,
       };
       return getChatStream(chatEndpoint.apiKey, chatEndpoint.endpoint, messages, modelConfig, abortSignal);
     },
@@ -119,7 +121,7 @@ export function ChatTree() {
   );
 
   const groupedConnections = useMemo(() => {
-    return Object.entries(Object.groupBy(connections, (connection) => connection.groupName));
+    return Object.entries(Object.groupBy(connections, (connection) => connection.displayGroup));
   }, [connections]);
 
   const handleTextChange = useCallback((nodeId: string, content: string) => {
@@ -209,7 +211,7 @@ export function ChatTree() {
         return [...getSourcePath(parentId), id];
       }
 
-      return getSourcePath(id).map((id) => {
+      const messages = getSourcePath(id).map((id) => {
         const node = treeDict.get(id);
         if (!node) throw new Error(`Node ${id} not found`);
 
@@ -225,6 +227,14 @@ export function ChatTree() {
 
         return message;
       });
+
+      // filter out blank messages
+      const hasContent = (message: ChatMessage) => {
+        if (typeof message.content === "string") return message.content.length > 0;
+        return message.content.some((part) => (part.type === "text" ? part.text.length > 0 : true));
+      };
+
+      return messages.filter(hasContent);
     },
     [treeNodes]
   );
@@ -666,8 +676,8 @@ export function ChatTree() {
                 {groupedConnections.map(([key, group]) => (
                   <optgroup key={key} label={key}>
                     {group?.map((connection) => (
-                      <option key={getConnectionKey(connection)} value={getConnectionKey(connection)}>
-                        {connection.optionName}
+                      <option key={connection.id} value={connection.id}>
+                        {connection.displayName}
                       </option>
                     ))}
                   </optgroup>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { connectionsEvents, getConnectionKey, listConnections, type ParsedConnection } from "./connections";
+import { connectionsEvents, listConnections, type Connection } from "./connections";
 
 const initialConnections = listConnections();
 
@@ -8,7 +8,7 @@ export function useConnections() {
 
   useEffect(() => {
     const onChange = (e: Event) => {
-      setConnections((e as CustomEvent<ParsedConnection[]>).detail);
+      setConnections((e as CustomEvent<Connection[]>).detail);
     };
 
     connectionsEvents.addEventListener("change", onChange);
@@ -16,16 +16,30 @@ export function useConnections() {
     return () => connectionsEvents.removeEventListener("change", onChange);
   }, []);
 
-  const getChatEndpoint = useCallback((key: string) => {
-    const connection = listConnections().find((connection) => getConnectionKey(connection) === key);
+  const getChatEndpoint = useCallback((id: string) => {
+    const connection = listConnections().find((connection) => connection.id === id);
     if (!connection) return null;
 
-    return {
-      type: connection.type,
-      endpoint: connection.endpoint,
-      apiKey: connection.apiKey,
-      model: connection.optionName,
-    };
+    switch (connection.type) {
+      case "openai":
+        return {
+          type: connection.type,
+          endpoint: `https://api.openai.com/v1/chat/completions`,
+          apiKey: connection.apiKey,
+          model: connection.model,
+        };
+
+      case "aoai":
+        return {
+          type: connection.type,
+          endpoint: `${connection.endpoint}openai/deployments/${connection.deployment}/chat/completions?api-version=${connection.apiVersion}`,
+          apiKey: connection.apiKey,
+          model: connection.deployment,
+        };
+
+      default:
+        return null;
+    }
   }, []);
 
   return { connections, getChatEndpoint };
