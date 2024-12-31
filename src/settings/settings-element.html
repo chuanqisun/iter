@@ -3,6 +3,7 @@
     <label><input name="newType" type="radio" value="openai" checked /> OpenAI</label>
     <label><input name="newType" type="radio" value="aoai" /> Azure OpenAI</label>
     <label><input name="newType" type="radio" value="anthropic" /> Anthropic</label>
+    <label><input name="newType" type="radio" value="google-gen-ai" /> Google Gen AI</label>
   </div>
 
   <form data-type="openai">
@@ -60,6 +61,25 @@
         <div class="field">
           <label for="newAnthropicAccountName">Account name (optional)</label>
           <input id="newAnthropicAccountName" name="newAccountName" type="text" placeholder="personal" />
+        </div>
+
+        <button type="submit">Submit</button>
+      </div>
+    </fieldset>
+  </form>
+
+  <form data-type="google-gen-ai">
+    <fieldset>
+      <legend>New</legend>
+      <div class="rows">
+        <div class="field">
+          <label for="newGoogleGenAIKey">API key</label>
+          <input id="newGoogleGenAIKey" name="newKey" type="password" required />
+        </div>
+
+        <div class="field">
+          <label for="newGoogleGenAIAccountName">Account name (optional)</label>
+          <input id="newGoogleGenAIAccountName" name="newAccountName" type="text" placeholder="personal" />
         </div>
 
         <button type="submit">Submit</button>
