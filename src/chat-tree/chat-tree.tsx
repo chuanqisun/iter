@@ -4,9 +4,9 @@ import { artifactStyles, markdownToHtml, useArtifactActions } from "../artifact/
 import { getFileAccessPostscript, respondFileAccess, respondFileList } from "../artifact/lib/file-access";
 import { AutoResize } from "../form/auto-resize";
 import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
-import { type ChatMessage, type OpenAIChatPayload } from "../openai/chat";
 import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
+import { type ChatMessage, type OpenAIChatPayload } from "../settings/providers/openai/chat";
 import { useConnections } from "../settings/use-connections";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import { getFirstImageDataUrl } from "./clipboard";

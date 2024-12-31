@@ -1,4 +1,4 @@
-import type { ChatMessage, OpenAIChatPayload } from "../../openai/chat";
+import type { ChatMessage, OpenAIChatPayload } from "./openai/chat";
 
 export interface BaseCredential {
   id: string;

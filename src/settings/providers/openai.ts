@@ -1,5 +1,5 @@
-import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "../../openai/chat";
 import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy } from "./base";
+import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "./openai/chat";
 
 export interface OpenAICredential extends BaseCredential {
   id: string;
