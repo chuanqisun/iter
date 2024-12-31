@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/chuanqisun/iter#readme",
   "devDependencies": {
+    "@types/dom-speech-recognition": "^0.0.4",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react-swc": "^3.7.2",

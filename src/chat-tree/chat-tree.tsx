@@ -8,6 +8,7 @@ import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "../open
 import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
 import { useConnections } from "../settings/use-connections";
+import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import { getFirstImageDataUrl } from "./clipboard";
 import { getReadableFileSize } from "./file-size";
 import { tableStyles } from "./table";
@@ -23,6 +24,7 @@ export interface ChatNode {
   isViewSource?: boolean;
   childIds?: string[];
   isLocked?: boolean;
+  isListening?: boolean;
   isCollapsed?: boolean;
   isEntry?: boolean;
   abortController?: AbortController;
@@ -280,6 +282,40 @@ export function ChatTree() {
     [treeNodes]
   );
 
+  // Speech to text
+  useEffect(() => {
+    const onResult = (e: Event) => {
+      const { replace, previous } = (e as CustomEvent<WebSpeechResult>).detail;
+
+      const textarea = document.activeElement as HTMLTextAreaElement;
+      if (textarea?.tagName !== "TEXTAREA") return;
+
+      // ...existing text | <previous_text_replaced> | <cursor>  | existing text...
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+
+      const allTextBeforeCursor = textarea.value.slice(0, start);
+      if (previous && allTextBeforeCursor.endsWith(previous)) {
+        const newText = allTextBeforeCursor.slice(0, -previous.length) + replace + textarea.value.slice(end);
+        textarea.value = newText;
+        textarea.selectionStart = textarea.selectionEnd = start - previous.length + replace.length;
+        handleTextChange(textarea.id, newText);
+      } else {
+        // if the character before cursor is not a /s character, add a space
+        const padding = !allTextBeforeCursor || allTextBeforeCursor.at(-1)?.match(/\s/) ? "" : " ";
+        // append at cursor
+        const newText = allTextBeforeCursor + padding + replace + textarea.value.slice(end);
+        textarea.value = newText;
+        textarea.selectionStart = textarea.selectionEnd = start + padding.length + replace.length;
+        handleTextChange(textarea.id, newText);
+      }
+    };
+
+    speech.addEventListener("result", onResult);
+
+    return () => speech.removeEventListener("result", onResult);
+  }, []);
+
   const handleKeydown = useCallback(
     async (nodeId: string, e: React.KeyboardEvent<HTMLTextAreaElement | HTMLDivElement>) => {
       const targetNode = treeNodes.find((node) => node.id === nodeId);
@@ -291,6 +327,26 @@ export function ChatTree() {
         if (!activeUserNodeId) return;
         e.preventDefault();
         handleAbort(activeUserNodeId);
+      }
+
+      // Hold Shift + Space to talk
+      if (e.shiftKey && e.key === " ") {
+        e.preventDefault();
+        if (!speech.start()) return;
+
+        const textarea = document.activeElement as HTMLTextAreaElement;
+        if (textarea?.tagName !== "TEXTAREA") return;
+        textarea.toggleAttribute("data-speaking", true);
+
+        e.target.addEventListener(
+          "keyup",
+          () => {
+            e.preventDefault();
+            speech.stop();
+            textarea.toggleAttribute("data-speaking", false);
+          },
+          { once: true }
+        );
       }
 
       if (targetNode.role === "assistant" && e.key === "Enter") {
@@ -580,7 +636,11 @@ export function ChatTree() {
                       onKeyDown={(e) => handleKeydown(node.id, e)}
                       onPaste={(e) => handlePaste(node.id, e)}
                       onChange={(e) => handleTextChange(node.id, e.target.value)}
-                      placeholder={node.role === "user" ? "Ctrl + Enter to send, Esc to cancel, paste images for vision models" : "System message"}
+                      placeholder={
+                        node.role === "user"
+                          ? "Ctrl + Enter to send, Esc to cancel, paste images for vision models, Shift + Space to dictate"
+                          : "System message"
+                      }
                     />
                   </AutoResize>
                   {node.files?.length || node.images?.length ? (
@@ -730,6 +790,10 @@ export function ChatTree() {
 
 const GhostTextArea = styled.textarea`
   border-radius: 2px;
+
+  &[data-speaking] {
+    color: GrayText;
+  }
 `;
 
 const ChatAppLayout = styled.div`
