@@ -111,6 +111,9 @@ export class SettingsElement extends HTMLElement {
             }
             if (!parsed) return;
 
+            // reset form
+            targetForm.reset();
+
             const updatedConnections = upsertConnections(parsed);
             existingConnections.innerHTML = toPreviewHTML(updatedConnections);
           }
