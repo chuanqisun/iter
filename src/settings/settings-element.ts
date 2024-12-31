@@ -30,37 +30,35 @@ export class SettingsElement extends HTMLElement {
       this.querySelector(`[name="newEndpoint"]`)?.toggleAttribute("disabled", type !== "aoai");
     });
 
-    this.addEventListener("click", (e) => {
+    this.addEventListener("submit", (e) => {
+      e.preventDefault();
       const targetForm = (e.target as HTMLElement)?.closest("form")!;
+      const isValid = targetForm.reportValidity();
+      if (!isValid) return;
 
+      const type = targetForm.getAttribute("data-type")!;
+      const formData = new FormData(targetForm);
+
+      let parsed: Credential[] = [];
+      if (type === "openai") {
+        parsed = parseOpenAICredential(formData);
+      } else if (type === "aoai") {
+        parsed = parseAzureOpenAICredential(formData);
+      }
+      if (!parsed) return;
+
+      // reset form
+      targetForm.reset();
+
+      const updatedConnections = upsertCredentials(parsed);
+      existingConnections.innerHTML = renderCredentials(updatedConnections);
+    });
+
+    this.addEventListener("click", (e) => {
       const targetActionTrigger = (e.target as HTMLElement)?.closest(`[data-action]`);
       const action = targetActionTrigger?.getAttribute("data-action");
 
       switch (action) {
-        case "add":
-          {
-            const isValid = targetForm.reportValidity();
-            if (!isValid) return;
-
-            const type = targetForm.getAttribute("data-type")!;
-            const formData = new FormData(targetForm);
-
-            let parsed: Credential[] = [];
-            if (type === "openai") {
-              parsed = parseOpenAICredential(formData);
-            } else if (type === "aoai") {
-              parsed = parseAzureOpenAICredential(formData);
-            }
-            if (!parsed) return;
-
-            // reset form
-            targetForm.reset();
-
-            const updatedConnections = upsertCredentials(parsed);
-            existingConnections.innerHTML = renderCredentials(updatedConnections);
-          }
-          break;
-
         case "delete": {
           const deleteKey = targetActionTrigger?.getAttribute("data-delete")!;
           const remaining = deleteCredential(deleteKey);
