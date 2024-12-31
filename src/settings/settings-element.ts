@@ -1,7 +1,9 @@
 import {
+  anthropicDefaultModels,
   deleteCredential,
   listCredentials,
   openaiDefaultModels,
+  parseAnthropicCredential,
   parseAzureOpenAICredential,
   parseOpenAICredential,
   upsertCredentials,
@@ -33,12 +35,16 @@ export class SettingsElement extends HTMLElement {
       const type = targetForm.getAttribute("data-type")!;
       const formData = new FormData(targetForm);
 
+      // TODO polymorphic refactor
       let parsed: Credential[] = [];
       if (type === "openai") {
         parsed = parseOpenAICredential(formData);
       } else if (type === "aoai") {
         parsed = parseAzureOpenAICredential(formData);
+      } else if (type === "anthropic") {
+        parsed = parseAnthropicCredential(formData);
       }
+
       if (!parsed) return;
 
       // reset form
@@ -94,6 +100,16 @@ function renderCredentials(credentials: Credential[]) {
         <div>
           <div><b>${new URL(credential.endpoint).hostname}</b></div>
           <div>${credential.deployments}</div> 
+        </div>
+      </div>`;
+
+        case "anthropic":
+          return `
+      <div class="action-row">
+        <button data-action="delete" data-delete="${credential.id}">Delete</button>
+        <div>
+          <div><b>${credential.accountName}</b> (${credential.type})</div>
+          <div>${anthropicDefaultModels.join(",")}</div>
         </div>
       </div>`;
       }

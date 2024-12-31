@@ -41,6 +41,12 @@ settings-element {
         display: none;
       }
     }
+
+    &:has([value="anthropic"]:checked) {
+      form:not([data-type="anthropic"]) {
+        display: none;
+      }
+    }
   }
 
   .radio-group {

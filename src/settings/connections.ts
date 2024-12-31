@@ -1,4 +1,5 @@
-export type Credential = OpenAICredential | AzureOpenAICredential;
+export type Credential = OpenAICredential | AzureOpenAICredential | AnthropicCredential;
+
 export interface OpenAICredential {
   id: string;
   type: "openai";
@@ -14,7 +15,14 @@ export interface AzureOpenAICredential {
   apiKey: string;
 }
 
-export type Connection = OpenAIConnection | AzureOpenAIConnection;
+export interface AnthropicCredential {
+  id: string;
+  type: "anthropic";
+  accountName: string;
+  apiKey: string;
+}
+
+export type Connection = OpenAIConnection | AzureOpenAIConnection | AnthropicConnection;
 
 export interface OpenAIConnection {
   id: string;
@@ -36,10 +44,21 @@ export interface AzureOpenAIConnection {
   apiVersion: string;
 }
 
+export interface AnthropicConnection {
+  id: string;
+  type: "anthropic";
+  displayGroup: string;
+  displayName: string;
+  model: string;
+  apiVersion: string;
+  apiKey: string;
+}
+
 export const connectionsEvents = new EventTarget();
 
 export const openaiDefaultModels = ["gpt-4o", "gpt-4o-mini", "o1-mini"];
 export const aoaiDefaultDeployments = ["gpt-4o", "gpt-4o-mini"];
+export const anthropicDefaultModels = ["claude-3-5-sonnet-latest", "claude-3-5-haiku-latest"];
 
 export function listCredentials(): Credential[] {
   return tryJSONParse(localStorage.getItem("iter.credentials"), [] as Credential[]);
@@ -79,11 +98,14 @@ export function getConnectionKey(connection: Credential) {
 export function parseOpenAICredential(formData: FormData): OpenAICredential[] {
   const accountName = formData.get("newAccountName") as string;
 
+  /* YYYYMMDDHHMMSS */
+  const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
+
   return [
     {
       id: crypto.randomUUID(),
       type: "openai",
-      accountName: accountName?.length ? accountName : `openai-${new Date().toISOString()}`,
+      accountName: accountName?.length ? accountName : `openai-${timestamp}`,
       apiKey: formData.get("newKey") as string,
     },
   ];
@@ -108,6 +130,22 @@ export function parseAzureOpenAICredential(formData: FormData): AzureOpenAICrede
       endpoint,
       deployments,
       apiKey,
+    },
+  ];
+}
+
+export function parseAnthropicCredential(formData: FormData): AnthropicCredential[] {
+  const accountName = formData.get("newAccountName") as string;
+
+  /* YYYYMMDDHHMMSS */
+  const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
+
+  return [
+    {
+      id: crypto.randomUUID(),
+      type: "anthropic",
+      accountName: accountName?.length ? accountName : `anthropic-${timestamp}`,
+      apiKey: formData.get("newKey") as string,
     },
   ];
 }
@@ -145,8 +183,23 @@ function credentialsToConnections(credentials: Credential[]): Connection[] {
               endpoint: credential.endpoint,
               deployment,
               apiKey: credential.apiKey,
-              apiVersion: "2024-02-15-preview",
+              apiVersion: "2024-10-01-preview",
             } satisfies AzureOpenAIConnection)
+        );
+      }
+
+      case "anthropic": {
+        return anthropicDefaultModels.map(
+          (model) =>
+            ({
+              id: `${model}:${credential.id}`,
+              type: "anthropic",
+              displayGroup: credential.accountName,
+              displayName: model,
+              model,
+              apiKey: credential.apiKey,
+              apiVersion: "2023-06-01",
+            } satisfies AnthropicConnection)
         );
       }
       default:

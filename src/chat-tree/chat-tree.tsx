@@ -739,7 +739,7 @@ export function ChatTree() {
     <ChatAppLayout>
       <div>
         <ConfigMenu>
-          <BasicFormButton onClick={handleConnectionsButtonClick}>Connections</BasicFormButton>
+          <BasicFormButton onClick={handleConnectionsButtonClick}>Menu</BasicFormButton>
           {groupedConnections?.length ? (
             <label>
               Model

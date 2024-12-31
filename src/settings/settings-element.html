@@ -2,6 +2,7 @@
   <div class="radio-group">
     <label><input name="newType" type="radio" value="openai" checked /> OpenAI</label>
     <label><input name="newType" type="radio" value="aoai" /> Azure OpenAI</label>
+    <label><input name="newType" type="radio" value="anthropic" /> Anthropic</label>
   </div>
 
   <form data-type="openai">
@@ -9,13 +10,13 @@
       <legend>New</legend>
       <div class="rows">
         <div class="field">
-          <label for="newOAIKey">API key</label>
-          <input id="newOAIKey" name="newKey" type="password" required />
+          <label for="newOpenAIKey">API key</label>
+          <input id="newOpenAIKey" name="newKey" type="password" required />
         </div>
 
         <div class="field">
-          <label for="newAccountName">Account name (optional)</label>
-          <input id="newAccountName" name="newAccountName" type="text" placeholder="personal" />
+          <label for="newOpenAIAccountName">Account name (optional)</label>
+          <input id="newOpenAIAccountName" name="newAccountName" type="text" placeholder="personal" />
         </div>
 
         <button type="submit">Submit</button>
@@ -40,6 +41,25 @@
         <div class="field">
           <label for="newDeployments">Deployments (comma separated)</label>
           <input id="newDeployments" name="newDeployments" type="text" placeholder="gpt-4o,gpt-4o-mini" />
+        </div>
+
+        <button type="submit">Submit</button>
+      </div>
+    </fieldset>
+  </form>
+
+  <form data-type="anthropic">
+    <fieldset>
+      <legend>New</legend>
+      <div class="rows">
+        <div class="field">
+          <label for="newAnthropicKey">API key</label>
+          <input id="newAnthropicKey" name="newKey" type="password" required />
+        </div>
+
+        <div class="field">
+          <label for="newAnthropicAccountName">Account name (optional)</label>
+          <input id="newAnthropicAccountName" name="newAccountName" type="text" placeholder="personal" />
         </div>
 
         <button type="submit">Submit</button>
