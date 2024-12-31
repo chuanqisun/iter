@@ -20,6 +20,7 @@ export interface AnthropicConnection extends BaseConnection {
 }
 
 export class AnthropicProvider implements BaseProvider {
+  static type = "anthropic";
   static defaultModels = ["claude-3-5-sonnet-latest", "claude-3-5-haiku-latest"];
 
   parseNewCredentialForm(formData: FormData): AnthropicCredential[] {

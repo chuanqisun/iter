@@ -47,6 +47,12 @@ settings-element {
         display: none;
       }
     }
+
+    &:has([value="google-gen-ai"]:checked) {
+      form:not([data-type="google-gen-ai"]) {
+        display: none;
+      }
+    }
   }
 
   .radio-group {
