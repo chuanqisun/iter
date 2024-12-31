@@ -39,6 +39,7 @@ export interface AzureOpenAIConnection {
 export const connectionsEvents = new EventTarget();
 
 export const openaiDefaultModels = ["gpt-4o", "gpt-4o-mini", "o1-mini"];
+export const aoaiDefaultDeployments = ["gpt-4o", "gpt-4o-mini"];
 
 export function listCredentials(): Credential[] {
   return tryJSONParse(localStorage.getItem("iter.credentials"), [] as Credential[]);
@@ -91,12 +92,14 @@ export function parseOpenAICredential(formData: FormData): OpenAICredential[] {
 export function parseAzureOpenAICredential(formData: FormData): AzureOpenAICredential[] {
   const endpoint = ensureTrailingSlash(formData.get("newEndpoint") as string);
   const apiKey = formData.get("newKey") as string;
-  const deployments = (formData.get("newDeployments") as string)
+  let deployments = (formData.get("newDeployments") as string)
     .split(",")
     .map((deployment) => deployment.trim())
     .join(",");
 
-  if (!deployments.length) return [];
+  if (!deployments.length) {
+    deployments = aoaiDefaultDeployments.join(",");
+  }
 
   return [
     {

@@ -124,6 +124,17 @@ export function ChatTree() {
     return Object.entries(Object.groupBy(connections, (connection) => connection.displayGroup));
   }, [connections]);
 
+  // audo resolve mistached connectionKey
+  useEffect(() => {
+    // already matched, no op
+    if (connectionKey.value && connections?.some((connection) => connection.id === connectionKey.value)) return;
+
+    // once every connection is loaded, update connectionKey if it is not present
+    const defaultConnection = connections.at(0); // auto load firt connection
+    if (!defaultConnection) return;
+    connectionKey.replace(defaultConnection.id);
+  }, [connectionKey.value, connectionKey.replace, connections]);
+
   const handleTextChange = useCallback((nodeId: string, content: string) => {
     setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { content })));
   }, []);

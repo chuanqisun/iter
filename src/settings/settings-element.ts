@@ -22,13 +22,7 @@ export class SettingsElement extends HTMLElement {
   }
 
   connectedCallback() {
-    const form = this.querySelector("form")!;
     const existingConnections = this.querySelector("#existing-connections")!;
-
-    form.addEventListener("change", (_e) => {
-      const type = new FormData(form).get("newType") as string;
-      this.querySelector(`[name="newEndpoint"]`)?.toggleAttribute("disabled", type !== "aoai");
-    });
 
     this.addEventListener("submit", (e) => {
       e.preventDefault();
