@@ -78,6 +78,7 @@ export class AnthropicProvider implements BaseProvider {
       const stream = await client.messages.create(
         {
           max_tokens: config?.max_tokens ?? 200,
+          temperature: Math.min(config?.temperature ?? 0.7, 1), // anthropic only supports 0-1
           system,
           messages: anthropicMessages,
           model: connection.model,
