@@ -1,6 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
-import { useAccountContext } from "../account/account-context";
 import { artifactStyles, markdownToHtml, useArtifactActions } from "../artifact/artifact";
 import { getFileAccessPostscript, respondFileAccess, respondFileList } from "../artifact/lib/file-access";
 import { AutoResize } from "../form/auto-resize";
@@ -8,6 +7,8 @@ import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "../openai/chat";
 import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
+import { getConnectionKey } from "../settings/connections";
+import { useConnections } from "../settings/use-connections";
 import { getFirstImageDataUrl } from "./clipboard";
 import { getReadableFileSize } from "./file-size";
 import { tableStyles } from "./table";
@@ -86,18 +87,12 @@ function getNextId(currentId: string): string | null {
   return allTextAreas.at(Math.min((allTextAreas.length - 1, currentIndex + 1)))?.id ?? null;
 }
 
-export interface ChatConnection {
-  endpoint: string;
-  apiKey: string;
-}
-
 export function ChatTree() {
   const [treeNodes, setTreeNodes] = useState(INITIAL_NODES);
   const treeRootRef = useRef<HTMLDivElement>(null);
+  const { connections, getChatEndpoint } = useConnections();
 
   const handleConnectionsButtonClick = () => document.querySelector("settings-element")?.closest("dialog")?.showModal();
-
-  const { connections, getChatEndpoint } = useAccountContext();
 
   const modelDisplayId = useRouteParameter({ name: "modelId", initial: null as null | string, encode: String, decode: String });
   const temperature = useRouteParameter({ name: "temperature", initial: 0, encode: String, decode: Number });
@@ -116,22 +111,16 @@ export function ChatTree() {
       const modelConfig: Partial<OpenAIChatPayload> = {
         temperature: temperature.value,
         max_tokens: maxTokens.value,
+        model: chatEndpoint.type === "openai" ? chatEndpoint.model : undefined,
       };
       return getChatStream(chatEndpoint.apiKey, chatEndpoint.endpoint, messages, modelConfig, abortSignal);
     },
     [modelDisplayId.value, getChatEndpoint, temperature.value, maxTokens.value]
   );
 
-  // intiialize
-  useEffect(() => {
-    if (modelDisplayId.value && connections?.some((connection) => connection.models?.some((model) => model.displayId === modelDisplayId.value))) return;
-    // once every connection is loaded, update modelDisplayId if it is not present
-    if (connections?.every((connection) => connection.models !== undefined)) {
-      const defaultConnection = connections.find((connection) => !!connection.models?.length);
-      if (!defaultConnection) return;
-      modelDisplayId.replace(defaultConnection.models?.at(0)!.displayId ?? "");
-    }
-  }, [modelDisplayId.value, modelDisplayId.replace, connections]);
+  const groupedConnections = useMemo(() => {
+    return Object.entries(Object.groupBy(connections, (connection) => connection.groupName));
+  }, [connections]);
 
   const handleTextChange = useCallback((nodeId: string, content: string) => {
     setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { content })));
@@ -670,22 +659,17 @@ export function ChatTree() {
       <div>
         <ConfigMenu>
           <BasicFormButton onClick={handleConnectionsButtonClick}>Connections</BasicFormButton>
-          {connections?.length ? (
+          {groupedConnections?.length ? (
             <label>
               Model
               <BasicSelect value={modelDisplayId.value ?? ""} onChange={(e) => modelDisplayId.replace(e.target.value)}>
-                {connections.map((connection) => (
-                  <optgroup key={connection.id} label={connection.displayName}>
-                    {connection.models?.map((model) => (
-                      <option key={model.displayId} value={model.displayId}>
-                        {model.displayName}
+                {groupedConnections.map(([key, group]) => (
+                  <optgroup key={key} label={key}>
+                    {group?.map((connection) => (
+                      <option key={getConnectionKey(connection)} value={getConnectionKey(connection)}>
+                        {connection.optionName}
                       </option>
                     ))}
-                    {!connection.models?.length ? (
-                      <option value="" disabled>
-                        No models available
-                      </option>
-                    ) : null}
                   </optgroup>
                 ))}
               </BasicSelect>

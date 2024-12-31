@@ -83,7 +83,7 @@ export class SettingsElement extends HTMLElement {
     const form = this.querySelector("form")!;
     const existingConnections = this.querySelector("#existing-connections")!;
 
-    form.addEventListener("change", (e) => {
+    form.addEventListener("change", (_e) => {
       const type = new FormData(form).get("newType") as string;
       this.querySelector(`[name="newEndpoint"]`)?.toggleAttribute("disabled", type !== "aoai");
     });

@@ -6,6 +6,7 @@ export interface OpenAIChatPayload {
   presence_penalty: number;
   max_tokens: number;
   stop: string | string[];
+  model?: string;
 }
 
 export interface ChatMessage {
@@ -64,10 +65,7 @@ export async function getChatResponse(
   try {
     const result: OpenAIChatResponse = await fetch(endpoint, {
       method: "post",
-      headers: {
-        "api-key": apiKey,
-        "Content-Type": "application/json",
-      },
+      headers: getChatHeaders(endpoint, apiKey),
       body: JSON.stringify(payload),
     }).then((res) => res.json());
 
@@ -126,10 +124,7 @@ export async function* getChatStream(
 
   const stream = await fetch(endpoint, {
     method: "post",
-    headers: {
-      "api-key": apiKey,
-      "Content-Type": "application/json",
-    },
+    headers: getChatHeaders(endpoint, apiKey),
     body: JSON.stringify({ ...payload, stream: true }),
     signal: abortSignal,
   }).catch((e) => {
@@ -174,4 +169,13 @@ export async function* getChatStream(
       yield item;
     }
   }
+}
+
+function getChatHeaders(endpoint: string, apiKey: string): HeadersInit {
+  const isOpenAI = endpoint.includes("api.openai.com");
+
+  return {
+    ...(isOpenAI ? { Authorization: `Bearer ${apiKey}` } : { "api-key": apiKey }),
+    "Content-Type": "application/json",
+  };
 }
