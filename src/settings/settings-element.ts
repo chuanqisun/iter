@@ -1,4 +1,13 @@
 import "./settings-element.css";
+import {
+  deleteConnection,
+  getConnectionKey,
+  listConnections,
+  parseAzureOpenAIConnection,
+  type ParsedConnection,
+  parseOpenAIConnection,
+  upsertConnections,
+} from "./settings-store";
 
 export function defineSettingsElement() {
   customElements.define("settings-element", SettingsElement);
@@ -94,7 +103,7 @@ export class SettingsElement extends HTMLElement {
             const formData = new FormData(targetForm);
             const { newType, newEndpoint, newKey, newNickname } = Object.fromEntries(formData.entries()) as Record<string, string>;
 
-            let parsed: any = null;
+            let parsed: ParsedConnection[] = [];
             if (newType === "openai") {
               parsed = parseOpenAIConnection(newNickname, newKey as string);
             } else if (newType === "aoai") {
@@ -102,22 +111,14 @@ export class SettingsElement extends HTMLElement {
             }
             if (!parsed) return;
 
-            const persistedConnections = tryJSONParse(localStorage.getItem("iter:connections"), [] as ParsedConnection[]);
-            const mergedConnections = mergeConnections([...persistedConnections, ...parsed]);
-            localStorage.setItem("iter:connections", JSON.stringify(mergedConnections));
-
-            existingConnections.innerHTML = toPreviewHTML(mergedConnections);
+            const updatedConnections = upsertConnections(parsed);
+            existingConnections.innerHTML = toPreviewHTML(updatedConnections);
           }
           break;
 
         case "delete": {
           const deleteKey = targetActionTrigger?.getAttribute("data-delete")!;
-          const persistedConnections = tryJSONParse(localStorage.getItem("iter:connections"), [] as ParsedConnection[]);
-          const remaining = mergeConnections(persistedConnections).filter((connection) => {
-            return `${connection.groupName}/${connection.optionName}` !== deleteKey;
-          });
-          localStorage.setItem("iter:connections", JSON.stringify(remaining));
-
+          const remaining = deleteConnection(deleteKey);
           existingConnections.innerHTML = toPreviewHTML(remaining);
 
           break;
@@ -130,96 +131,19 @@ export class SettingsElement extends HTMLElement {
       }
     });
 
-    // initialize
-    const persistedConnections = tryJSONParse(localStorage.getItem("iter:connections"), [] as ParsedConnection[]);
-    existingConnections.innerHTML = toPreviewHTML(mergeConnections(persistedConnections));
+    existingConnections.innerHTML = toPreviewHTML(listConnections());
   }
-}
-
-export interface ParsedConnection {
-  type: "openai" | "aoai";
-  endpoint: string;
-  apiKey: string;
-  groupName: string;
-  optionName: string;
-}
-
-function parseOpenAIConnection(nickname: string, apiKey: string): ParsedConnection[] {
-  return [
-    {
-      type: "openai",
-      endpoint: "https://api.openai.com/v1/chat/completions",
-      apiKey,
-      groupName: nickname.length ? nickname : "openai",
-      optionName: "gpt-4o",
-    },
-    {
-      type: "openai",
-      endpoint: "https://api.openai.com/v1/chat/completions",
-      apiKey,
-      groupName: nickname.length ? nickname : "openai",
-      optionName: "gpt-4o-mini",
-    },
-  ];
-}
-
-function parseAzureOpenAIConnection(nickname: string, endpoint: string, apiKey: string): ParsedConnection[] {
-  // e.g. https://{{project_name}}.openai.azure.com/openai/deployments/{{deployment_name}}/chat/completions?api-version=2024-02-15-preview
-  if (endpoint.includes("openai.azure.com")) {
-    const aoaiURLPattern = /https:\/\/([^.]+)\.openai\.azure\.com\/openai\/deployments\/([^\/]+)(?:(\/.*)|$)/;
-
-    const match = endpoint.match(aoaiURLPattern);
-    if (!match) throw new Error("Invalid AOAI endpoint");
-    const [, projectName, deploymentName] = match;
-
-    return [
-      {
-        type: "aoai",
-        endpoint: `https://${projectName}.openai.azure.com/openai/deployments/${deploymentName}/chat/completions?api-version=2024-02-15-preview`,
-        apiKey,
-        groupName: nickname.length ? nickname : projectName,
-        optionName: deploymentName,
-      },
-    ];
-  }
-
-  return [];
-}
-
-function tryJSONParse<T>(value: unknown, fallback: T): T {
-  if (typeof value !== "string") return fallback;
-
-  return JSON.parse(value as string) ?? fallback;
-}
-
-function mergeConnections(connections: ParsedConnection[]): ParsedConnection[] {
-  // ensure the combination of all fields are unique, and let newer value overrides older value.
-  const map = new Map<string, ParsedConnection>();
-  for (const connection of connections) {
-    const key = JSON.stringify(connection.groupName + connection.optionName);
-    map.set(key, connection);
-  }
-
-  const items = Array.from(map.values());
-
-  // sort by groupName + optionName
-  const sorted = items.sort((a, b) => {
-    const aKey = `${a.groupName}/${a.optionName}`;
-    const bKey = `${b.groupName}/${b.optionName}`;
-    return aKey.localeCompare(bKey);
-  });
-
-  return sorted;
 }
 
 function toPreviewHTML(connections: ParsedConnection[]) {
   if (!connections.length) return "There are no existing connections.";
   return connections
     .map((connection) => {
+      const key = getConnectionKey(connection);
       return `<div class="action-row">
-      <button data-action="delete" data-delete="${connection.groupName}/${connection.optionName}">Delete</button>
+      <button data-action="delete" data-delete="${key}">Delete</button>
       <div>
-        <div>${connection.groupName}/${connection.optionName}</div>
+        <div>${key}</div>
         <div>${connection.endpoint}</div>
       </div>
     </div>`;
