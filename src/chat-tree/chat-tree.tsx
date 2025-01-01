@@ -99,7 +99,8 @@ export function ChatTree() {
   const temperature = useRouteParameter({ name: "temperature", initial: 0, encode: String, decode: Number });
   const maxTokens = useRouteParameter({ name: "max_tokens", initial: 200, encode: String, decode: Number });
 
-  const previews = useNodeContentTransformStore(treeNodes, markdownToHtml);
+  const assistantNodes = useMemo(() => treeNodes.filter((node) => node.role === "assistant"), [treeNodes]);
+  const previews = useNodeContentTransformStore(assistantNodes, markdownToHtml);
 
   useArtifactActions();
   useRouteCache({ parameters: ["connection", "temperature", "max_tokens"] });
@@ -669,10 +670,7 @@ export function ChatTree() {
                       data-lang="md"
                       style={{ "--max-height": node.isCollapsed ? `${COLLAPSED_HEIGHT}px` : undefined } as any}
                       onescape={() => handleToggleViewFormat(node.id)}
-                      oncontentchange={(e) => {
-                        console.log("cm change");
-                        handleTextChange(node.id, e.detail);
-                      }}
+                      oncontentchange={(e) => handleTextChange(node.id, e.detail)}
                     ></code-editor-element>
                   ) : (
                     <MarkdownPreview
@@ -733,7 +731,7 @@ export function ChatTree() {
         </Thread>
       );
     },
-    [handleKeydown]
+    [handleKeydown, previews]
   );
 
   return (
