@@ -616,6 +616,11 @@ export function ChatTree() {
     return () => window.removeEventListener("message", handleIframeFileAccessRequest);
   }, [treeNodes]);
 
+  // auto focus last textarea on startup
+  useEffect(() => {
+    [...document.querySelectorAll<HTMLTextAreaElement>("textarea:last-of-type")].at(-1)?.focus();
+  }, []);
+
   const renderNode = useCallback(
     (node: ChatNode, hasSibling?: boolean) => {
       return (
