@@ -1,13 +1,6 @@
-import {
-  deleteCredential,
-  listCredentials,
-  openaiDefaultModels,
-  parseAzureOpenAICredential,
-  parseOpenAICredential,
-  upsertCredentials,
-  type Credential,
-} from "./connections";
-
+import type { BaseCredential } from "../providers/base";
+import { createProvider } from "../providers/factory";
+import { deleteCredential, listCredentials, upsertCredentials } from "./connections-store";
 import "./settings-element.css";
 import templateHtml from "./settings-element.html?raw";
 
@@ -33,15 +26,9 @@ export class SettingsElement extends HTMLElement {
       const type = targetForm.getAttribute("data-type")!;
       const formData = new FormData(targetForm);
 
-      let parsed: Credential[] = [];
-      if (type === "openai") {
-        parsed = parseOpenAICredential(formData);
-      } else if (type === "aoai") {
-        parsed = parseAzureOpenAICredential(formData);
-      }
-      if (!parsed) return;
+      const provider = createProvider(type);
+      const parsed = provider.parseNewCredentialForm(formData);
 
-      // reset form
       targetForm.reset();
 
       const updatedConnections = upsertCredentials(parsed);
@@ -72,31 +59,19 @@ export class SettingsElement extends HTMLElement {
   }
 }
 
-function renderCredentials(credentials: Credential[]) {
+function renderCredentials(credentials: BaseCredential[]) {
   if (!credentials.length) return "There are no existing connections.";
   return credentials
     .map((credential) => {
-      switch (credential.type) {
-        case "openai":
-          return `
-      <div class="action-row">
-        <button data-action="delete" data-delete="${credential.id}">Delete</button>
-        <div>
-          <div><b>${credential.accountName}</b> (${credential.type})</div>
-          <div>${openaiDefaultModels.join(",")}</div>
-        </div>
-      </div>`;
+      const summary = createProvider(credential.type).getCredentialSummary(credential);
 
-        case "aoai":
-          return `
-      <div class="action-row"> 
+      return `<div class="action-row">
         <button data-action="delete" data-delete="${credential.id}">Delete</button>
         <div>
-          <div><b>${new URL(credential.endpoint).hostname}</b></div>
-          <div>${credential.deployments}</div> 
+          <div><b>${summary.title}</b> (${summary.tagLine})</div>
+          <div>${summary.features}</div>
         </div>
       </div>`;
-      }
     })
     .join("");
 }

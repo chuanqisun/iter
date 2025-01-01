@@ -4,7 +4,7 @@ import { artifactStyles, markdownToHtml, useArtifactActions } from "../artifact/
 import { getFileAccessPostscript, respondFileAccess, respondFileList } from "../artifact/lib/file-access";
 import { AutoResize } from "../form/auto-resize";
 import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
-import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "../openai/chat";
+import { type ChatMessage, type OpenAIChatPayload } from "../providers/openai/chat";
 import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
 import { useConnections } from "../settings/use-connections";
@@ -91,7 +91,7 @@ function getNextId(currentId: string): string | null {
 export function ChatTree() {
   const [treeNodes, setTreeNodes] = useState(INITIAL_NODES);
   const treeRootRef = useRef<HTMLDivElement>(null);
-  const { connections, getChatEndpoint } = useConnections();
+  const { connections, getChatStreamProxy } = useConnections();
 
   const handleConnectionsButtonClick = () => document.querySelector("settings-element")?.closest("dialog")?.showModal();
 
@@ -106,27 +106,23 @@ export function ChatTree() {
 
   const chat = useCallback(
     (messages: ChatMessage[], abortSignal?: AbortSignal) => {
-      const chatEndpoint = getChatEndpoint?.(connectionKey.value ?? "");
-      if (!chatEndpoint) throw new Error(`API connection is not set up`);
-
-      const supportsMaxToken = !chatEndpoint.model.startsWith("o1");
-      const supportsTemperature = !chatEndpoint.model.startsWith("o1");
+      const chatStreamProxy = getChatStreamProxy?.(connectionKey.value ?? "");
+      if (!chatStreamProxy) throw new Error(`API connection is not set up`);
 
       const modelConfig: Partial<OpenAIChatPayload> = {
-        temperature: supportsTemperature ? temperature.value : undefined,
-        max_tokens: supportsMaxToken ? maxTokens.value : undefined,
-        model: chatEndpoint.model,
+        temperature: temperature.value,
+        max_tokens: maxTokens.value,
       };
-      return getChatStream(chatEndpoint.apiKey, chatEndpoint.endpoint, messages, modelConfig, abortSignal);
+      return chatStreamProxy(messages, modelConfig, abortSignal);
     },
-    [connectionKey.value, getChatEndpoint, temperature.value, maxTokens.value]
+    [connectionKey.value, getChatStreamProxy, temperature.value, maxTokens.value]
   );
 
   const groupedConnections = useMemo(() => {
     return Object.entries(Object.groupBy(connections, (connection) => connection.displayGroup));
   }, [connections]);
 
-  // audo resolve mistached connectionKey
+  // auto resolve mistached connectionKey
   useEffect(() => {
     // already matched, no op
     if (connectionKey.value && connections?.some((connection) => connection.id === connectionKey.value)) return;
@@ -434,7 +430,7 @@ export function ChatTree() {
               nodes.map(
                 patchNode(
                   (node) => node.id === newAssistantNode.id,
-                  (node) => ({ content: node.content + (item.choices[0]?.delta?.content ?? "") })
+                  (node) => ({ content: node.content + item })
                 )
               )
             );
@@ -744,7 +740,7 @@ export function ChatTree() {
     <ChatAppLayout>
       <div>
         <ConfigMenu>
-          <BasicFormButton onClick={handleConnectionsButtonClick}>Connections</BasicFormButton>
+          <BasicFormButton onClick={handleConnectionsButtonClick}>Menu</BasicFormButton>
           {groupedConnections?.length ? (
             <label>
               Model

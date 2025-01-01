@@ -29,6 +29,7 @@
     "vite": "^6.0.6"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.33.1",
     "@codemirror/commands": "^6.7.1",
     "@codemirror/lang-javascript": "^6.2.2",
     "@codemirror/lang-markdown": "^6.3.1",
@@ -36,6 +37,7 @@
     "@codemirror/language-data": "^6.5.1",
     "@codemirror/state": "^6.5.0",
     "@codemirror/view": "^6.36.1",
+    "@google/generative-ai": "^0.21.0",
     "@uiw/codemirror-theme-github": "^4.23.7",
     "dompurify": "^3.2.3",
     "marked": "^15.0.4",

@@ -16,7 +16,7 @@ export class GenericArtifact implements ArtifactSupport {
 
     timers.set(
       trigger,
-      setTimeout(() => trigger.classList.remove("copied"), 3000)
+      window.setTimeout(() => trigger.classList.remove("copied"), 3000)
     );
   }
 }
