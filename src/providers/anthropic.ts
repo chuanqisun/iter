@@ -92,7 +92,6 @@ export class AnthropicProvider implements BaseProvider {
 
       for await (const message of stream) {
         if (message.type === "content_block_delta" && message.delta.type === "text_delta" && message.delta.text) {
-          console.log(message.delta.text);
           yield message.delta.text;
         }
       }
