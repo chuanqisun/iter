@@ -1,5 +1,4 @@
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
-import { javascript } from "@codemirror/lang-javascript";
 import { markdown } from "@codemirror/lang-markdown";
 import { defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
@@ -107,13 +106,6 @@ export class CodeEditorElement extends HTMLElement {
 async function getLanguageSupport(filenameOrExtension: string) {
   const ext = filenameOrExtension.split(".").pop();
   switch (ext) {
-    case "js":
-    case "javascript":
-    case "ts":
-    case "typescript":
-    case "jsx":
-    case "tsx":
-      return javascript({ jsx: true, typescript: true });
     case "md":
       return markdown({ codeLanguages: languages });
     default:
