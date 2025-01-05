@@ -932,7 +932,7 @@ const AttachmentFileSize = styled.div`
 
 const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
   min-height: 31px; // match that of single line textarea
-  min-width: 0px;
+  overflow: auto;
   ${(props) => props.$maxHeight && `max-height: ${props.$maxHeight}px;`}
   padding: var(--input-padding-block) var(--input-padding-inline);
   line-height: var(--text-line-height);
