@@ -61,7 +61,7 @@ export class AzureOpenAIProvider implements BaseProvider {
           deployment,
           apiKey: credential.apiKey,
           apiVersion: "2024-10-01-preview",
-        }) satisfies AzureOpenAIConnection
+        } satisfies AzureOpenAIConnection)
     );
   }
 
@@ -89,14 +89,19 @@ export class AzureOpenAIProvider implements BaseProvider {
         dangerouslyAllowBrowser: true,
       });
 
-      const stream = await client.chat.completions.create({
-        stream: true,
-        messages: that.getOpenAIMessages(messages),
-        model: connection.deployment,
-        temperature: config?.temperature,
-        max_tokens: config?.maxTokens,
-        top_p: config?.topP,
-      });
+      const stream = await client.chat.completions.create(
+        {
+          stream: true,
+          messages: that.getOpenAIMessages(messages),
+          model: connection.deployment,
+          temperature: config?.temperature,
+          max_tokens: config?.maxTokens,
+          top_p: config?.topP,
+        },
+        {
+          signal: abortSignal,
+        }
+      );
 
       for await (const message of stream) {
         const deltaText = message.choices?.at(0)?.delta?.content;

@@ -77,14 +77,19 @@ export class OpenAIProvider implements BaseProvider {
       const supportsMaxToken = !connection.model.startsWith("o1");
       const supportsTemperature = !connection.model.startsWith("o1");
 
-      const stream = await client.chat.completions.create({
-        stream: true,
-        messages: that.getOpenAIMessages(messages),
-        model: connection.model,
-        temperature: supportsTemperature ? config?.temperature : undefined,
-        max_tokens: supportsMaxToken ? config?.maxTokens : undefined,
-        top_p: config?.topP,
-      });
+      const stream = await client.chat.completions.create(
+        {
+          stream: true,
+          messages: that.getOpenAIMessages(messages),
+          model: connection.model,
+          temperature: supportsTemperature ? config?.temperature : undefined,
+          max_tokens: supportsMaxToken ? config?.maxTokens : undefined,
+          top_p: config?.topP,
+        },
+        {
+          signal: abortSignal,
+        }
+      );
 
       for await (const message of stream) {
         const deltaText = message.choices?.at(0)?.delta?.content;
