@@ -1,6 +1,5 @@
 import type { ImageBlockParam, MessageParam, TextBlockParam } from "@anthropic-ai/sdk/resources/index.mjs";
-import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy } from "./base";
-import { type ChatMessage, type OpenAIChatPayload } from "./openai/chat";
+import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy, GenericChatParams, GenericMessage } from "./base";
 
 export interface AnthropicCredential extends BaseCredential {
   id: string;
@@ -52,7 +51,7 @@ export class AnthropicProvider implements BaseProvider {
           model,
           apiKey: credential.apiKey,
           apiVersion: "2023-06-01",
-        } satisfies AnthropicConnection)
+        }) satisfies AnthropicConnection
     );
   }
 
@@ -70,7 +69,7 @@ export class AnthropicProvider implements BaseProvider {
     if (!this.isAnthropicConnection(connection)) throw new Error("Invalid connection type");
     const that = this;
 
-    return async function* (messages: ChatMessage[], config?: Partial<OpenAIChatPayload>, abortSignal?: AbortSignal) {
+    return async function* ({ messages, abortSignal, ...config }: GenericChatParams) {
       const Anthropic = await import("@anthropic-ai/sdk").then((res) => res.Anthropic);
       const client = new Anthropic({ apiKey: connection.apiKey, dangerouslyAllowBrowser: true });
 
@@ -78,7 +77,7 @@ export class AnthropicProvider implements BaseProvider {
 
       const stream = await client.messages.create(
         {
-          max_tokens: config?.max_tokens ?? 200,
+          max_tokens: config?.maxTokens ?? 200,
           temperature: Math.min(config?.temperature ?? 0.7, 1), // anthropic only supports 0-1
           system,
           messages: anthropicMessages,
@@ -106,7 +105,7 @@ export class AnthropicProvider implements BaseProvider {
     return connection.type === "anthropic";
   }
 
-  private getAnthropicMessages(messages: ChatMessage[]): { system?: string; messages: MessageParam[] } {
+  private getAnthropicMessages(messages: GenericMessage[]): { system?: string; messages: MessageParam[] } {
     let system;
     const convertedMessages: MessageParam[] = [];
 
@@ -133,12 +132,16 @@ export class AnthropicProvider implements BaseProvider {
                 },
               } satisfies ImageBlockParam;
             }
+            default: {
+              console.warn(`Unsupported content type: ${part.type}`);
+              return null;
+            }
           }
         });
 
         convertedMessages.push({
           role: message.role as "assistant" | "user",
-          content: convertedMessageParts,
+          content: convertedMessageParts.filter((part) => part !== null),
         });
       }
     });

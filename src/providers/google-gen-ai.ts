@@ -1,6 +1,5 @@
 import type { Content, InlineDataPart, TextPart } from "@google/generative-ai";
-import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy } from "./base";
-import { type ChatMessage, type OpenAIChatPayload } from "./openai/chat";
+import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy, GenericChatParams, GenericMessage } from "./base";
 
 export interface GoogleGenAICredential extends BaseCredential {
   id: string;
@@ -50,7 +49,7 @@ export class GoogleGenAIProvider implements BaseProvider {
           displayName: model,
           model,
           apiKey: credential.apiKey,
-        } satisfies GoogleGenAIConnection)
+        }) satisfies GoogleGenAIConnection
     );
   }
 
@@ -68,7 +67,7 @@ export class GoogleGenAIProvider implements BaseProvider {
     if (!this.isAnthropicConnection(connection)) throw new Error("Invalid connection type");
     const that = this;
 
-    return async function* (messages: ChatMessage[], config?: Partial<OpenAIChatPayload>, abortSignal?: AbortSignal) {
+    return async function* ({ messages, abortSignal, ...config }: GenericChatParams) {
       const GoogleGenerativeAI = await import("@google/generative-ai").then((res) => res.GoogleGenerativeAI);
       const client = new GoogleGenerativeAI(connection.apiKey);
 
@@ -82,8 +81,8 @@ export class GoogleGenAIProvider implements BaseProvider {
           contents: googleMessages,
           generationConfig: {
             temperature: config?.temperature,
-            topP: config?.top_p,
-            maxOutputTokens: config?.max_tokens,
+            topP: config?.topP,
+            maxOutputTokens: config?.maxTokens,
           },
         },
         {
@@ -106,7 +105,7 @@ export class GoogleGenAIProvider implements BaseProvider {
     return connection.type === "google-gen-ai";
   }
 
-  private getGoogleGenAIMessages(messages: ChatMessage[]): { system?: string; messages: Content[] } {
+  private getGoogleGenAIMessages(messages: GenericMessage[]): { system?: string; messages: Content[] } {
     let system;
     const convertedMessages: Content[] = [];
 
@@ -131,12 +130,16 @@ export class GoogleGenAIProvider implements BaseProvider {
                 inlineData: this.dataUrlToImagePart(part.image_url.url),
               } satisfies InlineDataPart;
             }
+            default: {
+              console.warn(`Unsupported content type: ${part.type}`);
+              return null;
+            }
           }
         });
 
         convertedMessages.push({
           role: message.role as "assistant" | "user",
-          parts: convertedMessageParts,
+          parts: convertedMessageParts.filter((part) => part !== null),
         });
       }
     });

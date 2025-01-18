@@ -1,5 +1,5 @@
-import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy } from "./base";
-import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "./openai/chat";
+import type { ChatCompletionMessageParam } from "openai/resources/index.mjs";
+import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy, GenericChatParams, GenericMessage } from "./base";
 
 export interface OpenAICredential extends BaseCredential {
   id: string;
@@ -65,23 +65,51 @@ export class OpenAIProvider implements BaseProvider {
 
   getChatStreamProxy(connection: BaseConnection): ChatStreamProxy {
     if (!this.isOpenAIConnection(connection)) throw new Error("Invalid connection type");
+    const that = this;
 
-    return async function* (messages: ChatMessage[], config?: Partial<OpenAIChatPayload>, abortSignal?: AbortSignal) {
+    return async function* ({ messages, abortSignal, ...config }: GenericChatParams) {
+      const OpenAI = await import("openai").then((res) => res.OpenAI);
+      const client = new OpenAI({
+        apiKey: connection.apiKey,
+        dangerouslyAllowBrowser: true,
+      });
+
       const supportsMaxToken = !connection.model.startsWith("o1");
       const supportsTemperature = !connection.model.startsWith("o1");
-      const finalConfig: Partial<OpenAIChatPayload> = {
-        temperature: supportsTemperature ? config?.temperature : undefined,
-        max_tokens: supportsMaxToken ? config?.max_tokens : undefined,
+
+      const stream = await client.chat.completions.create({
+        stream: true,
+        messages: that.getOpenAIMessages(messages),
         model: connection.model,
-      };
+        temperature: supportsTemperature ? config?.temperature : undefined,
+        max_tokens: supportsMaxToken ? config?.maxTokens : undefined,
+        top_p: config?.topP,
+      });
 
-      const innerStream = getChatStream(connection.apiKey, "https://api.openai.com/v1/chat/completions", messages, finalConfig, abortSignal);
-
-      for await (const chunk of innerStream) {
-        const content = chunk.choices[0]?.delta?.content ?? "";
-        if (content) yield content;
+      for await (const message of stream) {
+        const deltaText = message.choices?.at(0)?.delta?.content;
+        if (deltaText) yield deltaText;
       }
     };
+  }
+
+  private getOpenAIMessages(messages: GenericMessage[]): ChatCompletionMessageParam[] {
+    const convertedMessage = messages.map((message) => {
+      switch (message.role) {
+        case "user":
+          return { role: "user", content: message.content };
+        case "assistant":
+          return { role: "assistant", content: message.content };
+        case "system":
+          return { role: "system", content: message.content };
+        default: {
+          console.warn("Unknown message type", message);
+          return null;
+        }
+      }
+    });
+
+    return convertedMessage.filter((m) => m !== null) as ChatCompletionMessageParam[];
   }
 
   private isOpenAICredential(credential: BaseCredential): credential is OpenAICredential {

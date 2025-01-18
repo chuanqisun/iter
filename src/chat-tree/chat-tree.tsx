@@ -4,7 +4,7 @@ import { artifactStyles, markdownToHtml, useArtifactActions } from "../artifact/
 import { getFileAccessPostscript, respondFileAccess, respondFileList } from "../artifact/lib/file-access";
 import { AutoResize } from "../form/auto-resize";
 import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
-import { type ChatMessage, type OpenAIChatPayload } from "../providers/openai/chat";
+import { type GenericMessage } from "../providers/base";
 import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
 import { useConnections } from "../settings/use-connections";
@@ -106,15 +106,16 @@ export function ChatTree() {
   useRouteCache({ parameters: ["connection", "temperature", "max_tokens"] });
 
   const chat = useCallback(
-    (messages: ChatMessage[], abortSignal?: AbortSignal) => {
+    (messages: GenericMessage[], abortSignal?: AbortSignal) => {
       const chatStreamProxy = getChatStreamProxy?.(connectionKey.value ?? "");
       if (!chatStreamProxy) throw new Error(`API connection is not set up`);
 
-      const modelConfig: Partial<OpenAIChatPayload> = {
+      return chatStreamProxy({
         temperature: temperature.value,
-        max_tokens: maxTokens.value,
-      };
-      return chatStreamProxy(messages, modelConfig, abortSignal);
+        maxTokens: maxTokens.value,
+        messages,
+        abortSignal,
+      });
     },
     [connectionKey.value, getChatStreamProxy, temperature.value, maxTokens.value]
   );
@@ -227,7 +228,7 @@ export function ChatTree() {
 
         const filePostScript = getFileAccessPostscript(node.files ?? []);
 
-        const message: ChatMessage = {
+        const message: GenericMessage = {
           role: node.role,
           content: [
             { type: "text", text: `${node.content}${filePostScript}` },
@@ -239,7 +240,7 @@ export function ChatTree() {
       });
 
       // filter out blank messages
-      const hasContent = (message: ChatMessage) => {
+      const hasContent = (message: GenericMessage) => {
         if (typeof message.content === "string") return message.content.length > 0;
         return message.content.some((part) => (part.type === "text" ? part.text.length > 0 : true));
       };

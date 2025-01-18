@@ -1,5 +1,5 @@
-import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy } from "./base";
-import { getChatStream, type ChatMessage, type OpenAIChatPayload } from "./openai/chat";
+import type { ChatCompletionMessageParam } from "openai/resources/index.mjs";
+import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy, GenericChatParams, GenericMessage } from "./base";
 
 export interface AzureOpenAICredential extends BaseCredential {
   id: string;
@@ -61,7 +61,7 @@ export class AzureOpenAIProvider implements BaseProvider {
           deployment,
           apiKey: credential.apiKey,
           apiVersion: "2024-10-01-preview",
-        } satisfies AzureOpenAIConnection)
+        }) satisfies AzureOpenAIConnection
     );
   }
 
@@ -77,22 +77,51 @@ export class AzureOpenAIProvider implements BaseProvider {
 
   getChatStreamProxy(connection: BaseConnection): ChatStreamProxy {
     if (!this.isAzureOpenAIConnection(connection)) throw new Error("Invalid connection type");
+    const that = this;
 
-    return async function* (messages: ChatMessage[], config?: Partial<OpenAIChatPayload>, abortSignal?: AbortSignal) {
-      const finalConfig: Partial<OpenAIChatPayload> = {
-        temperature: config?.temperature,
-        max_tokens: config?.max_tokens,
+    return async function* ({ messages, abortSignal, ...config }: GenericChatParams) {
+      const AzureOpenAI = await import("openai").then((res) => res.AzureOpenAI);
+      const client = new AzureOpenAI({
+        apiKey: connection.apiKey,
+        endpoint: connection.endpoint,
+        apiVersion: connection.apiVersion,
+        deployment: connection.deployment,
+        dangerouslyAllowBrowser: true,
+      });
+
+      const stream = await client.chat.completions.create({
+        stream: true,
+        messages: that.getOpenAIMessages(messages),
         model: connection.deployment,
-      };
+        temperature: config?.temperature,
+        max_tokens: config?.maxTokens,
+        top_p: config?.topP,
+      });
 
-      const endpoint = `${connection.endpoint}openai/deployments/${connection.deployment}/chat/completions?api-version=${connection.apiVersion}`;
-      const innerStream = getChatStream(connection.apiKey, endpoint, messages, finalConfig, abortSignal);
-
-      for await (const chunk of innerStream) {
-        const content = chunk.choices[0]?.delta?.content ?? "";
-        if (content) yield content;
+      for await (const message of stream) {
+        const deltaText = message.choices?.at(0)?.delta?.content;
+        if (deltaText) yield deltaText;
       }
     };
+  }
+
+  private getOpenAIMessages(messages: GenericMessage[]): ChatCompletionMessageParam[] {
+    const convertedMessage = messages.map((message) => {
+      switch (message.role) {
+        case "user":
+          return { role: "user", content: message.content };
+        case "assistant":
+          return { role: "assistant", content: message.content };
+        case "system":
+          return { role: "system", content: message.content };
+        default: {
+          console.warn("Unknown message type", message);
+          return null;
+        }
+      }
+    });
+
+    return convertedMessage.filter((m) => m !== null) as ChatCompletionMessageParam[];
   }
 
   private isAzureOpenAICredential(credential: BaseCredential): credential is AzureOpenAICredential {

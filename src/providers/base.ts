@@ -1,4 +1,4 @@
-import type { ChatMessage, OpenAIChatPayload } from "./openai/chat";
+import type { ChatCompletionContentPart } from "openai/resources/index.mjs";
 
 export interface BaseCredential {
   id: string;
@@ -25,4 +25,17 @@ export interface BaseProvider {
   getChatStreamProxy(connection: BaseConnection): ChatStreamProxy;
 }
 
-export type ChatStreamProxy = (messages: ChatMessage[], config?: Partial<OpenAIChatPayload>, abortSignal?: AbortSignal) => AsyncGenerator<string>;
+export interface GenericMessage {
+  role: string;
+  content: string | ChatCompletionContentPart[];
+}
+
+export interface GenericChatParams {
+  messages: GenericMessage[];
+  abortSignal?: AbortSignal;
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+}
+
+export type ChatStreamProxy = (params: GenericChatParams) => AsyncGenerator<string>;

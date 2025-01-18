@@ -43,6 +43,7 @@
     "marked": "^15.0.4",
     "marked-shiki": "^1.1.1",
     "mermaid": "^11.4.1",
+    "openai": "^4.79.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "shiki": "^1.25.0",
