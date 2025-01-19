@@ -30,6 +30,7 @@ export class GenericArtifact implements ArtifactSupport {
     const editor = document.createElement("code-editor-element") as CodeEditorElement;
     editor.setAttribute("data-lang", lang);
     editor.setAttribute("data-value", code);
+    editor.setAttribute("autofocus", "");
     editorContainer.appendChild(editor);
 
     editor.addEventListener("contentchange", () => {

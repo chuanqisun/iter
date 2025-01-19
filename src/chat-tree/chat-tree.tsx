@@ -374,9 +374,11 @@ export function ChatTree() {
         );
       }
 
+      // Enter to activate edit mode
       if (targetNode.role === "assistant" && e.key === "Enter") {
-        // switch to edit mode
-        setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { isViewSource: true })));
+        if ((e.target as HTMLElement).classList.contains("js-focusable")) {
+          setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { isViewSource: true })));
+        }
         return;
       }
 
@@ -398,7 +400,7 @@ export function ChatTree() {
             targetId = getNextId(nodeId);
           }
         }
-      } else {
+      } else if ((e.target as HTMLElement).classList.contains("js-focusable")) {
         // navigate on general elements
         if (e.key === "ArrowUp") {
           e.preventDefault();
