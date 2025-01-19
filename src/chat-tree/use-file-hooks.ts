@@ -20,6 +20,7 @@ export function useFileHooks(treeNodes: ChatNode[], setTreeNodes: (value: React.
     const htmlFile = new File([raw], `iter-${timestamp}`, { type: "text/html" });
     downloadFile(htmlFile);
     console.log(`[file] exported`);
+    return htmlFile;
   }, [treeNodes]);
 
   const loadChat = useCallback(async () => {
@@ -34,18 +35,22 @@ export function useFileHooks(treeNodes: ChatNode[], setTreeNodes: (value: React.
       treeNodes.slice(0, 2).map((i) => i.id)
     );
     console.log(`[file] loaded`, tree);
+
     setTreeNodes(() => tree);
   }, []);
 
   const importChat = useCallback(async () => {
     const uploadedFile = (await uploadFiles()).at(0);
-    if (!uploadedFile) return;
+    if (!uploadedFile) throw new Error("No file uploaded");
     const tree = await parseChat(
       await uploadedFile.text(),
       treeNodes.slice(0, 2).map((i) => i.id)
     );
+
+    if (tree.length < 2) throw new Error("Invalid chat file");
     console.log(`[file] imported`, tree);
     setTreeNodes(() => tree);
+    return uploadedFile;
   }, []);
 
   return { saveChat, exportChat, loadChat, importChat };

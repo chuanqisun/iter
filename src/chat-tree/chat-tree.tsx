@@ -14,6 +14,7 @@ import { getReadableFileSize } from "./file-size";
 import { autoFocusNthInput } from "./focus";
 import { getCombo } from "./keyboard";
 import { tableStyles } from "./table";
+import { showToast } from "./toast";
 import { uploadFiles, useFileHooks } from "./use-file-hooks";
 import { useNodeContentTransformStore } from "./use-node-content-transform-store";
 
@@ -354,16 +355,28 @@ export function ChatTree() {
       let matched = true;
       switch (combo) {
         case "ctrl+s":
-          saveChat();
+          saveChat()
+            .then(() => showToast("✅ Saved"))
+            .catch((e) => showToast(`❌ Error ${e?.message}`));
           break;
         case "ctrl+shift+s":
-          exportChat();
+          exportChat()
+            .then((file) => showToast(`✅ Exported ${file.name} (${getReadableFileSize(file.size)})`))
+            .catch((e) => showToast(`❌ Error ${e?.message}`));
           break;
         case "ctrl+o":
-          loadChat().then(() => autoFocusNthInput(0));
+          loadChat()
+            .then(() => autoFocusNthInput(0))
+            .then(() => showToast("✅ Loaded"))
+            .catch((e) => showToast(`❌ Error ${e?.message}`));
+
           break;
         case "ctrl+shift+o":
-          importChat().then(() => autoFocusNthInput(0));
+          importChat()
+            .then((file) => showToast(`✅ Imported ${file.name} ${getReadableFileSize(file.size)}`))
+            .then(() => autoFocusNthInput(0))
+            .catch((e) => showToast(`❌ Error ${e?.message}`));
+
           break;
         default:
           matched = false;
