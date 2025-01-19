@@ -10,6 +10,7 @@ import { useRouteParameter } from "../router/use-route-parameter";
 import { useConnections } from "../settings/use-connections";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import { getFirstImageDataUrl } from "./clipboard";
+import { uploadFiles, useFileHooks } from "./file";
 import { getReadableFileSize } from "./file-size";
 import { getCombo } from "./keyboard";
 import { tableStyles } from "./table";
@@ -19,7 +20,6 @@ export interface ChatNode {
   id: string;
   role: "system" | "user" | "assistant";
   content: string;
-  contentHtml?: string;
   images?: string[];
   files?: File[];
   isViewSource?: boolean;
@@ -167,44 +167,47 @@ export function ChatTree() {
     );
   }, []);
 
-  const handleDelete = useCallback((nodeId: string) => {
-    handleAbort(nodeId);
+  const handleDelete = useCallback(
+    (nodeId: string) => {
+      handleAbort(nodeId);
 
-    // if delete root: only clear its content
-    if (treeNodes[0].id === nodeId) {
-      setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { content: "" })));
-      return;
-    }
+      // if delete root: only clear its content
+      if (treeNodes[0].id === nodeId) {
+        setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { content: "" })));
+        return;
+      }
 
-    // if delete non-root, delete the node itself and fix the linked list
-    setTreeNodes((nodes) => {
-      const remainingNodes = nodes.filter((node) => node.id !== nodeId);
+      // if delete non-root, delete the node itself and fix the linked list
+      setTreeNodes((nodes) => {
+        const remainingNodes = nodes.filter((node) => node.id !== nodeId);
 
-      const parentId = nodes.find((node) => node.childIds?.includes(nodeId))?.id;
-      const childIds = nodes.find((node) => node.id === nodeId)?.childIds ?? [];
+        const parentId = nodes.find((node) => node.childIds?.includes(nodeId))?.id;
+        const childIds = nodes.find((node) => node.id === nodeId)?.childIds ?? [];
 
-      // link parents to childIds
-      const newNodes = remainingNodes.map((node) => {
-        if (node.id === parentId) {
-          return { ...node, childIds: [...(node.childIds ?? []).filter((id) => id !== nodeId), ...childIds] };
-        } else {
-          return node;
-        }
+        // link parents to childIds
+        const newNodes = remainingNodes.map((node) => {
+          if (node.id === parentId) {
+            return { ...node, childIds: [...(node.childIds ?? []).filter((id) => id !== nodeId), ...childIds] };
+          } else {
+            return node;
+          }
+        });
+
+        // make sure the last node is a user node
+        const updatedNodes = newNodes.flatMap((node) => {
+          if (!node.childIds?.length && node.role !== "user") {
+            const newUserNode = getUserNode(crypto.randomUUID());
+            return [{ ...node, childIds: [newUserNode.id] }, newUserNode];
+          }
+
+          return [node];
+        });
+
+        return updatedNodes;
       });
-
-      // make sure the last node is a user node
-      const updatedNodes = newNodes.flatMap((node) => {
-        if (!node.childIds?.length && node.role !== "user") {
-          const newUserNode = getUserNode(crypto.randomUUID());
-          return [{ ...node, childIds: [newUserNode.id] }, newUserNode];
-        }
-
-        return [node];
-      });
-
-      return updatedNodes;
-    });
-  }, []);
+    },
+    [treeNodes]
+  );
 
   const handleDeleteBelow = useCallback((nodeId: string) => {
     setTreeNodes((nodes) => {
@@ -342,29 +345,39 @@ export function ChatTree() {
     return () => speech.removeEventListener("result", onResult);
   }, []);
 
+  const { saveChat, exportChat, loadChat, importChat } = useFileHooks(treeNodes, setTreeNodes);
+
   // global keyboard
   useEffect(() => {
-    const handleGlobalKeydown = (e: KeyboardEvent) => {
+    const handleGlobalKeydown = async (e: KeyboardEvent) => {
       const combo = getCombo(e);
-
-      if (combo === "ctrl+s") {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log("// TODO export to file");
-        return;
+      let matched = true;
+      switch (combo) {
+        case "ctrl+s":
+          saveChat();
+          break;
+        case "ctrl+shift+s":
+          exportChat();
+          break;
+        case "ctrl+o":
+          loadChat();
+          break;
+        case "ctrl+shift+o":
+          importChat();
+          break;
+        default:
+          matched = false;
       }
 
-      if (combo === "ctrl+o") {
+      if (matched) {
         e.preventDefault();
         e.stopPropagation();
-        console.log("// TODO import from file");
-        return;
       }
     };
 
     window.addEventListener("keydown", handleGlobalKeydown, { capture: true });
     return () => window.removeEventListener("keydown", handleGlobalKeydown, { capture: true });
-  }, []);
+  }, [exportChat, importChat]);
 
   const handleKeydown = useCallback(
     async (nodeId: string, e: React.KeyboardEvent<HTMLTextAreaElement | HTMLDivElement>) => {
@@ -573,15 +586,7 @@ export function ChatTree() {
       const activeUserNodeId = getActiveUserNodeId(treeNodes.find((node) => node.id === nodeId));
       if (!activeUserNodeId) return;
 
-      const fileInput = document.createElement("input");
-      fileInput.type = "file";
-      fileInput.multiple = true;
-      const files = await new Promise<File[]>((resolve) => {
-        fileInput.onchange = () => {
-          resolve([...fileInput.files!]);
-        };
-        fileInput.click();
-      });
+      const files = await uploadFiles({ multiple: true });
 
       if (!files.length) return;
       setTreeNodes((nodes) =>

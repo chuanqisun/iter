@@ -40,6 +40,7 @@
     "@google/generative-ai": "^0.21.0",
     "@uiw/codemirror-theme-github": "^4.23.7",
     "dompurify": "^3.2.3",
+    "idb-keyval": "^6.2.1",
     "marked": "^15.0.4",
     "marked-shiki": "^1.1.1",
     "mermaid": "^11.4.1",
