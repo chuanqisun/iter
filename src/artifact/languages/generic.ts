@@ -29,7 +29,12 @@ export class GenericArtifact implements ArtifactSupport {
       trigger.textContent = "Edit";
       const editor = artifactElement.querySelector<CodeEditorElement>("code-editor-element")!;
       const latestSourceCode = editor.value;
-      artifactElement.dispatchEvent(new CustomEvent("codechange", { detail: { code: latestSourceCode } }));
+      const allArtifacts = [...artifactElement.parentElement!.querySelectorAll("artifact-element")];
+      const index = allArtifacts.indexOf(artifactElement);
+      artifactElement
+        .closest(".js-message")
+        ?.querySelector("code-block-events")
+        ?.dispatchEvent(new CustomEvent("codeblockchange", { detail: { index, prev: code, current: latestSourceCode } }));
       editor.remove();
       return;
     } else {

@@ -139,6 +139,33 @@ export function ChatTree() {
     setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { content })));
   }, []);
 
+  const handleCodeBlockChange = useCallback((nodeId: string, code: string, blockIndex: number) => {
+    const multilineTrippleTickCodeBlockPattern = /```.*\n([\s\S]*?)\n```/g;
+
+    const replaceNthMatch = (str: string, regex: RegExp, replacement: string, n: number) => {
+      let i = -1;
+      return str.replace(regex, (match, group1) => {
+        i++;
+        if (i === n) {
+          return match.replace(group1, replacement);
+        }
+        return match;
+      });
+    };
+
+    setTreeNodes((nodes) =>
+      nodes.map(
+        patchNode(
+          (node) => node.id === nodeId,
+          (node) => {
+            const replaced = replaceNthMatch(node.content, multilineTrippleTickCodeBlockPattern, code, blockIndex);
+            return { content: replaced };
+          }
+        )
+      )
+    );
+  }, []);
+
   const handleDelete = useCallback((nodeId: string) => {
     handleAbort(nodeId);
 
@@ -623,11 +650,12 @@ export function ChatTree() {
     (node: ChatNode, hasSibling?: boolean) => {
       return (
         <Thread showrail={hasSibling ? "true" : undefined} key={node.id}>
-          <MessageLayout>
+          <MessageLayout className="js-message">
             <Avatar onClick={(e) => handleToggleShowMore(node.id, e.ctrlKey ? { toggleAll: true } : undefined)}>
               <AvatarIcon title={node.role}>{roleIcon[node.role]}</AvatarIcon>
             </Avatar>
             <MessageWithActions>
+              <code-block-events oncodeblockchange={(e) => handleCodeBlockChange(node.id, e.detail.current, e.detail.index)}></code-block-events>
               {node.role === "user" || node.role === "system" ? (
                 <>
                   <AutoResize data-resize-textarea-content={node.content} $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}>
@@ -674,14 +702,16 @@ export function ChatTree() {
                       oncontentchange={(e) => handleTextChange(node.id, e.detail)}
                     ></code-editor-element>
                   ) : (
-                    <MarkdownPreview
-                      tabIndex={-1}
-                      className="js-focusable"
-                      onKeyDown={(e) => handleKeydown(node.id, e)}
-                      id={node.id}
-                      $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}
-                      dangerouslySetInnerHTML={{ __html: previews[node.id] ?? "" }}
-                    />
+                    <>
+                      <MarkdownPreview
+                        tabIndex={-1}
+                        className="js-focusable"
+                        onKeyDown={(e) => handleKeydown(node.id, e)}
+                        id={node.id}
+                        $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}
+                        dangerouslySetInnerHTML={{ __html: previews[node.id] ?? "" }}
+                      />
+                    </>
                   )}
                   <MessageActions>
                     <button onClick={() => handleDelete(node.id)}>Delete</button>
