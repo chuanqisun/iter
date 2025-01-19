@@ -12,6 +12,7 @@ import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import { getFirstImageDataUrl } from "./clipboard";
 import { uploadFiles, useFileHooks } from "./file";
 import { getReadableFileSize } from "./file-size";
+import { autoFocusNthInput } from "./focus";
 import { getCombo } from "./keyboard";
 import { tableStyles } from "./table";
 import { useNodeContentTransformStore } from "./use-node-content-transform-store";
@@ -677,7 +678,7 @@ export function ChatTree() {
 
   // auto focus last textarea on startup
   useEffect(() => {
-    [...document.querySelectorAll<HTMLTextAreaElement>("textarea:last-of-type")].at(-1)?.focus();
+    autoFocusNthInput(-1);
   }, []);
 
   const renderNode = useCallback(
