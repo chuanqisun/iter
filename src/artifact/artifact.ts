@@ -32,6 +32,7 @@ async function initializeMarked() {
         <artifact-element lang="${lang}">
           <artifact-source>${highlightedHtml}</artifact-source>  
           <artifact-preview></artifact-preview>
+          <artifact-edit></artifact-edit>
           <artifact-action>
             ${
               supportedArtifacts.some((art) => !!art.onRun && art.onResolveLanguage(lang))
@@ -44,6 +45,7 @@ async function initializeMarked() {
               `
                 : ""
             }
+            <button data-action="edit">Edit</button>
             <button class="copy" data-action="copy">
               <span class="ready">Copy</span>
               <span class="success">✅ Copied</span>
@@ -90,6 +92,11 @@ export function handleArtifactActions(event: MouseEvent) {
   if (!artifact) return;
 
   switch (action) {
+    case "edit": {
+      artifact.onEdit({ lang, code, trigger });
+      return;
+    }
+
     case "copy": {
       artifact.onCopy({ lang, code, trigger });
       return;
@@ -192,6 +199,12 @@ export const artifactStyles = css`
 
   artifact-element:not(:has([data-action="run"].running)) {
     artifact-action [data-action="save"] {
+      display: none;
+    }
+  }
+
+  artifact-element:has([data-action="edit"].editing) {
+    artifact-source {
       display: none;
     }
   }
