@@ -188,6 +188,7 @@ export const artifactStyles = css`
   }
 
   artifact-element:has([data-action="run"].running) {
+    [data-action="edit"],
     artifact-source {
       display: none;
     }
@@ -204,6 +205,7 @@ export const artifactStyles = css`
   }
 
   artifact-element:has([data-action="edit"].editing) {
+    [data-action="run"],
     artifact-source {
       display: none;
     }
