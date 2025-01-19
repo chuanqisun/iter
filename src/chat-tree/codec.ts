@@ -60,11 +60,11 @@ async function fileToBase64DataUrl(file: File) {
   });
 }
 
-export async function parseChat(raw: string): Promise<ChatNode[]> {
+export async function parseChat(raw: string, preserveIds?: string[]): Promise<ChatNode[]> {
   const dom = new DOMParser().parseFromString(raw, "text/html");
-  const nodes = [...dom.querySelectorAll<HTMLElement>(`[data-role]`)].map((el) =>
-    el.dataset.role === "user" ? parseUserMessage(el) : parseSystemOrAssistantMessage(el)
-  );
+  const nodes = [...dom.querySelectorAll<HTMLElement>(`[data-role]`)]
+    .map((el) => (el.dataset.role === "user" ? parseUserMessage(el) : parseSystemOrAssistantMessage(el)))
+    .map((node, i) => ({ ...node, id: preserveIds?.at(i) ?? node.id }));
 
   // use the next node id as the current node's childId.
   const linkedNodes = nodes.map((node, i) => ({ ...node, childIds: i < nodes.length - 1 ? [nodes[i + 1].id] : undefined } satisfies ChatNode));

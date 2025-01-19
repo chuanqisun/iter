@@ -10,11 +10,11 @@ import { useRouteParameter } from "../router/use-route-parameter";
 import { useConnections } from "../settings/use-connections";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import { getFirstImageDataUrl } from "./clipboard";
-import { uploadFiles, useFileHooks } from "./file";
 import { getReadableFileSize } from "./file-size";
 import { autoFocusNthInput } from "./focus";
 import { getCombo } from "./keyboard";
 import { tableStyles } from "./table";
+import { uploadFiles, useFileHooks } from "./use-file-hooks";
 import { useNodeContentTransformStore } from "./use-node-content-transform-store";
 
 export interface ChatNode {
@@ -94,6 +94,7 @@ export function ChatTree() {
   const [treeNodes, setTreeNodes] = useState(INITIAL_NODES);
   const treeRootRef = useRef<HTMLDivElement>(null);
   const { connections, getChatStreamProxy } = useConnections();
+  const { saveChat, exportChat, loadChat, importChat } = useFileHooks(treeNodes, setTreeNodes);
 
   const handleConnectionsButtonClick = () => document.querySelector("settings-element")?.closest("dialog")?.showModal();
 
@@ -346,8 +347,6 @@ export function ChatTree() {
     return () => speech.removeEventListener("result", onResult);
   }, []);
 
-  const { saveChat, exportChat, loadChat, importChat } = useFileHooks(treeNodes, setTreeNodes);
-
   // global keyboard
   useEffect(() => {
     const handleGlobalKeydown = async (e: KeyboardEvent) => {
@@ -361,10 +360,10 @@ export function ChatTree() {
           exportChat();
           break;
         case "ctrl+o":
-          loadChat();
+          loadChat().then(() => autoFocusNthInput(0));
           break;
         case "ctrl+shift+o":
-          importChat();
+          importChat().then(() => autoFocusNthInput(0));
           break;
         default:
           matched = false;

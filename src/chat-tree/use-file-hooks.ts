@@ -29,15 +29,22 @@ export function useFileHooks(treeNodes: ChatNode[], setTreeNodes: (value: React.
       return;
     }
 
-    const tree = await parseChat(raw);
-    console.log(`[file] loaded ${treeNodes.length} nodes`, tree);
+    const tree = await parseChat(
+      raw,
+      treeNodes.slice(0, 2).map((i) => i.id)
+    );
+    console.log(`[file] loaded`, tree);
     setTreeNodes(() => tree);
   }, []);
 
   const importChat = useCallback(async () => {
     const uploadedFile = (await uploadFiles()).at(0);
     if (!uploadedFile) return;
-    const tree = await parseChat(await uploadedFile.text());
+    const tree = await parseChat(
+      await uploadedFile.text(),
+      treeNodes.slice(0, 2).map((i) => i.id)
+    );
+    console.log(`[file] imported`, tree);
     setTreeNodes(() => tree);
   }, []);
 
