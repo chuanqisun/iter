@@ -1,4 +1,4 @@
-export function toggleIframeRun(trigger: HTMLElement, code?: string) {
+export function runIframe(trigger: HTMLElement, code?: string) {
   if (!code) return;
 
   const renderContainer = trigger.closest("artifact-element")?.querySelector<HTMLElement>("artifact-preview");

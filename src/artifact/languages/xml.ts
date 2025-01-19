@@ -1,5 +1,5 @@
 import { embedFileAccessToDocument, injectIframeFileAccessToDocument } from "../lib/file-access";
-import { toggleIframeRun } from "../lib/run-iframe";
+import { runIframe } from "../lib/run-iframe";
 import { saveTextFile } from "../lib/save-text-file";
 import { GenericArtifact } from "./generic";
 import type { ArtifactContext } from "./type";
@@ -16,7 +16,7 @@ export class XmlArtifact extends GenericArtifact {
   }
 
   onRun({ trigger, code, lang }: ArtifactContext) {
-    return lang === "html" ? toggleIframeRun(trigger, injectIframeFileAccessToDocument(code)) : toggleIframeRun(trigger, code);
+    return lang === "html" ? runIframe(trigger, injectIframeFileAccessToDocument(code)) : runIframe(trigger, code);
   }
 
   async onSave({ lang, code }: ArtifactContext) {
