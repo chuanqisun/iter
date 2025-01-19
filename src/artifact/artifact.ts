@@ -199,6 +199,11 @@ export const artifactStyles = css`
       height: 100vh;
     }
 
+    .cm-editor {
+      padding: 0;
+      border: none;
+    }
+
     & .split-layout {
       position: fixed;
       inset: 0;
