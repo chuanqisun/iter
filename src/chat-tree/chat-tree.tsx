@@ -11,6 +11,7 @@ import { useConnections } from "../settings/use-connections";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import { getFirstImageDataUrl } from "./clipboard";
 import { getReadableFileSize } from "./file-size";
+import { getCombo } from "./keyboard";
 import { tableStyles } from "./table";
 import { useNodeContentTransformStore } from "./use-node-content-transform-store";
 
@@ -346,16 +347,18 @@ export function ChatTree() {
       const targetNode = treeNodes.find((node) => node.id === nodeId);
       if (!targetNode) return;
 
+      const combo = getCombo(e as any as KeyboardEvent);
+
       const activeUserNodeId = getActiveUserNodeId(targetNode);
 
-      if (e.key === "Escape") {
+      if (combo === "escape") {
         if (!activeUserNodeId) return;
         e.preventDefault();
         handleAbort(activeUserNodeId);
       }
 
       // Hold Shift + Space to talk
-      if (e.shiftKey && e.key === " ") {
+      if (combo === "shift+space") {
         e.preventDefault();
         if (!speech.start()) return;
 
@@ -375,7 +378,7 @@ export function ChatTree() {
       }
 
       // Enter to activate edit mode
-      if (targetNode.role === "assistant" && e.key === "Enter") {
+      if (targetNode.role === "assistant" && combo === "enter") {
         if ((e.target as HTMLElement).classList.contains("js-focusable")) {
           setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { isViewSource: true })));
         }
@@ -385,14 +388,14 @@ export function ChatTree() {
       // up/down arrow
       let targetId: null | string = null;
       if ((e.target as HTMLElement).tagName === "TEXTAREA") {
-        if (!e.ctrlKey && !e.shiftKey && !e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+        if (combo === "arrowup" || combo === "arrowdown") {
           const textarea = e.target as HTMLTextAreaElement;
 
-          if (e.key === "ArrowUp" && textarea.selectionStart === 0 && (textarea.selectionEnd === 0 || textarea.selectionEnd === textarea.value.length)) {
+          if (combo === "arrowup" && textarea.selectionStart === 0 && (textarea.selectionEnd === 0 || textarea.selectionEnd === textarea.value.length)) {
             e.preventDefault();
             targetId = getPrevId(nodeId);
           } else if (
-            e.key === "ArrowDown" &&
+            combo === "arrowdown" &&
             (textarea.selectionStart === 0 || textarea.selectionStart === textarea.value.length) &&
             textarea.selectionEnd === textarea.value.length
           ) {
@@ -402,10 +405,10 @@ export function ChatTree() {
         }
       } else if ((e.target as HTMLElement).classList.contains("js-focusable")) {
         // navigate on general elements
-        if (e.key === "ArrowUp") {
+        if (combo === "arrowup") {
           e.preventDefault();
           targetId = getPrevId(nodeId);
-        } else if (e.key === "ArrowDown") {
+        } else if (combo === "arrowdown") {
           e.preventDefault();
           targetId = getNextId(nodeId);
         }
@@ -417,7 +420,7 @@ export function ChatTree() {
       }
 
       // submit message
-      if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key === "Enter") {
+      if (combo === "ctrl+enter") {
         if (!activeUserNodeId) return;
         e.preventDefault();
 
