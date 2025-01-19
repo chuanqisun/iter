@@ -22,7 +22,7 @@ export interface ChatNode {
   images?: string[];
   files?: File[];
   isViewSource?: boolean;
-  childIds?: string[];
+  childIds?: string[]; // Storing multiple child ids to allow branching
   isLocked?: boolean;
   isListening?: boolean;
   isCollapsed?: boolean;
