@@ -45,7 +45,7 @@ Mac users, please use <kbd>⌘</kbd> instead of <kbd>Ctrl</kbd>
 | Dictate          | <kbd>Shift</kbd> + <kbd>Space</kbd>                      |
 | Toggle edit/view | <kbd>Enter</kbd> / <kbd>Escape</kbd> (in editable block) |
 | Select up/down   | <kbd>↑</kbd> / <kbd>↓</kbd>                              |
-| Create backup    | <kbd>Ctrl</kbd> + <kbd>s</kbd>                           |
-| Restore backup   | <kbd>Ctrl</kbd> + <kbd>o</kbd>                           |
-| Export           | <kbd>Ctrl</kbd> <kbd>Shift</kbd> + <kbd>s</kbd>          |
-| Import           | <kbd>Ctrl</kbd> <kbd>Shift</kbd> + <kbd>o</kbd>          |
+| Create backup    | <kbd>Ctrl</kbd> + <kbd>S</kbd>                           |
+| Restore backup   | <kbd>Ctrl</kbd> + <kbd>O</kbd>                           |
+| Export           | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd>        |
+| Import           | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>O</kbd>        |
