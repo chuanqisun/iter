@@ -24,36 +24,43 @@ export class GenericArtifact implements ArtifactSupport {
   onEdit({ trigger, code, lang }: ArtifactContext) {
     const artifactElement = trigger.closest("artifact-element")!;
 
-    if (trigger.classList.contains("editing")) {
-      trigger.classList.remove("editing");
-      trigger.textContent = "Edit";
-      const editor = artifactElement.querySelector<CodeEditorElement>("code-editor-element")!;
+    trigger.classList.add("editing");
+    trigger.textContent = "View";
+    const editorContainer = artifactElement.querySelector("artifact-edit")!;
+    const editor = document.createElement("code-editor-element") as CodeEditorElement;
+    editor.setAttribute("data-lang", lang);
+    editor.setAttribute("data-value", code);
+    editorContainer.appendChild(editor);
+
+    editor.addEventListener("contentchange", () => {
       const latestSourceCode = editor.value;
-      const allArtifacts = [...artifactElement.parentElement!.querySelectorAll("artifact-element")];
-      const index = allArtifacts.indexOf(artifactElement);
-      artifactElement
-        .closest(".js-message")
-        ?.querySelector("code-block-events")
-        ?.dispatchEvent(new CustomEvent("codeblockchange", { detail: { index, prev: code, current: latestSourceCode } }));
-      editor.remove();
-      return;
-    } else {
-      trigger.classList.add("editing");
-      trigger.textContent = "View";
-      const editorContainer = artifactElement.querySelector("artifact-edit")!;
-      const editor = document.createElement("code-editor-element") as CodeEditorElement;
-      editor.setAttribute("data-lang", lang);
-      editor.setAttribute("data-value", code);
-      editorContainer.appendChild(editor);
+      artifactElement.querySelector("artifact-source")!.textContent = latestSourceCode;
+      // const isRunning = !!artifactElement.querySelector<HTMLButtonElement>(`[data-action="run"].running`);
+      // TODO: push updates to live debug view
+    });
+  }
 
-      editor.addEventListener("contentchange", () => {
-        const latestSourceCode = editor.value;
-        artifactElement.querySelector("artifact-source")!.textContent = latestSourceCode;
-        // const isRunning = !!artifactElement.querySelector<HTMLButtonElement>(`[data-action="run"].running`);
-        // TODO: push updates to live debug view
-      });
+  onEditExit({ trigger, code }: ArtifactContext) {
+    const artifactElement = trigger.closest("artifact-element")!;
 
-      return;
-    }
+    trigger.classList.remove("editing");
+    trigger.textContent = "Edit";
+    const editor = artifactElement.querySelector<CodeEditorElement>("code-editor-element")!;
+    const latestSourceCode = editor.value;
+    const allArtifacts = [...artifactElement.parentElement!.querySelectorAll("artifact-element")];
+    const index = allArtifacts.indexOf(artifactElement);
+    artifactElement
+      .closest(".js-message")
+      ?.querySelector("code-block-events")
+      ?.dispatchEvent(new CustomEvent("codeblockchange", { detail: { index, prev: code, current: latestSourceCode } }));
+    editor.remove();
+  }
+
+  onRunExit({ trigger }: ArtifactContext) {
+    const renderContainer = trigger.closest("artifact-element")?.querySelector<HTMLElement>("artifact-preview");
+    if (!renderContainer) return;
+
+    trigger.classList.remove("running");
+    renderContainer.innerHTML = "";
   }
 }

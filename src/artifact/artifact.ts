@@ -93,7 +93,12 @@ export function handleArtifactActions(event: MouseEvent) {
 
   switch (action) {
     case "edit": {
-      artifact.onEdit({ lang, code, trigger });
+      const isEditing = trigger.classList.contains("editing");
+      if (isEditing) {
+        return artifact.onEditExit({ lang, code, trigger });
+      } else {
+        artifact.onEdit({ lang, code, trigger });
+      }
       return;
     }
 
@@ -103,7 +108,13 @@ export function handleArtifactActions(event: MouseEvent) {
     }
 
     case "run": {
-      artifact.onRun?.({ lang, code, trigger });
+      const isRunning = trigger.classList.contains("running");
+      if (isRunning) {
+        artifact.onRunExit?.({ lang, code, trigger });
+      } else {
+        artifact.onRun?.({ lang, code, trigger });
+      }
+
       return;
     }
 
