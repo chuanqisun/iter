@@ -42,7 +42,7 @@ Mac users, please use <kbd>⌘</kbd> instead of <kbd>Ctrl</kbd>
 | ---------------- | -------------------------------------------------------- |
 | Send message     | <kbd>Ctrl</kbd> + <kbd>Enter</kbd>                       |
 | Abort action     | <kbd>Escape</kbd> (when streaming response)              |
-| Dictate          | <kbd>Shift</kbd> + <kbd>Space</kbd>                      |
+| Dictate          | <kbd>Shift</kbd> + <kbd>Space</kbd> (hold to talk)       |
 | Toggle edit/view | <kbd>Enter</kbd> / <kbd>Escape</kbd> (in editable block) |
 | Select up/down   | <kbd>↑</kbd> / <kbd>↓</kbd>                              |
 | Create backup    | <kbd>Ctrl</kbd> + <kbd>S</kbd>                           |
