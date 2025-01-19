@@ -36,6 +36,7 @@ export class GenericArtifact implements ArtifactSupport {
     editor.addEventListener("contentchange", () => {
       const latestSourceCode = editor.value;
       artifactElement.querySelector("artifact-source")!.textContent = latestSourceCode;
+      artifactElement.dispatchEvent(new CustomEvent("rerun", { detail: latestSourceCode }));
     });
 
     editor.addEventListener("escape", () => this.onEditExit({ trigger, code, lang }));

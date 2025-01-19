@@ -76,20 +76,29 @@ export function useArtifactActions() {
 
 export function handleArtifactActions(event: MouseEvent) {
   const trigger = (event.target as HTMLElement).closest(`artifact-action [data-action]`) as HTMLElement;
-  const code = trigger?.closest("artifact-element")?.querySelector("artifact-source")?.textContent ?? "";
   const action = trigger?.dataset.action;
-  const lang = trigger?.closest("artifact-element")?.getAttribute("lang");
+
+  const artifactElement = trigger?.closest("artifact-element");
+  if (!artifactElement) return;
+
+  const code = artifactElement?.querySelector("artifact-source")?.textContent ?? "";
+  const lang = artifactElement?.getAttribute("lang");
   if (!lang) return;
+
   const artifact = supportedArtifacts.find((art) => art.onResolveLanguage(lang));
   if (!artifact) return;
 
   switch (action) {
     case "edit": {
       const isEditing = trigger.classList.contains("running");
+      const handleRerun = (e: Event) => artifact.onRun?.({ lang, code: (e as CustomEvent<string>).detail, trigger });
+
       if (isEditing) {
+        artifactElement.removeEventListener("rerun", handleRerun);
         artifact.onRunExit?.({ lang, code, trigger });
         artifact.onEditExit({ lang, code, trigger });
       } else {
+        artifactElement.addEventListener("rerun", handleRerun);
         artifact.onEdit({ lang, code, trigger });
         artifact.onRun?.({ lang, code, trigger });
       }
