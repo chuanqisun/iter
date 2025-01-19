@@ -91,7 +91,14 @@ export function handleArtifactActions(event: MouseEvent) {
   switch (action) {
     case "edit": {
       const isEditing = trigger.classList.contains("running");
-      const handleRerun = (e: Event) => artifact.onRun?.({ lang, code: (e as CustomEvent<string>).detail, trigger });
+      let currentCode = code;
+      const handleRerun = (e: Event) => {
+        if (!artifact.onRun) return;
+        const updatedCode = (e as CustomEvent<string>).detail;
+        if (updatedCode === currentCode) return;
+        artifact.onRun?.({ lang, code: updatedCode, trigger });
+        currentCode = updatedCode;
+      };
 
       if (isEditing) {
         artifactElement.removeEventListener("rerun", handleRerun);
@@ -177,8 +184,9 @@ export const artifactStyles = css`
     }
 
     iframe {
+      display: block;
       width: 100%;
-      resize: vertical;
+      height: 100%;
     }
   }
 
