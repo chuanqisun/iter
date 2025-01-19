@@ -342,6 +342,30 @@ export function ChatTree() {
     return () => speech.removeEventListener("result", onResult);
   }, []);
 
+  // global keyboard
+  useEffect(() => {
+    const handleGlobalKeydown = (e: KeyboardEvent) => {
+      const combo = getCombo(e);
+
+      if (combo === "ctrl+s") {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("// TODO export to file");
+        return;
+      }
+
+      if (combo === "ctrl+o") {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("// TODO import from file");
+        return;
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeydown, { capture: true });
+    return () => window.removeEventListener("keydown", handleGlobalKeydown, { capture: true });
+  }, []);
+
   const handleKeydown = useCallback(
     async (nodeId: string, e: React.KeyboardEvent<HTMLTextAreaElement | HTMLDivElement>) => {
       const targetNode = treeNodes.find((node) => node.id === nodeId);
