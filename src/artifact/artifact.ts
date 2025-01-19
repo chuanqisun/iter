@@ -202,6 +202,7 @@ export const artifactStyles = css`
     .cm-editor {
       padding: 0;
       border: none;
+      resize: horizontal;
     }
 
     & .split-layout {
@@ -213,6 +214,11 @@ export const artifactStyles = css`
 
     &[data-is-runnable="true"] .split-layout {
       grid-template-columns: 1fr 1fr;
+    }
+
+    /* once user has resized the editor, left pane should fit content */
+    &[data-is-runnable="true"]:has(.cm-editor[style]) .split-layout {
+      grid-template-columns: auto 1fr;
     }
   }
 

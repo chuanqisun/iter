@@ -42,6 +42,11 @@ body {
   background-color: var(--body-background);
   font-family: var(--system-font);
   overflow-y: scroll;
+
+  /** HACK disable body scroll when full screen editor is on */
+  &:has(artifact-element [data-action="edit"].running) {
+    overflow: hidden;
+  }
 }
 
 dialog {

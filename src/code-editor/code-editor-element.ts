@@ -40,7 +40,6 @@ export class CodeEditorElement extends HTMLElement {
         ]),
         githubDark,
         dynamicLanguage.of([]),
-        EditorView.lineWrapping,
         EditorView.focusChangeEffect.of((state, focusing) => {
           if (focusing) return null;
           this.dispatchEvent(new CustomEvent("contentchange", { detail: state.doc.toString() }));
