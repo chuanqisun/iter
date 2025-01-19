@@ -1,6 +1,6 @@
 import { createESPlayDocument } from "../lib/create-esplay-document";
 import { embedFileAccessToDocument, injectIframeFileAccessToDocument } from "../lib/file-access";
-import { runIframe } from "../lib/run-iframe";
+import { toggleIframeRun } from "../lib/run-iframe";
 import { saveTextFile } from "../lib/save-text-file";
 import { GenericArtifact } from "./generic";
 import type { ArtifactContext } from "./type";
@@ -11,7 +11,7 @@ export class ScriptArtifact extends GenericArtifact {
   }
 
   onRun({ trigger, code }: ArtifactContext) {
-    runIframe(trigger, injectIframeFileAccessToDocument(createESPlayDocument(code)));
+    toggleIframeRun(trigger, injectIframeFileAccessToDocument(createESPlayDocument(code)));
   }
 
   async onSave({ code }: ArtifactContext) {
