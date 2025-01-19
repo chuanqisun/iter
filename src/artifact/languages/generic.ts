@@ -25,7 +25,7 @@ export class GenericArtifact implements ArtifactSupport {
     const artifactElement = trigger.closest("artifact-element")!;
 
     trigger.classList.add("running");
-    trigger.textContent = "View";
+    trigger.textContent = "Back";
     const editorContainer = artifactElement.querySelector("artifact-edit")!;
     const editor = document.createElement("code-editor-element") as CodeEditorElement;
     editor.setAttribute("data-lang", lang);
