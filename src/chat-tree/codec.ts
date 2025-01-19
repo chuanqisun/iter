@@ -41,6 +41,7 @@ async function stringifyUserMessage(node: ChatNode) {
     (node.files ?? [])?.map(async (file) => {
       const object = document.createElement("object");
       object.type = file.type;
+      object.name = file.name;
       object.data = await fileToBase64DataUrl(file);
       return object;
     })
@@ -62,14 +63,18 @@ async function fileToBase64DataUrl(file: File) {
 
 export async function parseChat(raw: string, preserveIds?: string[]): Promise<ChatNode[]> {
   const dom = new DOMParser().parseFromString(raw, "text/html");
-  const nodes = [...dom.querySelectorAll<HTMLElement>(`[data-role]`)]
-    .map((el) => (el.dataset.role === "user" ? parseUserMessage(el) : parseSystemOrAssistantMessage(el)))
-    .map((node, i) => ({ ...node, id: preserveIds?.at(i) ?? node.id }));
+  const nodes = (
+    await Promise.all(
+      [...dom.querySelectorAll<HTMLElement>(`[data-role]`)].map(async (el) =>
+        el.dataset.role === "user" ? await parseUserMessage(el) : parseSystemOrAssistantMessage(el)
+      )
+    )
+  ).map((node, i) => ({ ...node, id: preserveIds?.at(i) ?? node.id }));
 
   // use the next node id as the current node's childId.
   const linkedNodes = nodes.map((node, i) => ({ ...node, childIds: i < nodes.length - 1 ? [nodes[i + 1].id] : undefined } satisfies ChatNode));
 
-  return await Promise.all(linkedNodes);
+  return linkedNodes;
 }
 
 function parseSystemOrAssistantMessage(node: HTMLElement): ChatNode {
@@ -78,7 +83,16 @@ function parseSystemOrAssistantMessage(node: HTMLElement): ChatNode {
   return { id: crypto.randomUUID(), role, content, isEntry: role === "system" };
 }
 
-function parseUserMessage(node: HTMLElement): ChatNode {
+async function parseUserMessage(node: HTMLElement): Promise<ChatNode> {
   const content = [...node.querySelectorAll("p")].map((p) => p.textContent).join("\n\n");
-  return { id: crypto.randomUUID(), role: node.dataset.role as "user", content };
+  const images = [...node.querySelectorAll("img")].map((img) => img.src);
+  const files: File[] = await Promise.all(
+    [...node.querySelectorAll("object")].map((obj) =>
+      fetch(obj.data)
+        .then((res) => res.blob())
+        .then((blob) => new File([blob], obj.name, { type: obj.type }))
+    )
+  );
+
+  return { id: crypto.randomUUID(), role: node.dataset.role as "user", images, files, content };
 }
