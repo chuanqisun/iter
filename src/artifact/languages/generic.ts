@@ -1,3 +1,4 @@
+import { CodeEditorElement } from "../../code-editor/code-editor-element";
 import { supportedLanguages } from "../artifact";
 import type { ArtifactContext, ArtifactSupport } from "./type";
 
@@ -18,5 +19,50 @@ export class GenericArtifact implements ArtifactSupport {
       trigger,
       window.setTimeout(() => trigger.classList.remove("copied"), 3000)
     );
+  }
+
+  onEdit({ trigger, code, lang }: ArtifactContext) {
+    const artifactElement = trigger.closest("artifact-element")!;
+
+    trigger.classList.add("running");
+    trigger.textContent = "Back";
+    const editorContainer = artifactElement.querySelector("artifact-edit")!;
+    const editor = document.createElement("code-editor-element") as CodeEditorElement;
+    editor.setAttribute("data-lang", lang);
+    editor.setAttribute("data-value", code);
+    editor.setAttribute("autofocus", "");
+    editorContainer.appendChild(editor);
+
+    editor.addEventListener("contentchange", () => {
+      const latestSourceCode = editor.value;
+      artifactElement.querySelector("artifact-source")!.textContent = latestSourceCode;
+      artifactElement.dispatchEvent(new CustomEvent("rerun", { detail: latestSourceCode }));
+    });
+
+    editor.addEventListener("escape", () => this.onEditExit({ trigger, code, lang }));
+  }
+
+  onEditExit({ trigger, code }: ArtifactContext) {
+    const artifactElement = trigger.closest("artifact-element")!;
+
+    trigger.classList.remove("running");
+    trigger.textContent = "Edit";
+    const editor = artifactElement.querySelector<CodeEditorElement>("code-editor-element")!;
+    const latestSourceCode = editor.value;
+    const allArtifacts = [...artifactElement.parentElement!.querySelectorAll("artifact-element")];
+    const index = allArtifacts.indexOf(artifactElement);
+    artifactElement
+      .closest(".js-message")
+      ?.querySelector("code-block-events")
+      ?.dispatchEvent(new CustomEvent("codeblockchange", { detail: { index, prev: code, current: latestSourceCode } }));
+    editor.remove();
+  }
+
+  onRunExit({ trigger }: ArtifactContext) {
+    const renderContainer = trigger.closest("artifact-element")?.querySelector<HTMLElement>("artifact-preview");
+    if (!renderContainer) return;
+
+    trigger.classList.remove("running");
+    renderContainer.innerHTML = "";
   }
 }
