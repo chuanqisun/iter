@@ -1,6 +1,5 @@
 import { CodeEditorElement } from "../../code-editor/code-editor-element";
 import { supportedLanguages } from "../artifact";
-import { updateIframe } from "../lib/run-iframe";
 import type { ArtifactContext, ArtifactSupport } from "./type";
 
 const timers = new WeakMap<Element, number>();
@@ -50,9 +49,7 @@ export class GenericArtifact implements ArtifactSupport {
       editor.addEventListener("contentchange", () => {
         const latestSourceCode = editor.value;
         const isRunning = !!artifactElement.querySelector<HTMLButtonElement>(`[data-action="run"].running`);
-        if (isRunning) {
-          updateIframe(trigger, latestSourceCode);
-        }
+        // TODO: push updates to live debug view
       });
 
       return;
