@@ -29,27 +29,19 @@ async function initializeMarked() {
         });
 
         return `
-        <artifact-element lang="${lang}">
+        <artifact-element lang="${lang}" data-is-runnable="${supportedArtifacts.some((art) => !!art.onRun && art.onResolveLanguage(lang))}">
           <artifact-source>${highlightedHtml}</artifact-source>  
-          <artifact-preview></artifact-preview>
-          <artifact-edit></artifact-edit>
+          <div class="split-layout">
+            <artifact-edit></artifact-edit>
+            <artifact-preview></artifact-preview>
+          </div>
           <artifact-action>
-            ${
-              supportedArtifacts.some((art) => !!art.onRun && art.onResolveLanguage(lang))
-                ? `
-                <button data-action="run">
-                  <span class="ready">Run</span>
-                  <span class="running">Stop</span>
-                </button>
-                ${supportedArtifacts.some((art) => art.onSave) ? `<button data-action="save">Save</button>` : ""}
-              `
-                : ""
-            }
             <button data-action="edit">Edit</button>
             <button class="copy" data-action="copy">
               <span class="ready">Copy</span>
               <span class="success">✅ Copied</span>
             </button>
+            ${supportedArtifacts.some((art) => art.onSave) ? `<button data-action="save">Save</button>` : ""}
           </artifact-action>
         </artifact-element>`;
       },
@@ -93,28 +85,19 @@ export function handleArtifactActions(event: MouseEvent) {
 
   switch (action) {
     case "edit": {
-      const isEditing = trigger.classList.contains("editing");
+      const isEditing = trigger.classList.contains("running");
       if (isEditing) {
-        return artifact.onEditExit({ lang, code, trigger });
+        artifact.onRunExit?.({ lang, code, trigger });
+        artifact.onEditExit({ lang, code, trigger });
       } else {
         artifact.onEdit({ lang, code, trigger });
+        artifact.onRun?.({ lang, code, trigger });
       }
       return;
     }
 
     case "copy": {
       artifact.onCopy({ lang, code, trigger });
-      return;
-    }
-
-    case "run": {
-      const isRunning = trigger.classList.contains("running");
-      if (isRunning) {
-        artifact.onRunExit?.({ lang, code, trigger });
-      } else {
-        artifact.onRun?.({ lang, code, trigger });
-      }
-
       return;
     }
 
@@ -190,6 +173,27 @@ export const artifactStyles = css`
     }
   }
 
+  artifact-element:has([data-action="edit"].running) {
+    position: fixed;
+    z-index: 1;
+    inset: 0;
+
+    code-editor-element {
+      height: 100vh;
+    }
+
+    & .split-layout {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    &[data-is-runnable="true"] .split-layout {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
   artifact-action {
     position: absolute;
     top: 6px;
@@ -209,13 +213,13 @@ export const artifactStyles = css`
     }
   }
 
-  artifact-element:not(:has([data-action="run"].running)) {
+  artifact-element:not(:has([data-action="edit"].running)) {
     artifact-action [data-action="save"] {
       display: none;
     }
   }
 
-  artifact-element:has([data-action="edit"].editing) {
+  artifact-element:has([data-action="edit"].running) {
     [data-action="run"],
     artifact-source {
       display: none;

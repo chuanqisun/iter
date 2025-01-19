@@ -24,7 +24,7 @@ export class GenericArtifact implements ArtifactSupport {
   onEdit({ trigger, code, lang }: ArtifactContext) {
     const artifactElement = trigger.closest("artifact-element")!;
 
-    trigger.classList.add("editing");
+    trigger.classList.add("running");
     trigger.textContent = "View";
     const editorContainer = artifactElement.querySelector("artifact-edit")!;
     const editor = document.createElement("code-editor-element") as CodeEditorElement;
@@ -35,15 +35,13 @@ export class GenericArtifact implements ArtifactSupport {
     editor.addEventListener("contentchange", () => {
       const latestSourceCode = editor.value;
       artifactElement.querySelector("artifact-source")!.textContent = latestSourceCode;
-      // const isRunning = !!artifactElement.querySelector<HTMLButtonElement>(`[data-action="run"].running`);
-      // TODO: push updates to live debug view
     });
   }
 
   onEditExit({ trigger, code }: ArtifactContext) {
     const artifactElement = trigger.closest("artifact-element")!;
 
-    trigger.classList.remove("editing");
+    trigger.classList.remove("running");
     trigger.textContent = "Edit";
     const editor = artifactElement.querySelector<CodeEditorElement>("code-editor-element")!;
     const latestSourceCode = editor.value;
