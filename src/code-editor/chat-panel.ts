@@ -6,6 +6,7 @@ import { getCombo } from "../chat-tree/keyboard";
 import "./chat-panel.css";
 import { syncDispatch } from "./sync";
 
+// Reference: https://codemirror.net/examples/panel/
 export function chatPanel(): Extension[] {
   const toggleChat = StateEffect.define<boolean>();
 

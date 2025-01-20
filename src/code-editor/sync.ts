@@ -1,6 +1,7 @@
 import { Annotation, Transaction } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 
+// Reference: https://codemirror.net/examples/split/
 const syncAnnotation = Annotation.define<boolean>();
 export function syncDispatch(tr: Transaction, view: EditorView, other: EditorView) {
   view.update([tr]);
