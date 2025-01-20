@@ -6,10 +6,10 @@ export interface ArtifactSupport {
   onCopy: ArtifactHandler;
   onRun?: ArtifactHandler;
   onRunExit?: ArtifactHandler;
-  onSave?: ArtifactHandler;
+  onSave: ArtifactHandler;
 }
 
-export type ArtifactHandler = (context: ArtifactContext) => void;
+export type ArtifactHandler = (context: ArtifactContext) => any;
 export interface ArtifactContext {
   lang: string;
   code: string;

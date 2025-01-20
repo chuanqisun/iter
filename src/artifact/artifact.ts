@@ -28,8 +28,10 @@ async function initializeMarked() {
           theme: "dark-plus",
         });
 
+        const matchingArtifact = supportedArtifacts.find((art) => art.onResolveLanguage(lang));
+
         return `
-        <artifact-element lang="${lang}" data-is-runnable="${supportedArtifacts.some((art) => !!art.onRun && art.onResolveLanguage(lang))}">
+        <artifact-element lang="${lang}" data-is-runnable="${!!matchingArtifact?.onRun}">
           <artifact-source>${highlightedHtml}</artifact-source>  
           <artifact-focus-trap-element disabled>
             <div class="split-layout">
@@ -42,7 +44,7 @@ async function initializeMarked() {
                 <span class="ready">Copy</span>
                 <span class="success">✅ Copied</span>
               </button>
-              ${supportedArtifacts.some((art) => art.onSave) ? `<button data-action="save">Download</button>` : ""}
+              <button data-action="save">Download</button>
             </artifact-action>
           </artifact-focus-trap-element>
         </artifact-element>`;

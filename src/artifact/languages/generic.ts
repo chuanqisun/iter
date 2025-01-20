@@ -1,5 +1,6 @@
 import { CodeEditorElement } from "../../code-editor/code-editor-element";
 import { supportedLanguages } from "../artifact";
+import { saveTextFile } from "../lib/save-text-file";
 import type { ArtifactContext, ArtifactSupport } from "./type";
 
 const timers = new WeakMap<Element, number>();
@@ -86,5 +87,9 @@ export class GenericArtifact implements ArtifactSupport {
 
     trigger.classList.remove("running");
     renderContainer.innerHTML = "";
+  }
+
+  onSave({ lang, code }: ArtifactContext) {
+    saveTextFile(`text/plain`, lang, code);
   }
 }
