@@ -637,10 +637,12 @@ export function ChatTree() {
     setTreeNodes((nodes) => {
       const isExitEditing = nodes.find((node) => node.id === nodeId)?.isViewSource;
       if (isExitEditing) {
-        setTimeout(() => {
-          // programmatically focus the textarea
-          document.getElementById(nodeId)?.focus();
-        }, 0);
+        if (document.activeElement?.closest("code-editor-element")) {
+          setTimeout(() => {
+            // programmatically focus the textarea if transitioning from text editor
+            document.getElementById(nodeId)?.focus();
+          }, 0);
+        }
       }
       return nodes.map(
         patchNode(
@@ -741,7 +743,7 @@ export function ChatTree() {
                 <>
                   {node.isViewSource ? (
                     <code-editor-element
-                      autofocus
+                      data-autofocus
                       data-value={node.content}
                       data-lang="md"
                       style={{ "--max-height": node.isCollapsed ? `${COLLAPSED_HEIGHT}px` : undefined } as any}

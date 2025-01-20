@@ -83,8 +83,9 @@ export class CodeEditorElement extends HTMLElement {
       this.value = this.getAttribute("data-value") ?? "";
     }
 
-    if (this.hasAttribute("autofocus")) {
-      this.editorView.focus();
+    if (this.hasAttribute("data-autofocus")) {
+      // HACK: there is an unknown issue that moves focus away when entering edit mode from clicking a button
+      setTimeout(() => this.editorView?.focus());
     }
   }
 
