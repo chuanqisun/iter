@@ -2,9 +2,10 @@ import { EditorState, StateEffect, StateField, type Extension } from "@codemirro
 import { EditorView, keymap, showPanel, type KeyBinding } from "@codemirror/view";
 import { getChatInstance } from "../chat-tree/chat-instance";
 import { getCombo } from "../chat-tree/keyboard";
+import { extractStreamContent } from "./parse-xml";
+import { syncDispatch } from "./sync";
 
 import "./chat-panel.css";
-import { syncDispatch } from "./sync";
 
 // Reference: https://codemirror.net/examples/panel/
 export function chatPanel(): Extension[] {
@@ -64,7 +65,13 @@ export function chatPanel(): Extension[] {
 
     const selectedText = view.state.sliceDoc(currentSelectionRange.from, currentSelectionRange.to);
     const fullText = view.state.doc.toString();
-    console.log({ selectedText, fullText });
+
+    // surround the selectedText with <cursor></cursor>
+    const fullTextWithCursor =
+      fullText.slice(0, currentSelectionRange.from) + "<cursor>" + selectedText + "</cursor>" + fullText.slice(currentSelectionRange.to);
+
+    const lang = params.view.contentDOM.closest("code-editor-element")?.getAttribute("data-lang") ?? "text";
+    console.log({ selectedText, fullText, fullTextWithCursor, lang });
 
     const chatViewContainer = document.createElement("div");
     const chatView = new EditorView({
@@ -74,7 +81,61 @@ export function chatPanel(): Extension[] {
     });
 
     const chat = getChatInstance();
-    const chunks = chat({ messages: [{ role: "user", content: prompt }] });
+    const chunks = chat({
+      messages: [
+        {
+          role: "system",
+          content: `
+You are a text editor assistant. The content of the editor is wrapped in <editor-content>...</editor-content> tags. The curosr and selected text is marked by <cursor>...</cursor> tags.
+Now based user's provided goal/instruction wrapped in <user-goal>...</user-goal> tags, replace the content under cursor with <cursor-new>...</cursor-new>
+      `,
+        },
+        {
+          role: "user",
+          content: `
+<editor-content lang="javascript">
+function main() {
+  <cursor></cursor>
+}
+</editor-content>
+
+<goal>print hello world</goal>
+          `.trim(),
+        },
+        {
+          role: "assistant",
+          content: `
+<cursor-new>console.log("hello world");</cursor-new>
+          `.trim(),
+        },
+        {
+          role: "user",
+          content: `
+<editor-content lang="text">
+Hello, I am <cursor-content>John</cursor-content>.
+</editor-content>
+
+<goal>Rename to Mary</goal>
+          `.trim(),
+        },
+        {
+          role: "assistant",
+          content: `
+<cursor-new>Mary</cursor-new>
+          `.trim(),
+        },
+        {
+          role: "user",
+          content: `
+<editor-content lang="${lang}">
+${fullTextWithCursor.trim()}
+</editor-content>
+
+<goal>${prompt.trim()}</goal>
+          `.trim(),
+        },
+      ],
+    });
 
     // clear the text in the currentSelectionRange
     // shrink the currentSelectionRange in chatView
@@ -83,7 +144,9 @@ export function chatPanel(): Extension[] {
       selection: { head: currentSelectionRange.from, anchor: currentSelectionRange.from },
     });
 
-    for await (const chunk of chunks) {
+    const newCursorContent = extractStreamContent(chunks, "cursor-new");
+
+    for await (const chunk of newCursorContent) {
       chatView.dispatch({
         changes: { from: chatView.state.selection.main.from, insert: chunk },
         selection: { anchor: chatView.state.selection.main.from + chunk.length, head: chatView.state.selection.main.from + chunk.length },
