@@ -429,8 +429,14 @@ export function ChatTree() {
 
       // Enter to activate edit mode
       if (targetNode.role === "assistant" && combo === "enter") {
+        // Enter the entire message
         if ((e.target as HTMLElement).classList.contains("js-focusable")) {
           setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { isViewSource: true })));
+        }
+
+        // Enter a code block
+        if ((e.target as HTMLElement).closest("artifact-source")) {
+          (e.target as HTMLElement).closest("artifact-element")?.querySelector<HTMLButtonElement>(`[data-action="edit"]`)?.click();
         }
         return;
       }
