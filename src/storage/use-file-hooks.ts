@@ -17,7 +17,7 @@ export function useFileHooks(treeNodes: ChatNode[], setTreeNodes: (value: React.
       .toISOString()
       .split(".")[0]
       .replace(/[-T:.]/g, "");
-    const htmlFile = new File([raw], `iter-${timestamp}`, { type: "text/html" });
+    const htmlFile = new File([raw], `session-${timestamp}`, { type: "text/html" });
     downloadFile(htmlFile);
     console.log(`[file] exported`);
     return htmlFile;
