@@ -2,58 +2,64 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirro
 import { markdown } from "@codemirror/lang-markdown";
 import { defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
-import { Compartment } from "@codemirror/state";
+import { Compartment, EditorState, type Extension } from "@codemirror/state";
 import { drawSelection, EditorView, highlightSpecialChars, keymap } from "@codemirror/view";
 import { githubDark } from "@uiw/codemirror-theme-github/src/index.ts";
 
 import "./code-editor-element.css";
 
 const dynamicLanguage = new Compartment();
+const dynamicReadonly = new Compartment();
 
 export function defineCodeEditorElement() {
   customElements.define("code-editor-element", CodeEditorElement);
 }
 
 export class CodeEditorElement extends HTMLElement {
-  static observedAttributes = ["data-lang", "data-value"];
+  static observedAttributes = ["data-lang", "data-value", "data-readonly"];
 
   private editorView: EditorView | null = null;
 
+  private extensions: Extension[] = [
+    highlightSpecialChars(),
+    history(),
+    drawSelection(),
+    syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+    keymap.of([
+      {
+        key: "Ctrl-Enter",
+        mac: "Meta-Enter",
+        stopPropagation: true,
+        run: () => {
+          this.dispatchEvent(new CustomEvent("run", { detail: this.value }));
+          return true;
+        },
+      },
+      {
+        key: "Escape",
+        stopPropagation: true,
+        run: () => {
+          this.dispatchEvent(new Event("escape"));
+          return true;
+        },
+      },
+      ...defaultKeymap,
+      ...historyKeymap,
+      indentWithTab,
+    ]),
+    githubDark,
+    dynamicReadonly.of([]),
+    dynamicLanguage.of([]),
+    EditorView.focusChangeEffect.of((state, focusing) => {
+      if (focusing) return null;
+      this.dispatchEvent(new CustomEvent("contentchange", { detail: state.doc.toString() }));
+      return null;
+    }),
+  ];
+
   connectedCallback() {
     this.editorView = new EditorView({
-      extensions: [
-        highlightSpecialChars(),
-        history(),
-        drawSelection(),
-        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-        keymap.of([
-          {
-            key: "Ctrl-Enter",
-            mac: "Meta-Enter",
-            run: () => {
-              this.dispatchEvent(new CustomEvent("run", { detail: this.value }));
-              return true;
-            },
-          },
-          {
-            key: "Escape",
-            run: () => {
-              this.dispatchEvent(new Event("escape"));
-              return true;
-            },
-          },
-          ...defaultKeymap,
-          ...historyKeymap,
-          indentWithTab,
-        ]),
-        githubDark,
-        dynamicLanguage.of([]),
-        EditorView.focusChangeEffect.of((state, focusing) => {
-          if (focusing) return null;
-          this.dispatchEvent(new CustomEvent("contentchange", { detail: state.doc.toString() }));
-          return null;
-        }),
-      ],
+      extensions: [...this.extensions],
       parent: this,
     });
 
@@ -66,6 +72,18 @@ export class CodeEditorElement extends HTMLElement {
     if (this.hasAttribute("autofocus")) {
       this.editorView.focus();
     }
+
+    this.addEventListener("keydown", (e) => {
+      if (e.target !== this) return;
+
+      if (e.key === "Escape") {
+        this.dispatchEvent(new Event("escapecontainer"));
+      }
+
+      if (e.key === "Enter") {
+        this.dispatchEvent(new Event("entercontainer"));
+      }
+    });
   }
 
   attributeChangedCallback(name: string, _oldValue: string, newValue: string) {
@@ -76,6 +94,16 @@ export class CodeEditorElement extends HTMLElement {
     if (name === "data-value") {
       this.value = newValue;
     }
+
+    if (name === "data-readonly") {
+      const isReadonly = this.hasAttribute("data-readonly");
+      this.updateReadonly(isReadonly);
+    }
+  }
+
+  updateReadonly(isReadonly: boolean) {
+    const reconfig = dynamicReadonly.reconfigure(EditorView.editable.of(!isReadonly));
+    this.editorView?.dispatch({ effects: reconfig });
   }
 
   updateLanguage(lang: string) {
@@ -85,14 +113,17 @@ export class CodeEditorElement extends HTMLElement {
     });
   }
 
+  focusEditor() {
+    this.editorView?.focus();
+  }
+
   set value(value: string) {
-    this.editorView?.dispatch({
-      changes: {
-        from: 0,
-        to: this.editorView.state.doc.length,
-        insert: value,
-      },
-    });
+    this.editorView?.setState(
+      EditorState.create({
+        doc: value,
+        extensions: this.extensions,
+      })
+    );
   }
 
   get value() {

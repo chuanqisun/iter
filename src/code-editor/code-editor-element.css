@@ -1,6 +1,11 @@
 code-editor-element {
   display: grid;
   flex-grow: 1;
+
+  &:focus .cm-editor {
+    outline: 2px solid currentColor;
+    outline-offset: -2px;
+  }
 }
 
 .cm-editor {
