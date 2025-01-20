@@ -82,7 +82,8 @@ export class CodeEditorElement extends HTMLElement {
     this.updateLanguage(this.getAttribute("data-lang") ?? "md");
 
     if (this.hasAttribute("data-value")) {
-      this.value = this.getAttribute("data-value") ?? "";
+      // initial load, avoid setter.
+      this.loadDocument(this.getAttribute("data-value") ?? "");
     }
 
     if (this.hasAttribute("data-autofocus")) {
@@ -120,9 +121,14 @@ export class CodeEditorElement extends HTMLElement {
   }
 
   set value(value: string) {
+    this.editorView?.dispatch({ changes: { from: 0, to: this.editorView.state.doc.length, insert: value } });
+  }
+
+  /** This will wipeout history and reset UI state */
+  loadDocument(text: string) {
     this.editorView?.setState(
       EditorState.create({
-        doc: value,
+        doc: text,
         extensions: this.extensions,
       })
     );
