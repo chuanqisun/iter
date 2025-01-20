@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
-import { artifactStyles, markdownToHtml, useArtifactActions } from "../artifact/artifact";
+import { markdownToHtml, useArtifactActions } from "../artifact/artifact";
 import { getFileAccessPostscript, respondFileAccess, respondFileList } from "../artifact/lib/file-access";
 import { AutoResize } from "../form/auto-resize";
 import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
@@ -1053,6 +1053,4 @@ const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
   }
 
   ${tableStyles}
-
-  ${artifactStyles}
 `;

@@ -3,12 +3,13 @@ import { Marked } from "marked";
 import markedShiki from "marked-shiki";
 import { useEffect } from "react";
 import { bundledLanguages, createHighlighter } from "shiki/bundle/web";
-import { css } from "styled-components";
 import { GenericArtifact } from "./languages/generic";
 import { MermaidArtifact } from "./languages/mermaid";
 import { ScriptArtifact } from "./languages/script";
 import { type ArtifactSupport } from "./languages/type";
 import { XmlArtifact } from "./languages/xml";
+
+import "./artifact.css";
 
 export const supportedLanguages = Object.keys(bundledLanguages);
 
@@ -34,10 +35,10 @@ async function initializeMarked() {
         <artifact-element lang="${lang}" data-is-runnable="${!!matchingArtifact?.onRun}">
           <artifact-source>${highlightedHtml}</artifact-source>  
           <artifact-focus-trap-element disabled>
-            <div class="split-layout">
+            <dialog class="split-layout">
               <artifact-edit></artifact-edit>
               <artifact-preview></artifact-preview>
-            </div>
+            </dialog>
             <artifact-action>
               <button data-action="edit">Edit</button>
               <button class="copy" data-action="copy">
@@ -109,6 +110,7 @@ export function handleArtifactActions(event: MouseEvent) {
         artifact.onRunExit?.({ lang, code, trigger });
         artifact.onEditExit({ lang, code, trigger });
       } else {
+        artifactElement.querySelector("dialog")?.showModal();
         artifactElement.addEventListener("rerun", handleRerun);
         artifact.onEdit({ lang, code, trigger });
         artifact.onRun?.({ lang, code, trigger });
@@ -127,134 +129,3 @@ export function handleArtifactActions(event: MouseEvent) {
     }
   }
 }
-
-const artifactActionsStyles = css`
-  button {
-    font-size: 12px;
-    padding: 0 4px;
-
-    opacity: 0.725;
-    cursor: pointer;
-
-    &:hover,
-    &:focus-visible {
-      opacity: 1;
-    }
-  }
-
-  [data-action="copy"] {
-    &:not(.copied) {
-      .success {
-        display: none;
-      }
-    }
-    &.copied {
-      opacity: 1;
-      .ready {
-        display: none;
-      }
-    }
-  }
-
-  [data-action="run"] {
-    &:not(.running) {
-      .running {
-        display: none;
-      }
-    }
-
-    &.running {
-      .ready {
-        display: none;
-      }
-    }
-  }
-`;
-
-export const artifactStyles = css`
-  artifact-element {
-    display: block;
-    position: relative;
-  }
-
-  artifact-preview {
-    display: block;
-    background-color: white;
-
-    &:has(svg) {
-      display: grid;
-      justify-content: center;
-      background-color: white;
-    }
-
-    iframe {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-  }
-
-  artifact-element:has([data-action="edit"].running) {
-    position: fixed;
-    z-index: 1;
-    inset: 0;
-
-    code-editor-element {
-      height: 100vh;
-    }
-
-    .cm-editor {
-      padding: 0;
-      border: none;
-      resize: horizontal;
-    }
-
-    & .split-layout {
-      position: fixed;
-      inset: 0;
-      display: grid;
-      grid-template-columns: 1fr;
-    }
-
-    &[data-is-runnable="true"] .split-layout {
-      grid-template-columns: 1fr 1fr;
-    }
-
-    /* once user has resized the editor, left pane should fit content */
-    &[data-is-runnable="true"]:has(.cm-editor[style]) .split-layout {
-      grid-template-columns: auto 1fr;
-    }
-  }
-
-  artifact-action {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-
-    ${artifactActionsStyles}
-  }
-
-  artifact-element:has([data-action="run"].running) {
-    [data-action="edit"],
-    artifact-source {
-      display: none;
-    }
-
-    artifact-action [data-action="copy"] {
-      display: none;
-    }
-  }
-
-  artifact-element:not(:has([data-action="edit"].running)) {
-    artifact-action [data-action="save"] {
-      display: none;
-    }
-  }
-
-  artifact-element:has([data-action="edit"].running) {
-    [data-action="run"],
-    artifact-source {
-      display: none;
-    }
-  }
-`;
