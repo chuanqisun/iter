@@ -35,10 +35,10 @@ async function initializeMarked() {
         <artifact-element lang="${lang}" data-is-runnable="${!!matchingArtifact?.onRun}">
           <artifact-source>${highlightedHtml}</artifact-source>  
           <artifact-focus-trap-element disabled>
-            <dialog class="split-layout">
+            <div  class="split-layout">
               <artifact-edit></artifact-edit>
               <artifact-preview></artifact-preview>
-            </dialog>
+            </div>
             <artifact-action>
               <button data-action="edit">Edit</button>
               <button class="copy" data-action="copy">
