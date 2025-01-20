@@ -28,6 +28,14 @@ export class CodeEditorElement extends HTMLElement {
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         keymap.of([
           {
+            key: "Ctrl-Enter",
+            mac: "Meta-Enter",
+            run: () => {
+              this.dispatchEvent(new CustomEvent("run", { detail: this.value }));
+              return true;
+            },
+          },
+          {
             key: "Escape",
             run: () => {
               this.dispatchEvent(new Event("escape"));

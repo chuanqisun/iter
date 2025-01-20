@@ -33,9 +33,15 @@ export class GenericArtifact implements ArtifactSupport {
     editor.setAttribute("autofocus", "");
     editorContainer.appendChild(editor);
 
+    // editor node will be removed, no need to remove listeneres
     editor.addEventListener("contentchange", () => {
       const latestSourceCode = editor.value;
       artifactElement.querySelector("artifact-source")!.textContent = latestSourceCode;
+      artifactElement.dispatchEvent(new CustomEvent("rerun", { detail: latestSourceCode }));
+    });
+
+    editor.addEventListener("run", (e) => {
+      const latestSourceCode = (e as CustomEvent<string>).detail;
       artifactElement.dispatchEvent(new CustomEvent("rerun", { detail: latestSourceCode }));
     });
 
