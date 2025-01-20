@@ -42,7 +42,7 @@ async function initializeMarked() {
                 <span class="ready">Copy</span>
                 <span class="success">✅ Copied</span>
               </button>
-              ${supportedArtifacts.some((art) => art.onSave) ? `<button data-action="save">Save</button>` : ""}
+              ${supportedArtifacts.some((art) => art.onSave) ? `<button data-action="save">Download</button>` : ""}
             </artifact-action>
           </artifact-focus-trap-element>
         </artifact-element>`;

@@ -2,6 +2,10 @@ export function saveTextFile(mimeType: string, extension: string, content: strin
   const blob = new Blob([content], { type: mimeType });
   const anchor = document.createElement("a");
   anchor.href = URL.createObjectURL(blob);
-  anchor.download = `artifact-${new Date().toISOString()}.${extension}`;
+  const timestamp = new Date()
+    .toISOString()
+    .split(".")[0]
+    .replace(/[-T:.]/g, "");
+  anchor.download = `artifact-${timestamp}.${extension}`;
   anchor.click();
 }
