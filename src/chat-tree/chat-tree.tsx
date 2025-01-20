@@ -11,6 +11,7 @@ import { useConnections } from "../settings/use-connections";
 import { showToast } from "../shell/toast";
 import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
+import { setChatInstance } from "./chat-instance";
 import { getFirstImageDataUrl } from "./clipboard";
 import { getReadableFileSize } from "./file-size";
 import { autoFocusNthInput } from "./focus";
@@ -123,6 +124,14 @@ export function ChatTree() {
     },
     [connectionKey.value, getChatStreamProxy, temperature.value, maxTokens.value]
   );
+
+  // expose latest chatStreamingProxy to web components
+  useEffect(() => {
+    const chatStreamProxy = getChatStreamProxy?.(connectionKey.value ?? "");
+    if (!chatStreamProxy) return;
+
+    setChatInstance(chatStreamProxy);
+  }, [connectionKey]);
 
   const groupedConnections = useMemo(() => {
     return Object.entries(Object.groupBy(connections, (connection) => connection.displayGroup));
