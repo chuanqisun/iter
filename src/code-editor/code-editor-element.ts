@@ -5,6 +5,7 @@ import { languages } from "@codemirror/language-data";
 import { Compartment, EditorState, type Extension } from "@codemirror/state";
 import { drawSelection, EditorView, highlightSpecialChars, keymap } from "@codemirror/view";
 import { githubDark } from "@uiw/codemirror-theme-github/src/index.ts";
+import { chatPanel } from "./chat-panel";
 
 import "./code-editor-element.css";
 
@@ -69,6 +70,7 @@ export class CodeEditorElement extends HTMLElement {
       this.dispatchEvent(new CustomEvent("contentchange", { detail: state.doc.toString() }));
       return null;
     }),
+    ...chatPanel(),
   ];
 
   connectedCallback() {
