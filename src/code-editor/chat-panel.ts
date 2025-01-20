@@ -1,11 +1,12 @@
+import "./chat-panel.css";
+
 import { EditorState, StateEffect, StateField, type Extension } from "@codemirror/state";
 import { EditorView, keymap, showPanel, type KeyBinding } from "@codemirror/view";
 import { getChatInstance } from "../chat-tree/chat-instance";
 import { getCombo } from "../chat-tree/keyboard";
 import { extractStreamContent } from "./parse-xml";
+import { getCursorChatMessages } from "./prompt";
 import { syncDispatch } from "./sync";
-
-import "./chat-panel.css";
 
 // Reference: https://codemirror.net/examples/panel/
 export function chatPanel(): Extension[] {
@@ -81,61 +82,7 @@ export function chatPanel(): Extension[] {
     });
 
     const chat = getChatInstance();
-    const chunks = chat({
-      messages: [
-        {
-          role: "system",
-          content: `
-You are a text editor assistant. The content of the editor is wrapped in <editor-content>...</editor-content> tags. The curosr and selected text is marked by <cursor>...</cursor> tags.
-Now based user's provided goal/instruction wrapped in <user-goal>...</user-goal> tags, replace the content under cursor with <cursor-new>...</cursor-new>
-      `,
-        },
-        {
-          role: "user",
-          content: `
-<editor-content lang="javascript">
-function main() {
-  <cursor></cursor>
-}
-</editor-content>
-
-<goal>print hello world</goal>
-          `.trim(),
-        },
-        {
-          role: "assistant",
-          content: `
-<cursor-new>console.log("hello world");</cursor-new>
-          `.trim(),
-        },
-        {
-          role: "user",
-          content: `
-<editor-content lang="text">
-Hello, I am <cursor-content>John</cursor-content>.
-</editor-content>
-
-<goal>Rename to Mary</goal>
-          `.trim(),
-        },
-        {
-          role: "assistant",
-          content: `
-<cursor-new>Mary</cursor-new>
-          `.trim(),
-        },
-        {
-          role: "user",
-          content: `
-<editor-content lang="${lang}">
-${fullTextWithCursor.trim()}
-</editor-content>
-
-<goal>${prompt.trim()}</goal>
-          `.trim(),
-        },
-      ],
-    });
+    const chunks = chat({ messages: getCursorChatMessages({ prompt, lang, fullTextWithCursor }) });
 
     // clear the text in the currentSelectionRange
     // shrink the currentSelectionRange in chatView
