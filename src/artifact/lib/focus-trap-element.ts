@@ -20,8 +20,7 @@ export class FocusTrapElement extends HTMLElement {
     );
     this.prepend(
       FocusTrapElement.createSentinel(() => {
-        // This head element forwards the auto-focus behavior of the modal element to the first focusable child
-        this.queryFocusableChildren()[0]?.focus();
+        [...this.queryFocusableChildren()].at(-1)?.focus();
       })
     );
   }
