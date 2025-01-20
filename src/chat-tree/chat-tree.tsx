@@ -8,14 +8,14 @@ import { type GenericMessage } from "../providers/base";
 import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
 import { useConnections } from "../settings/use-connections";
+import { showToast } from "../shell/toast";
+import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import { getFirstImageDataUrl } from "./clipboard";
 import { getReadableFileSize } from "./file-size";
 import { autoFocusNthInput } from "./focus";
 import { getCombo } from "./keyboard";
 import { tableStyles } from "./table";
-import { showToast } from "./toast";
-import { uploadFiles, useFileHooks } from "./use-file-hooks";
 import { useNodeContentTransformStore } from "./use-node-content-transform-store";
 
 export interface ChatNode {
