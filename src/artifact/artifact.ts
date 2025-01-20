@@ -31,18 +31,20 @@ async function initializeMarked() {
         return `
         <artifact-element lang="${lang}" data-is-runnable="${supportedArtifacts.some((art) => !!art.onRun && art.onResolveLanguage(lang))}">
           <artifact-source>${highlightedHtml}</artifact-source>  
-          <div class="split-layout">
-            <artifact-edit></artifact-edit>
-            <artifact-preview></artifact-preview>
-          </div>
-          <artifact-action>
-            <button data-action="edit">Edit</button>
-            <button class="copy" data-action="copy">
-              <span class="ready">Copy</span>
-              <span class="success">✅ Copied</span>
-            </button>
-            ${supportedArtifacts.some((art) => art.onSave) ? `<button data-action="save">Save</button>` : ""}
-          </artifact-action>
+          <artifact-focus-trap-element>
+            <div class="split-layout">
+              <artifact-edit></artifact-edit>
+              <artifact-preview></artifact-preview>
+            </div>
+            <artifact-action>
+              <button data-action="edit">Edit</button>
+              <button class="copy" data-action="copy">
+                <span class="ready">Copy</span>
+                <span class="success">✅ Copied</span>
+              </button>
+              ${supportedArtifacts.some((art) => art.onSave) ? `<button data-action="save">Save</button>` : ""}
+            </artifact-action>
+          </artifact-focus-trap-element>
         </artifact-element>`;
       },
     })
