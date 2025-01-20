@@ -14,7 +14,7 @@ code-editor-element {
   max-height: var(--max-height);
   overflow: auto;
 
-  padding: 3px 2px; /* cm line comes with padding */
+  padding: 0 2px; /* cm line comes with padding */
   border: 1px solid currentColor;
   border-radius: 2px;
 
@@ -24,5 +24,12 @@ code-editor-element {
 
   .cm-line {
     line-height: 18px;
+  }
+
+  .cm-line:first-of-type {
+    margin-top: 3px;
+  }
+  .cm-line:last-of-type {
+    margin-bottom: 3px;
   }
 }
