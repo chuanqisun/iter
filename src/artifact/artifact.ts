@@ -132,6 +132,7 @@ export function handleArtifactActions(event: MouseEvent) {
 }
 
 function onEdit({ trigger, code, lang }: ArtifactContext) {
+  const currentFocus = document.activeElement?.closest(".js-focusable");
   const artifactElement = trigger.closest("artifact-element")!;
   const focusTrapElement = artifactElement.querySelector("artifact-focus-trap-element")!;
 
@@ -143,11 +144,12 @@ function onEdit({ trigger, code, lang }: ArtifactContext) {
   editor.setAttribute("data-value", code);
   editor.setAttribute("data-autofocus", "");
   editorContainer.appendChild(editor);
+  (editor as any).returnFocus = () => (currentFocus as HTMLElement)?.focus?.();
 
   // editor node will be removed, no need to remove listeneres
   editor.addEventListener("contentchange", () => {
     const latestSourceCode = editor.value;
-    artifactElement.querySelector("artifact-source")!.textContent = latestSourceCode;
+    // artifactElement.querySelector("artifact-source")!.textContent = latestSourceCode;
     artifactElement.dispatchEvent(new CustomEvent("rerun", { detail: latestSourceCode }));
   });
 
@@ -185,6 +187,8 @@ function onEditExit({ trigger, code }: ArtifactContext) {
     .closest(".js-message")
     ?.querySelector("code-block-events")
     ?.dispatchEvent(new CustomEvent("codeblockchange", { detail: { index, prev: code, current: latestSourceCode } }));
+
+  (editor as any).returnFocus?.();
   editor.remove();
 
   focusTrapElement.toggleAttribute("disabled", true);
