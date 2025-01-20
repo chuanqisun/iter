@@ -4,12 +4,25 @@ export function defineFocusTrapElement(tagName = "focus-trap-element") {
 }
 
 export class FocusTrapElement extends HTMLElement {
+  static observedAttributes = ["disabled"];
+
   static createSentinel(onFocus: EventListener) {
     const sentinel = document.createElement("span");
     sentinel.tabIndex = 0;
     sentinel.setAttribute("data-is-sentinel", "");
     sentinel.addEventListener("focus", onFocus);
     return sentinel;
+  }
+
+  attributeChangedCallback(name: string, _oldValue: string, _newValue: string) {
+    if (name === "disabled") {
+      this.updateDisabled(this.hasAttribute("disabled"));
+    }
+  }
+
+  private updateDisabled(isDisabled: boolean) {
+    const sentinels = this.querySelectorAll<HTMLSpanElement>("[data-is-sentinel]");
+    sentinels.forEach((s) => (s.tabIndex = isDisabled ? -1 : 0));
   }
 
   connectedCallback() {
@@ -23,6 +36,8 @@ export class FocusTrapElement extends HTMLElement {
         [...this.queryFocusableChildren()].at(-1)?.focus();
       })
     );
+
+    this.updateDisabled(this.hasAttribute("disabled"));
   }
 
   private queryFocusableChildren() {

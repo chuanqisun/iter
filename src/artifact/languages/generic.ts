@@ -23,6 +23,7 @@ export class GenericArtifact implements ArtifactSupport {
 
   onEdit({ trigger, code, lang }: ArtifactContext) {
     const artifactElement = trigger.closest("artifact-element")!;
+    const focusTrapElement = artifactElement.querySelector("artifact-focus-trap-element")!;
 
     trigger.classList.add("running");
     trigger.textContent = "Back";
@@ -57,10 +58,13 @@ export class GenericArtifact implements ArtifactSupport {
       editor.removeAttribute("data-readonly");
       editor.focusEditor();
     });
+
+    focusTrapElement.toggleAttribute("disabled", false);
   }
 
   onEditExit({ trigger, code }: ArtifactContext) {
     const artifactElement = trigger.closest("artifact-element")!;
+    const focusTrapElement = artifactElement.querySelector("artifact-focus-trap-element")!;
 
     trigger.classList.remove("running");
     trigger.textContent = "Edit";
@@ -73,6 +77,8 @@ export class GenericArtifact implements ArtifactSupport {
       ?.querySelector("code-block-events")
       ?.dispatchEvent(new CustomEvent("codeblockchange", { detail: { index, prev: code, current: latestSourceCode } }));
     editor.remove();
+
+    focusTrapElement.toggleAttribute("disabled", true);
   }
 
   onRunExit({ trigger }: ArtifactContext) {

@@ -31,7 +31,7 @@ async function initializeMarked() {
         return `
         <artifact-element lang="${lang}" data-is-runnable="${supportedArtifacts.some((art) => !!art.onRun && art.onResolveLanguage(lang))}">
           <artifact-source>${highlightedHtml}</artifact-source>  
-          <artifact-focus-trap-element>
+          <artifact-focus-trap-element disabled>
             <div class="split-layout">
               <artifact-edit></artifact-edit>
               <artifact-preview></artifact-preview>
