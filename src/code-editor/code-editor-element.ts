@@ -73,17 +73,26 @@ export class CodeEditorElement extends HTMLElement {
       this.editorView.focus();
     }
 
-    this.addEventListener("keydown", (e) => {
-      if (e.target !== this) return;
+    // handle readonly mode events
+    this.addEventListener(
+      "keydown",
+      (e) => {
+        if (!this.hasAttribute("data-readonly")) return;
 
-      if (e.key === "Escape") {
-        this.dispatchEvent(new Event("escapecontainer"));
-      }
+        if (e.key === "Escape") {
+          this.dispatchEvent(new Event("escapecontainer"));
+          e.preventDefault();
+          e.stopPropagation();
+        }
 
-      if (e.key === "Enter") {
-        this.dispatchEvent(new Event("entercontainer"));
-      }
-    });
+        if (e.key === "Enter") {
+          this.dispatchEvent(new Event("entercontainer"));
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      },
+      { capture: true }
+    );
   }
 
   attributeChangedCallback(name: string, _oldValue: string, newValue: string) {
@@ -102,7 +111,8 @@ export class CodeEditorElement extends HTMLElement {
   }
 
   updateReadonly(isReadonly: boolean) {
-    const reconfig = dynamicReadonly.reconfigure(EditorView.editable.of(!isReadonly));
+    const reconfig = dynamicReadonly.reconfigure(EditorState.readOnly.of(isReadonly)); // This keeps focusability while preventing edits
+    // const reconfig = dynamicReadonly.reconfigure(EditorView.editable.of(!isReadonly)); // This prevent DOM focusability
     this.editorView?.dispatch({ effects: reconfig });
   }
 
@@ -111,10 +121,6 @@ export class CodeEditorElement extends HTMLElement {
       const reconfig = dynamicLanguage.reconfigure(lang);
       this.editorView?.dispatch({ effects: reconfig });
     });
-  }
-
-  focusEditor() {
-    this.editorView?.focus();
   }
 
   set value(value: string) {

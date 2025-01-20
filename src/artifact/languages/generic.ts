@@ -32,7 +32,6 @@ export class GenericArtifact implements ArtifactSupport {
     editor.setAttribute("data-lang", lang);
     editor.setAttribute("data-value", code);
     editor.setAttribute("autofocus", "");
-    editor.tabIndex = 0;
     editorContainer.appendChild(editor);
 
     // editor node will be removed, no need to remove listeneres
@@ -49,14 +48,14 @@ export class GenericArtifact implements ArtifactSupport {
 
     // first escape: exit editor focus capture, allow tab movement
     // second escape: exit edit mode
-    editor.addEventListener("escape", () => {
-      editor.focus();
-      editor.setAttribute("data-readonly", "");
-    });
+    editor.addEventListener("escape", () => editor.setAttribute("data-readonly", ""));
     editor.addEventListener("escapecontainer", () => this.onEditExit({ trigger, code, lang }));
-    editor.addEventListener("entercontainer", () => {
-      editor.removeAttribute("data-readonly");
-      editor.focusEditor();
+    editor.addEventListener("entercontainer", () => editor.removeAttribute("data-readonly"));
+
+    editor.addEventListener("mousedown", (_e) => {
+      if (editor.hasAttribute("data-readonly")) {
+        editor.removeAttribute("data-readonly");
+      }
     });
 
     focusTrapElement.toggleAttribute("disabled", false);
