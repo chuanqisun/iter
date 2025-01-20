@@ -49,8 +49,8 @@ export class GenericArtifact implements ArtifactSupport {
     // first escape: exit editor focus capture, allow tab movement
     // second escape: exit edit mode
     editor.addEventListener("escape", () => editor.setAttribute("data-readonly", ""));
-    editor.addEventListener("escapecontainer", () => this.onEditExit({ trigger, code, lang }));
-    editor.addEventListener("entercontainer", () => editor.removeAttribute("data-readonly"));
+    editor.addEventListener("escapereadonly", () => this.onEditExit({ trigger, code, lang }));
+    editor.addEventListener("enterreadonly", () => editor.removeAttribute("data-readonly"));
 
     editor.addEventListener("mousedown", (_e) => {
       if (editor.hasAttribute("data-readonly")) {

@@ -36,10 +36,24 @@ export class CodeEditorElement extends HTMLElement {
         },
       },
       {
+        key: "Enter",
+        run: () => {
+          if (this.hasAttribute("data-readonly")) {
+            this.dispatchEvent(new Event("enterreadonly"));
+            return true;
+          }
+          return false;
+        },
+      },
+      {
         key: "Escape",
         stopPropagation: true,
         run: () => {
-          this.dispatchEvent(new Event("escape"));
+          if (this.hasAttribute("data-readonly")) {
+            this.dispatchEvent(new Event("escapereadonly"));
+          } else {
+            this.dispatchEvent(new Event("escape"));
+          }
           return true;
         },
       },
@@ -72,27 +86,6 @@ export class CodeEditorElement extends HTMLElement {
     if (this.hasAttribute("autofocus")) {
       this.editorView.focus();
     }
-
-    // handle readonly mode events
-    this.addEventListener(
-      "keydown",
-      (e) => {
-        if (!this.hasAttribute("data-readonly")) return;
-
-        if (e.key === "Escape") {
-          this.dispatchEvent(new Event("escapecontainer"));
-          e.preventDefault();
-          e.stopPropagation();
-        }
-
-        if (e.key === "Enter") {
-          this.dispatchEvent(new Event("entercontainer"));
-          e.preventDefault();
-          e.stopPropagation();
-        }
-      },
-      { capture: true }
-    );
   }
 
   attributeChangedCallback(name: string, _oldValue: string, newValue: string) {
