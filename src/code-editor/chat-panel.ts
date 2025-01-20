@@ -1,7 +1,10 @@
-import { StateEffect, StateField, type Extension } from "@codemirror/state";
+import { EditorState, StateEffect, StateField, type Extension } from "@codemirror/state";
 import { EditorView, keymap, showPanel, type KeyBinding } from "@codemirror/view";
 import { getChatInstance } from "../chat-tree/chat-instance";
 import { getCombo } from "../chat-tree/keyboard";
+
+import "./chat-panel.css";
+import { syncDispatch } from "./sync";
 
 export function chatPanel(): Extension[] {
   const toggleChat = StateEffect.define<boolean>();
@@ -20,12 +23,6 @@ export function chatPanel(): Extension[] {
     const textarea = document.createElement("textarea");
     textarea.id = "chat-textarea";
     textarea.placeholder = "Type your message here...";
-    textarea.style.border = "none";
-    textarea.style.width = "100%";
-    textarea.style.padding = "4px 6px";
-    // @ts-ignore: this is an upcoming API
-    textarea.style.fieldSizing = "content";
-    textarea.style.resize = "none";
     textarea.addEventListener("keydown", (e) => {
       const combo = getCombo(e);
       switch (combo) {
@@ -40,20 +37,60 @@ export function chatPanel(): Extension[] {
         case "ctrl+enter":
           e.preventDefault();
           e.stopPropagation();
+          const prompt = textarea.value;
           textarea.value = "";
-          const chat = getChatInstance();
-          const response = chat({ messages: [{ role: "user", content: textarea.value }] });
-          renderChatResponse(response);
+          handleChatRequest({ view, prompt });
+          break;
+
+        case "tab":
+          e.preventDefault();
+          e.stopPropagation();
+          // cycle context modes: file-file, file-selection, selection-selection
+          break;
       }
     });
+
     dom.appendChild(textarea);
     dom.className = "cm-chat-panel";
     setTimeout(() => textarea.focus(), 0);
     return { top: false, dom };
   }
 
-  async function renderChatResponse(chunks: AsyncGenerator<string>) {
-    for await (const chunk of chunks) console.log(chunk);
+  async function handleChatRequest(params: { view: EditorView; prompt: string }) {
+    const { view, prompt } = params;
+
+    const currentSelectionRange = view.state.selection.main;
+
+    const selectedText = view.state.sliceDoc(currentSelectionRange.from, currentSelectionRange.to);
+    const fullText = view.state.doc.toString();
+    console.log({ selectedText, fullText });
+
+    const chatViewContainer = document.createElement("div");
+    const chatView = new EditorView({
+      state: EditorState.create({ doc: view.state.doc }), // share doc and nothing else
+      parent: chatViewContainer,
+      dispatch: (tr) => syncDispatch(tr, chatView, view),
+    });
+
+    const chat = getChatInstance();
+    const chunks = chat({ messages: [{ role: "user", content: prompt }] });
+
+    // clear the text in the currentSelectionRange
+    // shrink the currentSelectionRange in chatView
+    chatView.dispatch({
+      changes: { from: currentSelectionRange.from, to: currentSelectionRange.to, insert: "" },
+      selection: { head: currentSelectionRange.from, anchor: currentSelectionRange.from },
+    });
+
+    for await (const chunk of chunks) {
+      chatView.dispatch({
+        changes: { from: chatView.state.selection.main.from, insert: chunk },
+        selection: { anchor: chatView.state.selection.main.from + chunk.length, head: chatView.state.selection.main.from + chunk.length },
+      });
+    }
+
+    // destory the view
+    chatView.destroy();
   }
 
   const chatKeymap: KeyBinding[] = [

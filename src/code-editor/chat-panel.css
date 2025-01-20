@@ -1,0 +1,9 @@
+.cm-chat-panel {
+  #chat-textarea {
+    border: none;
+    width: 100%;
+    padding: 4px 6px;
+    field-sizing: content;
+    resize: none;
+  }
+}
