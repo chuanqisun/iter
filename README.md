@@ -7,6 +7,7 @@ A minimalist frontend for Gen AI Chat models, optimized for rapid prompt iterati
 - **🦉 Adapts to OS/Browser default theme**: Dark theme for happy night owls
 - **💅 Markdown parser**: Built-in syntax highlight and copy button for code blocks
 - **🧭 Artifacts**: Live edit and preview code blocks for SVG, HTML, Mermaid, TypeScript, and React in JSX
+- **🖱 Cursor chat**: Precisely edit the selected text within a chat response
 - **💻 Interpreter**: Process uploaded files with TypeScript and any browser-friendly npm packages
 - **📸 Vision input**: Handle visual inputs with multi-modal models
 - **🎙️ Speech input**: Use microphone to input text that can be mixed with typed message
@@ -38,17 +39,18 @@ Recreate the UI of Airbnb with a single screenshot
 
 Mac users, please use <kbd>⌘</kbd> instead of <kbd>Ctrl</kbd>
 
-| Action               | Shortcut                                                |
-| -------------------- | ------------------------------------------------------- |
-| Send message         | <kbd>Ctrl</kbd> + <kbd>Enter</kbd> (in textarea)        |
-| Abort action         | <kbd>Escape</kbd> (when streaming response)             |
-| Dictate              | <kbd>Shift</kbd> + <kbd>Space</kbd> (hold to talk)      |
-| Open response editor | <kbd>Enter</kbd> (when focusing response block)         |
-| Open artifact editor | <kbd>Enter</kbd> (when focusing artifact block)         |
-| Rerun artifact       | <kbd>Ctrl</kbd> + <kbd>Enter</kbd> (in artifact editor) |
-| Exit editor          | <kbd>Escape</kbd> (in artifact or response editor)      |
-| Select up/down       | <kbd>↑</kbd> / <kbd>↓</kbd>                             |
-| Create backup        | <kbd>Ctrl</kbd> + <kbd>S</kbd>                          |
-| Restore backup       | <kbd>Ctrl</kbd> + <kbd>O</kbd>                          |
-| Export               | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd>       |
-| Import               | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>O</kbd>       |
+| Action               | Shortcut                                                        |
+| -------------------- | --------------------------------------------------------------- |
+| Send message         | <kbd>Ctrl</kbd> + <kbd>Enter</kbd> (in any textarea)            |
+| Abort action         | <kbd>Escape</kbd> (when streaming response)                     |
+| Dictate              | <kbd>Shift</kbd> + <kbd>Space</kbd> (hold to talk)              |
+| Open response editor | <kbd>Enter</kbd> (when focusing response block)                 |
+| Open artifact editor | <kbd>Enter</kbd> (when focusing artifact block)                 |
+| Toggle cursor chat   | <kbd>Ctrl</kbd> + <kbd>K</kbd> (in artifact or response editor) |
+| Rerun artifact       | <kbd>Ctrl</kbd> + <kbd>Enter</kbd> (in artifact editor)         |
+| Exit editor          | <kbd>Escape</kbd> (in artifact or response editor)              |
+| Select up/down       | <kbd>↑</kbd> / <kbd>↓</kbd>                                     |
+| Create backup        | <kbd>Ctrl</kbd> + <kbd>S</kbd>                                  |
+| Restore backup       | <kbd>Ctrl</kbd> + <kbd>O</kbd>                                  |
+| Export               | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd>               |
+| Import               | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>O</kbd>               |
