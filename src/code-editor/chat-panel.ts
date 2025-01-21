@@ -5,7 +5,7 @@ import { EditorState, StateEffect, StateField, type Extension } from "@codemirro
 import { EditorView, keymap, showPanel, type KeyBinding } from "@codemirror/view";
 import { getChatInstance } from "../chat-tree/chat-instance";
 import { getCombo } from "../chat-tree/keyboard";
-import { extractStreamContent } from "./parse-xml";
+import { getTaggedStream } from "./get-tagged-stream";
 import { getCursorChatMessages } from "./prompt";
 import { syncDispatch } from "./sync";
 
@@ -29,7 +29,7 @@ export function chatPanel(): Extension[] {
     const dom = document.createElement("div");
     const textarea = document.createElement("textarea");
     textarea.id = "chat-textarea";
-    textarea.placeholder = "Ctrl + Enter to send, Esc to cancel";
+    textarea.placeholder = "Ctrl + Enter to send, Esc to cancel, Shift + Space to dictate";
     textarea.addEventListener("keydown", (e) => {
       const combo = getCombo(e);
       switch (combo) {
@@ -94,7 +94,7 @@ export function chatPanel(): Extension[] {
       selection: { head: currentSelectionRange.from, anchor: currentSelectionRange.from },
     });
 
-    const newCursorContent = extractStreamContent(chunks, "cursor-new");
+    const newCursorContent = getTaggedStream(chunks, "cursor-new");
     let fullResponse = "";
 
     try {
@@ -165,12 +165,5 @@ export function chatPanel(): Extension[] {
     },
   ];
 
-  const chatTheme = EditorView.baseTheme({
-    ".cm-chat-panel": {
-      display: "grid",
-      fontFamily: "monospace",
-    },
-  });
-
-  return [chatPanelState, keymap.of(chatKeymap), chatTheme];
+  return [chatPanelState, keymap.of(chatKeymap)];
 }

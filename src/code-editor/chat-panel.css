@@ -1,9 +1,19 @@
 .cm-chat-panel {
+  display: grid;
+
   #chat-textarea {
     border: none;
     width: 100%;
     padding: 4px 6px;
     field-sizing: content;
     resize: none;
+    border: none;
+    outline: none;
+    background-color: transparent;
+
+    &:focus {
+      color: white;
+      background-color: black;
+    }
   }
 }

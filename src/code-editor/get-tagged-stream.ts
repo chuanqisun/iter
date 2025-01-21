@@ -1,4 +1,4 @@
-export async function* extractStreamContent(stream: AsyncIterable<string>, tagName: string): AsyncGenerator<string> {
+export async function* getTaggedStream(stream: AsyncIterable<string>, tagName: string): AsyncGenerator<string> {
   let buffer = "";
   let isCollecting = false;
   const prefix = `<${tagName}>`;

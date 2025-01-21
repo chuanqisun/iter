@@ -357,6 +357,15 @@ export function ChatTree() {
   useEffect(() => {
     const abortController = new AbortController();
 
+    const passthroughtBrowserNativeKey = async (e: KeyboardEvent) => {
+      const combo = getCombo(e);
+      switch (combo) {
+        case "ctrl+shift+k":
+          e.stopPropagation();
+          return;
+      }
+    };
+
     const handleGlobalKeydown = async (e: KeyboardEvent) => {
       const combo = getCombo(e);
       let matched = true;
@@ -432,6 +441,7 @@ export function ChatTree() {
     };
 
     window.addEventListener("keydown", handleGlobalKeydown, { capture: true, signal: abortController.signal });
+    window.addEventListener("keydown", passthroughtBrowserNativeKey, { capture: true, signal: abortController.signal });
     window.addEventListener("keyup", handleGlobalKeyup, { capture: true, signal: abortController.signal });
 
     return () => abortController.abort();
