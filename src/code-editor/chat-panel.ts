@@ -136,6 +136,13 @@ export function chatPanel(): Extension[] {
 
   const chatKeymap: KeyBinding[] = [
     {
+      key: "Escape",
+      run() {
+        chatInterrupt?.abort();
+        return false; // Make sure we continue processing other handlers
+      },
+    },
+    {
       key: "Ctrl-k",
       mac: "Meta-k",
       run(view) {
