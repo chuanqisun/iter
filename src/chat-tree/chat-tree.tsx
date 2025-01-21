@@ -1065,7 +1065,12 @@ const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
   background-color: var(--readonly-text-background);
 
   & > * + * {
-    margin-top: 4px;
+    margin-top: 0.5rem;
+  }
+
+  hr {
+    border: none;
+    border-bottom: 1px solid GrayText;
   }
 
   code:not(pre > *) {
