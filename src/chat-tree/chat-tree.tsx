@@ -709,9 +709,10 @@ export function ChatTree() {
   }, []);
 
   const handlePreviewDoubleClick = useCallback((nodeId: string, e: React.SyntheticEvent) => {
-    const artifact = (e.target as HTMLElement)?.closest("artifact-element");
-    if (artifact) {
-      artifact.querySelector<HTMLButtonElement>(`[data-action="edit"]`)?.click();
+    const artifactElement = (e.target as HTMLElement)?.closest("artifact-element");
+    if (artifactElement) {
+      if (!(e.target as HTMLElement)?.closest("artifact-source")) return;
+      artifactElement.querySelector<HTMLButtonElement>(`[data-action="edit"]`)?.click();
     } else {
       handleToggleViewFormat(nodeId);
     }
