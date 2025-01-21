@@ -13,6 +13,7 @@ import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import { setChatInstance } from "./chat-instance";
 import { getFirstImageDataUrl } from "./clipboard";
+import { dictateToTextarea } from "./dictation";
 import { getReadableFileSize } from "./file-size";
 import { autoFocusNthInput } from "./focus";
 import { getCombo } from "./keyboard";
@@ -326,30 +327,18 @@ export function ChatTree() {
   // Speech to text
   useEffect(() => {
     const onResult = (e: Event) => {
-      const { replace, previous } = (e as CustomEvent<WebSpeechResult>).detail;
-
       const textarea = document.activeElement as HTMLTextAreaElement;
       if (textarea?.tagName !== "TEXTAREA") return;
 
-      // ...existing text | <previous_text_replaced> | <cursor>  | existing text...
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
+      // Textarea for System/User message
+      // Textarea for Inline chat
+      const { fullText } = dictateToTextarea(textarea, (e as CustomEvent<WebSpeechResult>).detail);
 
-      const allTextBeforeCursor = textarea.value.slice(0, start);
-      if (previous && allTextBeforeCursor.endsWith(previous)) {
-        const newText = allTextBeforeCursor.slice(0, -previous.length) + replace + textarea.value.slice(end);
-        textarea.value = newText;
-        textarea.selectionStart = textarea.selectionEnd = start - previous.length + replace.length;
-        handleTextChange(textarea.id, newText);
-      } else {
-        // if the character before cursor is not a /s character, add a space
-        const padding = !allTextBeforeCursor || allTextBeforeCursor.at(-1)?.match(/\s/) ? "" : " ";
-        // append at cursor
-        const newText = allTextBeforeCursor + padding + replace + textarea.value.slice(end);
-        textarea.value = newText;
-        textarea.selectionStart = textarea.selectionEnd = start + padding.length + replace.length;
-        handleTextChange(textarea.id, newText);
+      // System/User message
+      if (textarea.matches(".js-focusable")) {
+        handleTextChange(textarea.id, fullText);
       }
+      // code-editor-element
     };
 
     speech.addEventListener("result", onResult);
