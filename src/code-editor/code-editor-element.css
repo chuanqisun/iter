@@ -1,6 +1,7 @@
 code-editor-element {
   display: grid;
   flex-grow: 1;
+  color-scheme: dark;
 
   &[data-readonly] .cm-editor {
     outline: 2px solid currentColor;

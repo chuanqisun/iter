@@ -1,6 +1,5 @@
 .cm-chat-panel {
   display: grid;
-  color-scheme: dark;
 
   #chat-textarea {
     border: none;
