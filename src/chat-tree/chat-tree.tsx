@@ -359,6 +359,8 @@ export function ChatTree() {
 
   // global keyboard
   useEffect(() => {
+    const abortController = new AbortController();
+
     const handleGlobalKeydown = async (e: KeyboardEvent) => {
       const combo = getCombo(e);
       let matched = true;
@@ -378,15 +380,34 @@ export function ChatTree() {
             .then(() => autoFocusNthInput(0))
             .then(() => showToast("✅ Loaded"))
             .catch((e) => showToast(`❌ Error ${e?.message}`));
-
           break;
         case "ctrl+shift+o":
           importChat()
             .then((file) => showToast(`✅ Imported ${file.name} ${getReadableFileSize(file.size)}`))
             .then(() => autoFocusNthInput(0))
             .catch((e) => showToast(`❌ Error ${e?.message}`));
-
           break;
+
+        // Hold Shift + Space to talk
+        case "shift+space":
+          e.preventDefault();
+          if (!speech.start()) return;
+
+          const textarea = document.activeElement as HTMLTextAreaElement;
+          if (textarea?.tagName !== "TEXTAREA") return;
+          textarea.toggleAttribute("data-speaking", true);
+
+          window.addEventListener(
+            "keyup",
+            () => {
+              e.preventDefault();
+              speech.stop();
+              textarea.toggleAttribute("data-speaking", false);
+            },
+            { once: true }
+          );
+          break;
+
         default:
           matched = false;
       }
@@ -397,8 +418,9 @@ export function ChatTree() {
       }
     };
 
-    window.addEventListener("keydown", handleGlobalKeydown, { capture: true });
-    return () => window.removeEventListener("keydown", handleGlobalKeydown, { capture: true });
+    window.addEventListener("keydown", handleGlobalKeydown, { capture: true, signal: abortController.signal });
+
+    return () => abortController.abort();
   }, [exportChat, importChat]);
 
   const handleKeydown = useCallback(
@@ -414,26 +436,6 @@ export function ChatTree() {
         if (!activeUserNodeId) return;
         e.preventDefault();
         handleAbort(activeUserNodeId);
-      }
-
-      // Hold Shift + Space to talk
-      if (combo === "shift+space") {
-        e.preventDefault();
-        if (!speech.start()) return;
-
-        const textarea = document.activeElement as HTMLTextAreaElement;
-        if (textarea?.tagName !== "TEXTAREA") return;
-        textarea.toggleAttribute("data-speaking", true);
-
-        e.target.addEventListener(
-          "keyup",
-          () => {
-            e.preventDefault();
-            speech.stop();
-            textarea.toggleAttribute("data-speaking", false);
-          },
-          { once: true }
-        );
       }
 
       // Enter to activate edit mode
