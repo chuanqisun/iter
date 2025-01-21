@@ -154,6 +154,71 @@ export class CodeEditorElement extends HTMLElement {
       },
     });
   }
+
+  appendSpeech(result: { previous: string; replace: string }) {
+    if (!this.editorView) return;
+    // if there is previous text, replace it with `replace`
+    // if there is no previous text, append it with `replace`. Prefix with a space if needed
+    const { replace, previous } = result;
+    let selection = this.editorView.state.selection.main;
+
+    // overwrite the selection
+    if (!selection.empty && !previous) {
+      const start = selection.from;
+      const end = selection.to;
+      this.editorView.dispatch({
+        changes: { from: start, to: end, insert: "" },
+        selection: { head: start, anchor: start },
+      });
+      selection = this.editorView.state.selection.main;
+    }
+
+    const end = selection.to;
+    const docMaxLength = this.editorView.state.doc.length;
+    const toSafeRange = (pos: number) => Math.max(0, Math.min(pos, docMaxLength)); // code mirror cursor can be placed after doc end.
+
+    // replace ghost text
+    if (previous) {
+      // between cursor - replace.length and curosr
+      const safeAnchor = toSafeRange(end - previous.length);
+      const textBeforeCursor = this.editorView.state.doc.sliceString(safeAnchor, end);
+      if (textBeforeCursor.endsWith(previous)) {
+        const newHead = safeAnchor + replace.length;
+        this.editorView.dispatch({
+          changes: { from: safeAnchor, to: end, insert: replace },
+          selection: { anchor: newHead },
+        });
+
+        console.log("replace", {
+          previous,
+          replace,
+          from: safeAnchor,
+          to: end,
+          insert: replace,
+          select: newHead,
+        });
+      }
+      // else no op, user must have interrupted
+    } else {
+      const safeAnchor = toSafeRange(end - 1);
+      const singleCharBeforeCursor = this.editorView.state.doc.sliceString(safeAnchor, end);
+      const padding = !singleCharBeforeCursor || singleCharBeforeCursor.match(/\s/) ? "" : " ";
+      const newHead = end + padding.length + replace.length;
+      this.editorView.dispatch({
+        changes: { from: end, to: end, insert: padding + replace },
+        selection: { anchor: newHead },
+      });
+
+      console.log("append", {
+        previous,
+        replace,
+        from: end,
+        to: end,
+        insert: padding + replace,
+        select: newHead,
+      });
+    }
+  }
 }
 
 async function getLanguageSupport(filenameOrExtension: string) {

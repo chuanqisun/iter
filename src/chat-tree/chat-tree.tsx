@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import styled from "styled-components";
 import { markdownToHtml, useArtifactActions } from "../artifact/artifact";
 import { getFileAccessPostscript, respondFileAccess, respondFileList } from "../artifact/lib/file-access";
+import type { CodeEditorElement } from "../code-editor/code-editor-element";
 import { AutoResize } from "../form/auto-resize";
 import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import { type GenericMessage } from "../providers/base";
@@ -327,18 +328,24 @@ export function ChatTree() {
   // Speech to text
   useEffect(() => {
     const onResult = (e: Event) => {
-      const textarea = document.activeElement as HTMLTextAreaElement;
-      if (textarea?.tagName !== "TEXTAREA") return;
+      const dictationTarget = document.activeElement as HTMLTextAreaElement;
 
-      // Textarea for System/User message
-      // Textarea for Inline chat
-      const { fullText } = dictateToTextarea(textarea, (e as CustomEvent<WebSpeechResult>).detail);
+      if (dictationTarget.tagName === "TEXTAREA") {
+        // Textarea for System/User message
+        // Textarea for Inline chat
+        const { fullText } = dictateToTextarea(dictationTarget, (e as CustomEvent<WebSpeechResult>).detail);
 
-      // System/User message
-      if (textarea.matches(".js-focusable")) {
-        handleTextChange(textarea.id, fullText);
+        // System/User message
+        if (dictationTarget.matches(".js-focusable")) {
+          handleTextChange(dictationTarget.id, fullText);
+        }
+      } else {
+        // code-editor-element
+        const codeEditor = dictationTarget?.closest<CodeEditorElement>("code-editor-element");
+        if (!codeEditor) return;
+
+        codeEditor.appendSpeech((e as CustomEvent<WebSpeechResult>).detail);
       }
-      // code-editor-element
     };
 
     speech.addEventListener("result", onResult);
@@ -382,19 +389,36 @@ export function ChatTree() {
           e.preventDefault();
           if (!speech.start()) return;
 
-          const textarea = document.activeElement as HTMLTextAreaElement;
-          if (textarea?.tagName !== "TEXTAREA") return;
-          textarea.toggleAttribute("data-speaking", true);
+          const targetElement = document.activeElement as HTMLTextAreaElement;
+          if (targetElement) {
+            targetElement.toggleAttribute("data-speaking", true);
+          }
+          break;
 
-          window.addEventListener(
-            "keyup",
-            () => {
-              e.preventDefault();
-              speech.stop();
-              textarea.toggleAttribute("data-speaking", false);
-            },
-            { once: true }
-          );
+        default:
+          matched = false;
+      }
+
+      if (matched) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    const handleGlobalKeyup = async (e: KeyboardEvent) => {
+      const combo = getCombo(e);
+      let matched = true;
+      switch (combo) {
+        // Hold Shift + Space to talk
+        case "shift+space":
+          e.preventDefault();
+
+          speech.stop();
+
+          const targetElement = document.activeElement as HTMLTextAreaElement;
+          if (targetElement) {
+            targetElement.toggleAttribute("data-speaking", false);
+          }
           break;
 
         default:
@@ -408,6 +432,7 @@ export function ChatTree() {
     };
 
     window.addEventListener("keydown", handleGlobalKeydown, { capture: true, signal: abortController.signal });
+    window.addEventListener("keyup", handleGlobalKeyup, { capture: true, signal: abortController.signal });
 
     return () => abortController.abort();
   }, [exportChat, importChat]);

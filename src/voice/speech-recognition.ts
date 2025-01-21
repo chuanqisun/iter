@@ -16,13 +16,16 @@ export class WebSpeechRecognitionNode extends EventTarget {
     super();
     this.recognition.interimResults = true;
   }
+
   private initSession() {
     this.isStarted = true;
-
     this.recognition.continuous = true;
     this.recognition.lang = "en-US";
 
-    this.recognition.onstart = () => console.log("[recognition] session stated");
+    console.log("[recognition] will start");
+    this.recognition.onstart = () => {
+      console.log("[recognition] session stated");
+    };
     this.recognition.onresult = (e) => {
       const latestItem = [...e.results].at(-1);
       if (!latestItem) return;
@@ -55,13 +58,21 @@ export class WebSpeechRecognitionNode extends EventTarget {
 
     this.recognition.onerror = (e) => {
       console.error(`[recognition] sliently omit error`, e);
+      this.isStarted = false;
+      if (this.recognition.continuous) {
+        this.initSession();
+        this.start();
+      }
     };
 
     this.recognition.onend = () => {
       this.isStarted = false;
       this.recognition.stop();
       console.log("[recognition] session ended");
-      if (this.recognition.continuous) this.initSession();
+      if (this.recognition.continuous) {
+        this.initSession();
+        this.recognition.start();
+      }
     };
   }
 
@@ -74,6 +85,7 @@ export class WebSpeechRecognitionNode extends EventTarget {
 
   public stop() {
     this.recognition.continuous = false;
+    console.log(`[recognition] stop requested`);
     this.recognition.stop();
   }
 
