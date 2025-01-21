@@ -44,8 +44,8 @@ Mac users, please use <kbd>⌘</kbd> instead of <kbd>Ctrl</kbd>
 | Send message         | <kbd>Ctrl</kbd> + <kbd>Enter</kbd> (in any textarea)            |
 | Abort action         | <kbd>Escape</kbd> (when streaming response)                     |
 | Dictate              | <kbd>Shift</kbd> + <kbd>Space</kbd> (hold to talk)              |
-| Open response editor | <kbd>Enter</kbd> (when focusing response block)                 |
-| Open artifact editor | <kbd>Enter</kbd> (when focusing artifact block)                 |
+| Open response editor | <kbd>Enter</kbd> or double click (when focusing response block) |
+| Open artifact editor | <kbd>Enter</kbd> or double click (when focusing artifact block) |
 | Toggle cursor chat   | <kbd>Ctrl</kbd> + <kbd>K</kbd> (in artifact or response editor) |
 | Rerun artifact       | <kbd>Ctrl</kbd> + <kbd>Enter</kbd> (in artifact editor)         |
 | Exit editor          | <kbd>Escape</kbd> (in artifact or response editor)              |
