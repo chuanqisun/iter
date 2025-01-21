@@ -794,9 +794,10 @@ export function ChatTree() {
                   ) : (
                     <>
                       <MarkdownPreview
-                        tabIndex={-1}
+                        tabIndex={0}
                         className="js-focusable"
                         onKeyDown={(e) => handleKeydown(node.id, e)}
+                        onDoubleClick={() => handleToggleViewFormat(node.id)}
                         id={node.id}
                         $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}
                         dangerouslySetInnerHTML={{ __html: previews[node.id] ?? "" }}
