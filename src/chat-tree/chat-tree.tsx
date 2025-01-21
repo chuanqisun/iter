@@ -708,6 +708,15 @@ export function ChatTree() {
     });
   }, []);
 
+  const handlePreviewDoubleClick = useCallback((nodeId: string, e: React.SyntheticEvent) => {
+    const artifact = (e.target as HTMLElement)?.closest("artifact-element");
+    if (artifact) {
+      artifact.querySelector<HTMLButtonElement>(`[data-action="edit"]`)?.click();
+    } else {
+      handleToggleViewFormat(nodeId);
+    }
+  }, []);
+
   // expose file access api
   useEffect(() => {
     const allFiles = treeNodes.flatMap((node) => node.files ?? []);
@@ -797,7 +806,7 @@ export function ChatTree() {
                         tabIndex={0}
                         className="js-focusable"
                         onKeyDown={(e) => handleKeydown(node.id, e)}
-                        onDoubleClick={() => handleToggleViewFormat(node.id)}
+                        onDoubleClick={(e) => handlePreviewDoubleClick(node.id, e)}
                         id={node.id}
                         $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}
                         dangerouslySetInnerHTML={{ __html: previews[node.id] ?? "" }}
