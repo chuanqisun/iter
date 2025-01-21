@@ -121,6 +121,17 @@ export function chatPanel(): Extension[] {
 
     // destory the view
     chatView.destroy();
+
+    if (!params.focusInterrupt.aborted) {
+      // hide the chat panel
+      view.focus();
+      view.dispatch({ effects: toggleChat.of(false) });
+    }
+
+    if (!params.chatInterrupt.aborted) {
+      const fullContent = view.state.doc.toString();
+      view.contentDOM?.closest("code-editor-element")?.dispatchEvent(new CustomEvent("run", { detail: fullContent }));
+    }
   }
 
   const chatKeymap: KeyBinding[] = [

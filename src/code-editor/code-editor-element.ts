@@ -26,11 +26,11 @@ export class CodeEditorElement extends HTMLElement {
     history(),
     drawSelection(),
     syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+    ...chatPanel(),
     keymap.of([
       {
         key: "Ctrl-Enter",
         mac: "Meta-Enter",
-        stopPropagation: true,
         run: () => {
           this.dispatchEvent(new CustomEvent("run", { detail: this.value }));
           return true;
@@ -48,8 +48,10 @@ export class CodeEditorElement extends HTMLElement {
       },
       {
         key: "Escape",
-        stopPropagation: true,
-        run: () => {
+        run: (view) => {
+          // if there is selection, collapse to head
+          if (!view.state.selection.main.empty) return false;
+
           if (this.hasAttribute("data-readonly")) {
             this.dispatchEvent(new Event("escapereadonly"));
           } else {
@@ -70,7 +72,6 @@ export class CodeEditorElement extends HTMLElement {
       this.dispatchEvent(new CustomEvent("contentchange", { detail: state.doc.toString() }));
       return null;
     }),
-    ...chatPanel(),
   ];
 
   connectedCallback() {
