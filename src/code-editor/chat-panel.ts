@@ -1,5 +1,6 @@
 import "./chat-panel.css";
 
+import { isolateHistory } from "@codemirror/commands";
 import { EditorState, StateEffect, StateField, type Extension } from "@codemirror/state";
 import { EditorView, keymap, showPanel, type KeyBinding } from "@codemirror/view";
 import { getChatInstance } from "../chat-tree/chat-instance";
@@ -11,6 +12,9 @@ import { syncDispatch } from "./sync";
 // Reference: https://codemirror.net/examples/panel/
 export function chatPanel(): Extension[] {
   const toggleChat = StateEffect.define<boolean>();
+
+  let focusInterrupt: AbortController | undefined;
+  let chatInterrupt: AbortController | undefined;
 
   const chatPanelState = StateField.define<boolean>({
     create: () => false,
@@ -25,7 +29,7 @@ export function chatPanel(): Extension[] {
     const dom = document.createElement("div");
     const textarea = document.createElement("textarea");
     textarea.id = "chat-textarea";
-    textarea.placeholder = "Type your message here...";
+    textarea.placeholder = "Ctrl + Enter to send, Esc to cancel";
     textarea.addEventListener("keydown", (e) => {
       const combo = getCombo(e);
       switch (combo) {
@@ -35,6 +39,7 @@ export function chatPanel(): Extension[] {
           e.stopPropagation();
           view.focus();
           view.dispatch({ effects: toggleChat.of(false) });
+          chatInterrupt?.abort();
           break;
 
         case "ctrl+enter":
@@ -42,16 +47,14 @@ export function chatPanel(): Extension[] {
           e.stopPropagation();
           const prompt = textarea.value;
           textarea.value = "";
-          handleChatRequest({ view, prompt });
-          break;
-
-        case "tab":
-          e.preventDefault();
-          e.stopPropagation();
-          // cycle context modes: file-file, file-selection, selection-selection
+          focusInterrupt = new AbortController();
+          chatInterrupt = new AbortController();
+          handleChatRequest({ view, prompt, focusInterrupt: focusInterrupt.signal, chatInterrupt: chatInterrupt.signal });
           break;
       }
     });
+
+    textarea.addEventListener("blur", () => focusInterrupt?.abort());
 
     dom.appendChild(textarea);
     dom.className = "cm-chat-panel";
@@ -59,7 +62,7 @@ export function chatPanel(): Extension[] {
     return { top: false, dom };
   }
 
-  async function handleChatRequest(params: { view: EditorView; prompt: string }) {
+  async function handleChatRequest(params: { view: EditorView; prompt: string; focusInterrupt: AbortSignal; chatInterrupt: AbortSignal }) {
     const { view, prompt } = params;
 
     const currentSelectionRange = view.state.selection.main;
@@ -82,7 +85,7 @@ export function chatPanel(): Extension[] {
     });
 
     const chat = getChatInstance();
-    const chunks = chat({ messages: getCursorChatMessages({ prompt, lang, fullTextWithCursor }) });
+    const chunks = chat({ messages: getCursorChatMessages({ prompt, lang, fullTextWithCursor }), abortSignal: params.chatInterrupt });
 
     // clear the text in the currentSelectionRange
     // shrink the currentSelectionRange in chatView
@@ -92,11 +95,27 @@ export function chatPanel(): Extension[] {
     });
 
     const newCursorContent = extractStreamContent(chunks, "cursor-new");
+    let fullResponse = "";
 
-    for await (const chunk of newCursorContent) {
-      chatView.dispatch({
-        changes: { from: chatView.state.selection.main.from, insert: chunk },
-        selection: { anchor: chatView.state.selection.main.from + chunk.length, head: chatView.state.selection.main.from + chunk.length },
+    try {
+      for await (const chunk of newCursorContent) {
+        fullResponse += chunk;
+        chatView.dispatch({
+          changes: { from: chatView.state.selection.main.from, insert: chunk },
+          selection: { anchor: chatView.state.selection.main.from + chunk.length, head: chatView.state.selection.main.from + chunk.length },
+        });
+      }
+    } catch (e) {
+      console.warn(`[chat] error`, e);
+    }
+
+    // when focus is uninterrupted or user cancels the chat, we want to show user the change
+    if (!params.focusInterrupt.aborted || params.chatInterrupt.aborted) {
+      // replay the entire insertion
+      view.dispatch({
+        // select the changed text, make sure the selection itself can be undo/redo
+        selection: { anchor: currentSelectionRange.from, head: currentSelectionRange.from + fullResponse.length },
+        annotations: [isolateHistory.of("full")],
       });
     }
 

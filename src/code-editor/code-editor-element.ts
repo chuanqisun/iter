@@ -121,7 +121,12 @@ export class CodeEditorElement extends HTMLElement {
   }
 
   set value(value: string) {
-    this.editorView?.dispatch({ changes: { from: 0, to: this.editorView.state.doc.length, insert: value } });
+    const currentValue = this.editorView?.state.doc.toString();
+    if (currentValue === value) return; // no-op
+
+    this.editorView?.dispatch({
+      changes: { from: 0, to: this.editorView.state.doc.length, insert: value },
+    });
   }
 
   /** This will wipeout history and reset UI state */
