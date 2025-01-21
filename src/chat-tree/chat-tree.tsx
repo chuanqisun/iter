@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
-import { artifactStyles, markdownToHtml, useArtifactActions } from "../artifact/artifact";
+import { markdownToHtml, useArtifactActions } from "../artifact/artifact";
 import { getFileAccessPostscript, respondFileAccess, respondFileList } from "../artifact/lib/file-access";
+import type { CodeEditorElement } from "../code-editor/code-editor-element";
 import { AutoResize } from "../form/auto-resize";
 import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import { type GenericMessage } from "../providers/base";
@@ -11,7 +12,9 @@ import { useConnections } from "../settings/use-connections";
 import { showToast } from "../shell/toast";
 import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
+import { setChatInstance } from "./chat-instance";
 import { getFirstImageDataUrl } from "./clipboard";
+import { dictateToTextarea } from "./dictation";
 import { getReadableFileSize } from "./file-size";
 import { autoFocusNthInput } from "./focus";
 import { getCombo } from "./keyboard";
@@ -123,6 +126,14 @@ export function ChatTree() {
     },
     [connectionKey.value, getChatStreamProxy, temperature.value, maxTokens.value]
   );
+
+  // expose latest chatStreamingProxy to web components
+  useEffect(() => {
+    const chatStreamProxy = getChatStreamProxy?.(connectionKey.value ?? "");
+    if (!chatStreamProxy) return;
+
+    setChatInstance(chatStreamProxy);
+  }, [connectionKey]);
 
   const groupedConnections = useMemo(() => {
     return Object.entries(Object.groupBy(connections, (connection) => connection.displayGroup));
@@ -317,29 +328,23 @@ export function ChatTree() {
   // Speech to text
   useEffect(() => {
     const onResult = (e: Event) => {
-      const { replace, previous } = (e as CustomEvent<WebSpeechResult>).detail;
+      const dictationTarget = document.activeElement as HTMLTextAreaElement;
 
-      const textarea = document.activeElement as HTMLTextAreaElement;
-      if (textarea?.tagName !== "TEXTAREA") return;
+      if (dictationTarget.tagName === "TEXTAREA") {
+        // Textarea for System/User message
+        // Textarea for Inline chat
+        const { fullText } = dictateToTextarea(dictationTarget, (e as CustomEvent<WebSpeechResult>).detail);
 
-      // ...existing text | <previous_text_replaced> | <cursor>  | existing text...
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-
-      const allTextBeforeCursor = textarea.value.slice(0, start);
-      if (previous && allTextBeforeCursor.endsWith(previous)) {
-        const newText = allTextBeforeCursor.slice(0, -previous.length) + replace + textarea.value.slice(end);
-        textarea.value = newText;
-        textarea.selectionStart = textarea.selectionEnd = start - previous.length + replace.length;
-        handleTextChange(textarea.id, newText);
+        // System/User message
+        if (dictationTarget.matches(".js-focusable")) {
+          handleTextChange(dictationTarget.id, fullText);
+        }
       } else {
-        // if the character before cursor is not a /s character, add a space
-        const padding = !allTextBeforeCursor || allTextBeforeCursor.at(-1)?.match(/\s/) ? "" : " ";
-        // append at cursor
-        const newText = allTextBeforeCursor + padding + replace + textarea.value.slice(end);
-        textarea.value = newText;
-        textarea.selectionStart = textarea.selectionEnd = start + padding.length + replace.length;
-        handleTextChange(textarea.id, newText);
+        // code-editor-element
+        const codeEditor = dictationTarget?.closest<CodeEditorElement>("code-editor-element");
+        if (!codeEditor) return;
+
+        codeEditor.appendSpeech((e as CustomEvent<WebSpeechResult>).detail);
       }
     };
 
@@ -350,6 +355,17 @@ export function ChatTree() {
 
   // global keyboard
   useEffect(() => {
+    const abortController = new AbortController();
+
+    const passthroughtBrowserNativeKey = async (e: KeyboardEvent) => {
+      const combo = getCombo(e);
+      switch (combo) {
+        case "ctrl+shift+k":
+          e.stopPropagation();
+          return;
+      }
+    };
+
     const handleGlobalKeydown = async (e: KeyboardEvent) => {
       const combo = getCombo(e);
       let matched = true;
@@ -369,15 +385,25 @@ export function ChatTree() {
             .then(() => autoFocusNthInput(0))
             .then(() => showToast("✅ Loaded"))
             .catch((e) => showToast(`❌ Error ${e?.message}`));
-
           break;
         case "ctrl+shift+o":
           importChat()
             .then((file) => showToast(`✅ Imported ${file.name} ${getReadableFileSize(file.size)}`))
             .then(() => autoFocusNthInput(0))
             .catch((e) => showToast(`❌ Error ${e?.message}`));
-
           break;
+
+        // Hold Shift + Space to talk
+        case "shift+space":
+          e.preventDefault();
+          if (!speech.start()) return;
+
+          const targetElement = document.activeElement as HTMLTextAreaElement;
+          if (targetElement) {
+            targetElement.toggleAttribute("data-speaking", true);
+          }
+          break;
+
         default:
           matched = false;
       }
@@ -388,8 +414,37 @@ export function ChatTree() {
       }
     };
 
-    window.addEventListener("keydown", handleGlobalKeydown, { capture: true });
-    return () => window.removeEventListener("keydown", handleGlobalKeydown, { capture: true });
+    const handleGlobalKeyup = async (e: KeyboardEvent) => {
+      const combo = getCombo(e);
+      let matched = true;
+      switch (combo) {
+        // Hold Shift + Space to talk
+        case "shift+space":
+          e.preventDefault();
+
+          speech.stop();
+
+          const targetElement = document.activeElement as HTMLTextAreaElement;
+          if (targetElement) {
+            targetElement.toggleAttribute("data-speaking", false);
+          }
+          break;
+
+        default:
+          matched = false;
+      }
+
+      if (matched) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeydown, { capture: true, signal: abortController.signal });
+    window.addEventListener("keydown", passthroughtBrowserNativeKey, { capture: true, signal: abortController.signal });
+    window.addEventListener("keyup", handleGlobalKeyup, { capture: true, signal: abortController.signal });
+
+    return () => abortController.abort();
   }, [exportChat, importChat]);
 
   const handleKeydown = useCallback(
@@ -407,30 +462,16 @@ export function ChatTree() {
         handleAbort(activeUserNodeId);
       }
 
-      // Hold Shift + Space to talk
-      if (combo === "shift+space") {
-        e.preventDefault();
-        if (!speech.start()) return;
-
-        const textarea = document.activeElement as HTMLTextAreaElement;
-        if (textarea?.tagName !== "TEXTAREA") return;
-        textarea.toggleAttribute("data-speaking", true);
-
-        e.target.addEventListener(
-          "keyup",
-          () => {
-            e.preventDefault();
-            speech.stop();
-            textarea.toggleAttribute("data-speaking", false);
-          },
-          { once: true }
-        );
-      }
-
       // Enter to activate edit mode
       if (targetNode.role === "assistant" && combo === "enter") {
+        // Enter the entire message
         if ((e.target as HTMLElement).classList.contains("js-focusable")) {
           setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { isViewSource: true })));
+        }
+
+        // Enter a code block
+        if ((e.target as HTMLElement).closest("artifact-source")) {
+          (e.target as HTMLElement).closest("artifact-element")?.querySelector<HTMLButtonElement>(`[data-action="edit"]`)?.click();
         }
         return;
       }
@@ -1047,6 +1088,4 @@ const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
   }
 
   ${tableStyles}
-
-  ${artifactStyles}
 `;

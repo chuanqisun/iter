@@ -5,6 +5,7 @@ import { languages } from "@codemirror/language-data";
 import { Compartment, EditorState, type Extension } from "@codemirror/state";
 import { drawSelection, EditorView, highlightSpecialChars, keymap } from "@codemirror/view";
 import { githubDark } from "@uiw/codemirror-theme-github/src/index.ts";
+import { chatPanel } from "./chat-panel";
 
 import "./code-editor-element.css";
 
@@ -25,11 +26,11 @@ export class CodeEditorElement extends HTMLElement {
     history(),
     drawSelection(),
     syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+    ...chatPanel(),
     keymap.of([
       {
         key: "Ctrl-Enter",
         mac: "Meta-Enter",
-        stopPropagation: true,
         run: () => {
           this.dispatchEvent(new CustomEvent("run", { detail: this.value }));
           return true;
@@ -47,8 +48,10 @@ export class CodeEditorElement extends HTMLElement {
       },
       {
         key: "Escape",
-        stopPropagation: true,
-        run: () => {
+        run: (view) => {
+          // if there is selection, collapse to head
+          if (!view.state.selection.main.empty) return false;
+
           if (this.hasAttribute("data-readonly")) {
             this.dispatchEvent(new Event("escapereadonly"));
           } else {
@@ -80,7 +83,8 @@ export class CodeEditorElement extends HTMLElement {
     this.updateLanguage(this.getAttribute("data-lang") ?? "md");
 
     if (this.hasAttribute("data-value")) {
-      this.value = this.getAttribute("data-value") ?? "";
+      // initial load, avoid setter.
+      this.loadDocument(this.getAttribute("data-value") ?? "");
     }
 
     if (this.hasAttribute("data-autofocus")) {
@@ -118,9 +122,19 @@ export class CodeEditorElement extends HTMLElement {
   }
 
   set value(value: string) {
+    const currentValue = this.editorView?.state.doc.toString();
+    if (currentValue === value) return; // no-op
+
+    this.editorView?.dispatch({
+      changes: { from: 0, to: this.editorView.state.doc.length, insert: value },
+    });
+  }
+
+  /** This will wipeout history and reset UI state */
+  loadDocument(text: string) {
     this.editorView?.setState(
       EditorState.create({
-        doc: value,
+        doc: text,
         extensions: this.extensions,
       })
     );
@@ -139,6 +153,71 @@ export class CodeEditorElement extends HTMLElement {
         insert: text,
       },
     });
+  }
+
+  appendSpeech(result: { previous: string; replace: string }) {
+    if (!this.editorView) return;
+    // if there is previous text, replace it with `replace`
+    // if there is no previous text, append it with `replace`. Prefix with a space if needed
+    const { replace, previous } = result;
+    let selection = this.editorView.state.selection.main;
+
+    // overwrite the selection
+    if (!selection.empty && !previous) {
+      const start = selection.from;
+      const end = selection.to;
+      this.editorView.dispatch({
+        changes: { from: start, to: end, insert: "" },
+        selection: { head: start, anchor: start },
+      });
+      selection = this.editorView.state.selection.main;
+    }
+
+    const end = selection.to;
+    const docMaxLength = this.editorView.state.doc.length;
+    const toSafeRange = (pos: number) => Math.max(0, Math.min(pos, docMaxLength)); // code mirror cursor can be placed after doc end.
+
+    // replace ghost text
+    if (previous) {
+      // between cursor - replace.length and curosr
+      const safeAnchor = toSafeRange(end - previous.length);
+      const textBeforeCursor = this.editorView.state.doc.sliceString(safeAnchor, end);
+      if (textBeforeCursor.endsWith(previous)) {
+        const newHead = safeAnchor + replace.length;
+        this.editorView.dispatch({
+          changes: { from: safeAnchor, to: end, insert: replace },
+          selection: { anchor: newHead },
+        });
+
+        console.log("replace", {
+          previous,
+          replace,
+          from: safeAnchor,
+          to: end,
+          insert: replace,
+          select: newHead,
+        });
+      }
+      // else no op, user must have interrupted
+    } else {
+      const safeAnchor = toSafeRange(end - 1);
+      const singleCharBeforeCursor = this.editorView.state.doc.sliceString(safeAnchor, end);
+      const padding = !singleCharBeforeCursor || singleCharBeforeCursor.match(/\s/) ? "" : " ";
+      const newHead = end + padding.length + replace.length;
+      this.editorView.dispatch({
+        changes: { from: end, to: end, insert: padding + replace },
+        selection: { anchor: newHead },
+      });
+
+      console.log("append", {
+        previous,
+        replace,
+        from: end,
+        to: end,
+        insert: padding + replace,
+        select: newHead,
+      });
+    }
   }
 }
 
