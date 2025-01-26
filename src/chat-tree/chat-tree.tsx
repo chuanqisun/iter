@@ -418,8 +418,19 @@ export function ChatTree() {
       const combo = getCombo(e);
       let matched = true;
       switch (combo) {
+        // In case user releases Shift first
+        case "shift": {
+          const targetElement = document.activeElement as HTMLTextAreaElement;
+          if (targetElement.hasAttribute("data-speaking")) {
+            targetElement.toggleAttribute("data-speaking", false);
+            speech.stop();
+          }
+          // Do NOT match. We want to continue processing shift keyup
+          break;
+        }
+
         // Hold Shift + Space to talk
-        case "shift+space":
+        case "shift+space": {
           e.preventDefault();
 
           speech.stop();
@@ -429,6 +440,7 @@ export function ChatTree() {
             targetElement.toggleAttribute("data-speaking", false);
           }
           break;
+        }
 
         default:
           matched = false;
