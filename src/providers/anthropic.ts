@@ -111,7 +111,11 @@ export class AnthropicProvider implements BaseProvider {
 
     messages.forEach((message) => {
       if (message.role === "system") {
-        system = message.content.filter(part => part.type === "text/plain").map(part => this.decodeAsPlaintext(part.url)).join("\n")
+        if (typeof message.content === "string") {
+          system = message.content;
+        } else {
+          system = message.content.filter(part => part.type === "text/plain").map(part => this.decodeAsPlaintext(part.url)).join("\n")
+        }
       } else if (typeof message.content === "string") {
         convertedMessages.push({
           role: message.role as "assistant" | "user",

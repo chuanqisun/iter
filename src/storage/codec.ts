@@ -33,7 +33,7 @@ async function stringifyUserMessage(node: ChatNode) {
 
   const parts = (node.parts ?? [])?.map((part) => {
     const object = document.createElement("object");
-    object.setAttribute("data-source", "inline");
+    object.setAttribute("data-role", "part");
     object.type = part.type;
     object.name = part.name;
     object.data = part.url;
@@ -43,7 +43,7 @@ async function stringifyUserMessage(node: ChatNode) {
   const objectNodes = await Promise.all(
     (node.files ?? [])?.map(async (file) => {
       const object = document.createElement("object");
-      object.setAttribute("data-source", "upload");
+      object.setAttribute("data-role", "interpreter");
       object.type = file.type;
       object.name = file.name;
       object.data = await fileToBase64DataUrl(file);
@@ -91,7 +91,7 @@ async function parseUserMessage(node: HTMLElement): Promise<ChatNode> {
   const content = [...node.querySelectorAll("p")].map((p) => p.textContent).join("\n\n");
   const parts = await Promise.all(
     [...node.querySelectorAll("object")]
-      .filter((obj) => obj.getAttribute("data-source") === "inline")
+      .filter((obj) => obj.getAttribute("data-role") === "part")
       .map((obj) => ({
         type: obj.type,
         name: obj.name,
@@ -101,7 +101,7 @@ async function parseUserMessage(node: HTMLElement): Promise<ChatNode> {
 
   const files: File[] = await Promise.all(
     [...node.querySelectorAll("object")]
-      .filter((obj) => obj.getAttribute("data-role") === "upload")
+      .filter((obj) => obj.getAttribute("data-role") === "interpreter")
       .map((obj) =>
         fetch(obj.data)
           .then((res) => res.blob())

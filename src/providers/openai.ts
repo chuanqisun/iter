@@ -104,6 +104,12 @@ export class OpenAIProvider implements BaseProvider {
         case "user":
         case "assistant": {
 
+          if (typeof message.content === "string") {
+            return {
+              role: message.role, content: [{ type: "text", content: message.content }]
+            }
+          }
+
           return {
             role: message.role, content: message.content.map(part => {
               if (part.type === "text/plain") {

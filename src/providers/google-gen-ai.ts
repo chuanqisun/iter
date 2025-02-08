@@ -111,8 +111,19 @@ export class GoogleGenAIProvider implements BaseProvider {
 
     messages.forEach((message) => {
       if (message.role === "system") {
-        system = message.content.filter(part => part.type === "text/plain").map(part => this.decodeAsPlaintext(part.url)).join("\n")
+        if (typeof message.content === "string") {
+          system = message.content;
+        } else {
+          system = message.content.filter(part => part.type === "text/plain").map(part => this.decodeAsPlaintext(part.url)).join("\n")
+        }
       } else {
+        if (typeof message.content === "string") {
+          return {
+            role: this.toGeminiRoleName(message.role as "assistant" | "user"),
+            parts: [{ text: message.content }],
+          } satisfies Content;
+        }
+
         const convertedMessageParts = message.content.map((part) => {
           switch (part.type) {
             case "text/plain": {
@@ -121,7 +132,6 @@ export class GoogleGenAIProvider implements BaseProvider {
               } satisfies TextPart;
             }
             case "image/gif":
-            case "image/png":
             case "image/png":
             case "image/webp":
             case "application/pdf": {

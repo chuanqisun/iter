@@ -25,7 +25,7 @@ export interface BaseProvider {
 
 export interface GenericMessage {
   role: string;
-  content: CustomContentPart[]
+  content: string | CustomContentPart[]
 }
 
 export interface CustomContentPart {
