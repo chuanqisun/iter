@@ -1,4 +1,4 @@
-import type { ChatCompletionContentPartImage, ChatCompletionMessageParam } from "openai/resources/index.mjs";
+import type { ChatCompletionContentPartImage, ChatCompletionContentPartText, ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy, GenericChatParams, GenericMessage } from "./base";
 
 export interface OpenAICredential extends BaseCredential {
@@ -103,17 +103,12 @@ export class OpenAIProvider implements BaseProvider {
       switch (message.role) {
         case "user":
         case "assistant": {
-
-          if (typeof message.content === "string") {
-            return {
-              role: message.role, content: [{ type: "text", content: message.content }]
-            }
-          }
+          if (typeof message.content === "string") return { role: message.role, content: message.content }
 
           return {
             role: message.role, content: message.content.map(part => {
               if (part.type === "text/plain") {
-                return { type: "text", content: this.decodeAsPlaintext(part.url) }
+                return { type: "text", text: this.decodeAsPlaintext(part.url) } satisfies ChatCompletionContentPartText
               } else if (part.type.startsWith("image/")) {
                 return {
                   type: "image_url",
@@ -125,11 +120,15 @@ export class OpenAIProvider implements BaseProvider {
                 console.warn("Unsupported message part", part);
                 return null;
               }
-            })
+            }).filter(part => part !== null)
           }
         }
         case "system":
-          return { role: "system", content: message.content }
+          if (typeof message.content === "string") {
+            return { role: "system", content: message.content }
+          } else {
+            return { role: "system", content: message.content.filter(part => part.type === "text/plain").map(part => this.decodeAsPlaintext(part.url)).join("\n") }
+          }
         default: {
           console.warn("Unknown message type", message);
           return null;
