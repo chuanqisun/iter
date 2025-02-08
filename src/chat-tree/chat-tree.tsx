@@ -25,11 +25,7 @@ export interface ChatNode {
   id: string;
   role: "system" | "user" | "assistant";
   content: string;
-  parts?: {
-    name: string;
-    type: string;
-    url: string;
-  }[]
+  parts?: ChatPart[]
   files?: File[]; // Files for interpreter
   isViewSource?: boolean;
   childIds?: string[]; // Storing multiple child ids to allow branching
@@ -40,6 +36,13 @@ export interface ChatNode {
   abortController?: AbortController;
   errorMessage?: string;
   lastSubmittedContent?: string;
+}
+
+export interface ChatPart {
+  name: string;
+  type: string;
+  url: string;
+  size: number;
 }
 
 const INITIAL_USER_NODE = getUserNode(crypto.randomUUID());
@@ -806,14 +809,14 @@ export function ChatTree() {
                       {node.parts?.filter(part => !part.type.startsWith("image/"))?.map((part) => (
                         <AttachmentPreview key={part.url} onClick={(_) => handleRemoveAttachment(node.id, part.name, part.url)}>
                           <AttachmentFileName title={`${part.name}${part.type ? ` (${part.type})` : ""}`}>{part.name}</AttachmentFileName>
-                          <AttachmentFileSize>inline</AttachmentFileSize>
+                          <AttachmentFileSize>{getReadableFileSize(part.size)} inlined</AttachmentFileSize>
                         </AttachmentPreview>
                       ))}
 
                       {node.files?.map((file) => (
                         <AttachmentPreview key={file.name} onClick={(_) => hanldeRemoveFile(node.id, file.name)}>
                           <AttachmentFileName title={`${file.name}${file.type ? ` (${file.type})` : ""}`}>{file.name}</AttachmentFileName>
-                          <AttachmentFileSize>{getReadableFileSize(file.size)}</AttachmentFileSize>
+                          <AttachmentFileSize>{getReadableFileSize(file.size)} uploaded</AttachmentFileSize>
                         </AttachmentPreview>
                       ))}
                     </AttachmentList>

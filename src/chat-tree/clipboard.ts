@@ -1,4 +1,6 @@
-export async function getParts(data?: DataTransfer): Promise<{ name: string, type: string; url: string }[]> {
+import type { ChatPart } from './chat-tree';
+
+export async function getParts(data?: DataTransfer): Promise<ChatPart[]> {
   const items = data?.items;
   if (!items) return [];
 
@@ -8,15 +10,16 @@ export async function getParts(data?: DataTransfer): Promise<{ name: string, typ
     if (!file) return null;
     const reader = new FileReader();
 
-    return new Promise<{ name: string, type: string, url: string }>((resolve) => {
+    return new Promise<ChatPart>((resolve) => {
       reader.onload = () => resolve({
         name: file.name,
         type: file.type ? file.type : "text/plain",
-        url: reader.result as string
+        url: reader.result as string,
+        size: file.size,
       });
       reader.readAsDataURL(file);
     });
   })));
 
-  return parts.filter((part): part is { name: string, type: string, url: string } => !!part);
+  return parts.filter((part) => !!part);
 }
