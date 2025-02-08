@@ -33,7 +33,7 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ Claude 3.5 Sonnet
   - ✅ Claude 3.5 Haiku
 - Google Generative AI
-  - ✅ Gemini 2.0 Flash Experimental
+  - ✅ Gemini 2.0 Flash
 
 ## Keyboard shortcuts
 

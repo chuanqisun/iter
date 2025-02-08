@@ -42,5 +42,6 @@ export const BasicFormTextarea = styled.textarea`
 `;
 
 export const BasicSelect = styled.select`
+  field-sizing: content;
   padding: var(--input-padding-block) var(--input-padding-inline);
 `;
