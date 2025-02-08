@@ -106,32 +106,27 @@ export class GoogleGenAIProvider implements BaseProvider {
   }
 
   private getGoogleGenAIMessages(messages: GenericMessage[]): { system?: string; messages: Content[] } {
-    let system;
+    let system: string | undefined;
     const convertedMessages: Content[] = [];
 
     messages.forEach((message) => {
       if (message.role === "system") {
-        if (typeof message.content === "string") {
-          system = message.content as string;
-        } else {
-          system = message.content.filter(part => part.type === "text").map(part => part.text).join("\n")
-        }
-      } else if (typeof message.content === "string") {
-        convertedMessages.push({
-          role: this.toGeminiRole(message.role as "assistant" | "user"),
-          parts: [{ text: message.content }],
-        });
+        system = message.content.filter(part => part.type === "text/plain").map(part => this.decodeAsPlaintext(part.url)).join("\n")
       } else {
         const convertedMessageParts = message.content.map((part) => {
           switch (part.type) {
-            case "text": {
+            case "text/plain": {
               return {
-                text: part.text,
+                text: this.decodeAsPlaintext(part.url),
               } satisfies TextPart;
             }
-            case "image_url": {
+            case "image/gif":
+            case "image/png":
+            case "image/png":
+            case "image/webp":
+            case "application/pdf": {
               return {
-                inlineData: this.dataUrlToImagePart(part.image_url.url),
+                inlineData: this.dataUrlToInlineDataPart(part.url),
               } satisfies InlineDataPart;
             }
             default: {
@@ -142,7 +137,7 @@ export class GoogleGenAIProvider implements BaseProvider {
         });
 
         convertedMessages.push({
-          role: this.toGeminiRole(message.role as "assistant" | "user"),
+          role: this.toGeminiRoleName(message.role as "assistant" | "user"),
           parts: convertedMessageParts.filter((part) => part !== null),
         });
       }
@@ -154,16 +149,19 @@ export class GoogleGenAIProvider implements BaseProvider {
     };
   }
 
-  private toGeminiRole(role: "assistant" | "user") {
+  private toGeminiRoleName(role: "assistant" | "user") {
     return role === "assistant" ? "model" : "user";
   }
 
-  private dataUrlToImagePart(dataUrl: string) {
+  private dataUrlToInlineDataPart(dataUrl: string) {
     const split = dataUrl.split(",");
 
     return {
       data: split[1],
       mimeType: split[0].split(";")[0].split(":")[1],
     };
+  }
+  private decodeAsPlaintext(dataUrl: string) {
+    return atob(dataUrl.split(",")[1]);
   }
 }

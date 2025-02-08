@@ -1,4 +1,4 @@
-export async function getParts(data?: DataTransfer): Promise<{ name: string, url: string }[]> {
+export async function getParts(data?: DataTransfer): Promise<{ name: string, type: string; url: string }[]> {
   const items = data?.items;
   if (!items) return [];
 
@@ -8,14 +8,15 @@ export async function getParts(data?: DataTransfer): Promise<{ name: string, url
     if (!file) return null;
     const reader = new FileReader();
 
-    return new Promise<{ name: string, url: string }>((resolve) => {
+    return new Promise<{ name: string, type: string, url: string }>((resolve) => {
       reader.onload = () => resolve({
         name: file.name,
+        type: file.type ? file.type : "text/plain",
         url: reader.result as string
       });
       reader.readAsDataURL(file);
     });
   })));
 
-  return parts.filter((part): part is { name: string, url: string } => !!part);
+  return parts.filter((part): part is { name: string, type: string, url: string } => !!part);
 }

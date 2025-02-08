@@ -111,11 +111,7 @@ export class AnthropicProvider implements BaseProvider {
 
     messages.forEach((message) => {
       if (message.role === "system") {
-        if (typeof message.content === "string") {
-          system = message.content as string;
-        } else {
-          system = message.content.filter(part => part.type === "text").map(part => part.text).join("\n")
-        }
+        system = message.content.filter(part => part.type === "text/plain").map(part => this.decodeAsPlaintext(part.url)).join("\n")
       } else if (typeof message.content === "string") {
         convertedMessages.push({
           role: message.role as "assistant" | "user",
@@ -124,8 +120,11 @@ export class AnthropicProvider implements BaseProvider {
       } else {
         const convertedMessageParts = message.content.map((part) => {
           switch (part.type) {
-            case "text": {
-              return part satisfies TextBlockParam;
+            case "text/plain": {
+              return {
+                type: "text",
+                text: this.decodeAsPlaintext(part.url),
+              } satisfies TextBlockParam;
             }
             case "application/pdf": {
               return {
@@ -137,11 +136,14 @@ export class AnthropicProvider implements BaseProvider {
                 cache_control: { type: "ephemeral" }
               } satisfies DocumentBlockParam;
             }
-            case "image_url": {
+            case "image/jpeg":
+            case "image/png":
+            case "image/gif":
+            case "image/webp": {
               return {
                 type: "image",
                 source: {
-                  ...this.dataUrlToImagePart(part.image_url.url),
+                  ...this.dataUrlToImagePart(part.url),
                   type: "base64",
                 },
               } satisfies ImageBlockParam;
@@ -188,5 +190,9 @@ export class AnthropicProvider implements BaseProvider {
       data: split[1],
       media_type,
     };
+  }
+
+  private decodeAsPlaintext(dataUrl: string) {
+    return atob(dataUrl.split(",")[1]);
   }
 }

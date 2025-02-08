@@ -1,5 +1,3 @@
-import type { ChatCompletionContentPart } from "openai/resources/index.mjs";
-
 export interface BaseCredential {
   id: string;
   type: string;
@@ -27,11 +25,12 @@ export interface BaseProvider {
 
 export interface GenericMessage {
   role: string;
-  content: string | (ChatCompletionContentPart | CustomContentPart)[]
+  content: CustomContentPart[]
 }
 
 export interface CustomContentPart {
-  type: 'application/pdf';
+  name?: string;
+  type: "text/plain" | "application/pdf" | "image/png" | "image/jpeg" | "image/webp" | "image/gif";
   url: string;
 }
 

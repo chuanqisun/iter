@@ -1,4 +1,4 @@
-import type { ChatCompletionMessageParam } from "openai/resources/index.mjs";
+import type { ChatCompletionContentPartImage, ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy, GenericChatParams, GenericMessage } from "./base";
 
 export interface AzureOpenAICredential extends BaseCredential {
@@ -52,16 +52,16 @@ export class AzureOpenAIProvider implements BaseProvider {
 
     return credential.deployments.split(",").map(
       (deployment) =>
-        ({
-          id: `${deployment}:${credential.id}`,
-          type: "aoai",
-          displayGroup: new URL(credential.endpoint).hostname.split(".")[0],
-          displayName: deployment,
-          endpoint: credential.endpoint,
-          deployment,
-          apiKey: credential.apiKey,
-          apiVersion: "2024-10-01-preview",
-        } satisfies AzureOpenAIConnection)
+      ({
+        id: `${deployment}:${credential.id}`,
+        type: "aoai",
+        displayGroup: new URL(credential.endpoint).hostname.split(".")[0],
+        displayName: deployment,
+        endpoint: credential.endpoint,
+        deployment,
+        apiKey: credential.apiKey,
+        apiVersion: "2024-10-01-preview",
+      } satisfies AzureOpenAIConnection)
     );
   }
 
@@ -114,11 +114,27 @@ export class AzureOpenAIProvider implements BaseProvider {
     const convertedMessage = messages.map((message) => {
       switch (message.role) {
         case "user":
-          return { role: "user", content: message.content };
-        case "assistant":
-          return { role: "assistant", content: message.content };
+        case "assistant": {
+          return {
+            role: message.role, content: message.content.map(part => {
+              if (part.type === "text/plain") {
+                return { type: "text", content: this.decodeAsPlaintext(part.url) }
+              } else if (part.type.startsWith("image/")) {
+                return {
+                  type: "image_url",
+                  image_url: {
+                    url: part.url,
+                  }
+                } satisfies ChatCompletionContentPartImage
+              } else {
+                console.warn("Unsupported message part", part);
+                return null;
+              }
+            })
+          }
+        }
         case "system":
-          return { role: "system", content: message.content };
+          return { role: "system", content: message.content }
         default: {
           console.warn("Unknown message type", message);
           return null;
@@ -139,5 +155,9 @@ export class AzureOpenAIProvider implements BaseProvider {
 
   private ensureTrailingSlash(url: string) {
     return url.endsWith("/") ? url : url + "/";
+  }
+
+  private decodeAsPlaintext(dataUrl: string) {
+    return atob(dataUrl.split(",")[1]);
   }
 }

@@ -31,15 +31,19 @@ async function stringifyUserMessage(node: ChatNode) {
   p.textContent = node.content;
   section.append(p);
 
-  const imageNodes = (node.images ?? [])?.map((imgData) => {
-    const img = document.createElement("img");
-    img.src = imgData;
-    return img;
+  const parts = (node.parts ?? [])?.map((part) => {
+    const object = document.createElement("object");
+    object.setAttribute("data-source", "inline");
+    object.type = part.type;
+    object.name = part.name;
+    object.data = part.url;
+    return object;
   });
 
   const objectNodes = await Promise.all(
     (node.files ?? [])?.map(async (file) => {
       const object = document.createElement("object");
+      object.setAttribute("data-source", "upload");
       object.type = file.type;
       object.name = file.name;
       object.data = await fileToBase64DataUrl(file);
@@ -47,7 +51,7 @@ async function stringifyUserMessage(node: ChatNode) {
     })
   );
 
-  section.append(...imageNodes, ...objectNodes);
+  section.append(...parts, ...objectNodes);
 
   return section.outerHTML;
 }
@@ -85,14 +89,25 @@ function parseSystemOrAssistantMessage(node: HTMLElement): ChatNode {
 
 async function parseUserMessage(node: HTMLElement): Promise<ChatNode> {
   const content = [...node.querySelectorAll("p")].map((p) => p.textContent).join("\n\n");
-  const images = [...node.querySelectorAll("img")].map((img) => img.src);
-  const files: File[] = await Promise.all(
-    [...node.querySelectorAll("object")].map((obj) =>
-      fetch(obj.data)
-        .then((res) => res.blob())
-        .then((blob) => new File([blob], obj.name, { type: obj.type }))
-    )
+  const parts = await Promise.all(
+    [...node.querySelectorAll("object")]
+      .filter((obj) => obj.getAttribute("data-source") === "inline")
+      .map((obj) => ({
+        type: obj.type,
+        name: obj.name,
+        url: obj.data,
+      }))
   );
 
-  return { id: crypto.randomUUID(), role: node.dataset.role as "user", images, files, content };
+  const files: File[] = await Promise.all(
+    [...node.querySelectorAll("object")]
+      .filter((obj) => obj.getAttribute("data-role") === "upload")
+      .map((obj) =>
+        fetch(obj.data)
+          .then((res) => res.blob())
+          .then((blob) => new File([blob], obj.name, { type: obj.type }))
+      )
+  );
+
+  return { id: crypto.randomUUID(), role: node.dataset.role as "user", parts, files, content };
 }

@@ -1,4 +1,4 @@
-import type { ChatCompletionMessageParam } from "openai/resources/index.mjs";
+import type { ChatCompletionContentPartImage, ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy, GenericChatParams, GenericMessage } from "./base";
 
 export interface OpenAICredential extends BaseCredential {
@@ -42,14 +42,14 @@ export class OpenAIProvider implements BaseProvider {
 
     return OpenAIProvider.defaultModels.map(
       (model) =>
-        ({
-          id: `${model}:${credential.id}`,
-          type: "openai",
-          displayGroup: credential.accountName,
-          displayName: model,
-          model,
-          apiKey: credential.apiKey,
-        } satisfies OpenAIConnection)
+      ({
+        id: `${model}:${credential.id}`,
+        type: "openai",
+        displayGroup: credential.accountName,
+        displayName: model,
+        model,
+        apiKey: credential.apiKey,
+      } satisfies OpenAIConnection)
     );
   }
 
@@ -102,11 +102,28 @@ export class OpenAIProvider implements BaseProvider {
     const convertedMessage = messages.map((message) => {
       switch (message.role) {
         case "user":
-          return { role: "user", content: message.content };
-        case "assistant":
-          return { role: "assistant", content: message.content };
+        case "assistant": {
+
+          return {
+            role: message.role, content: message.content.map(part => {
+              if (part.type === "text/plain") {
+                return { type: "text", content: this.decodeAsPlaintext(part.url) }
+              } else if (part.type.startsWith("image/")) {
+                return {
+                  type: "image_url",
+                  image_url: {
+                    url: part.url,
+                  }
+                } satisfies ChatCompletionContentPartImage
+              } else {
+                console.warn("Unsupported message part", part);
+                return null;
+              }
+            })
+          }
+        }
         case "system":
-          return { role: "system", content: message.content };
+          return { role: "system", content: message.content }
         default: {
           console.warn("Unknown message type", message);
           return null;
@@ -123,5 +140,10 @@ export class OpenAIProvider implements BaseProvider {
 
   private isOpenAIConnection(connection: BaseConnection): connection is OpenAIConnection {
     return connection.type === "openai";
+  }
+
+
+  private decodeAsPlaintext(dataUrl: string) {
+    return atob(dataUrl.split(",")[1]);
   }
 }
