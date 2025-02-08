@@ -27,7 +27,12 @@ export interface BaseProvider {
 
 export interface GenericMessage {
   role: string;
-  content: string | ChatCompletionContentPart[];
+  content: string | (ChatCompletionContentPart | CustomContentPart)[]
+}
+
+export interface CustomContentPart {
+  type: 'application/pdf';
+  url: string;
 }
 
 export interface GenericChatParams {

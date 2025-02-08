@@ -13,7 +13,7 @@ import { showToast } from "../shell/toast";
 import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import { setChatInstance } from "./chat-instance";
-import { getFirstImageDataUrl } from "./clipboard";
+import { getParts } from "./clipboard";
 import { dictateToTextarea } from "./dictation";
 import { getReadableFileSize } from "./file-size";
 import { autoFocusNthInput } from "./focus";
@@ -25,7 +25,12 @@ export interface ChatNode {
   id: string;
   role: "system" | "user" | "assistant";
   content: string;
+  /** @deprecated use parts instead */
   images?: string[];
+  parts?: {
+    name: string;
+    dataUrl: string;
+  }[]
   files?: File[];
   isViewSource?: boolean;
   childIds?: string[]; // Storing multiple child ids to allow branching
@@ -276,8 +281,8 @@ export function ChatTree() {
         const message: GenericMessage = {
           role: node.role,
           content: [
-            { type: "text", text: `${node.content}${filePostScript}` },
             ...(node.images ?? []).map((url) => ({ type: "image_url" as const, image_url: { url } })),
+            { type: "text", text: `${node.content}${filePostScript}` },
           ],
         };
 
@@ -621,14 +626,14 @@ export function ChatTree() {
       const activeUserNodeId = getActiveUserNodeId(treeNodes.find((node) => node.id === nodeId));
       if (!activeUserNodeId) return;
 
-      const imageDataUrl = await getFirstImageDataUrl(e.clipboardData);
-      if (!imageDataUrl) return;
+      const parts = await getParts(e.clipboardData);
+      if (!parts.length) return;
 
       setTreeNodes((nodes) =>
         nodes.map(
           patchNode(
             (node) => node.id === activeUserNodeId,
-            (node) => ({ images: [...new Set([...(node.images ?? []), imageDataUrl])] })
+            (node) => ({ images: [...new Set([...(node.images ?? []), ...parts.map(part => part.url)])] })
           )
         )
       );

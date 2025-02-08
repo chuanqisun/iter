@@ -1,19 +1,21 @@
-export async function getFirstImageDataUrl(data?: DataTransfer): Promise<string | undefined> {
+export async function getParts(data?: DataTransfer): Promise<{ name: string, url: string }[]> {
   const items = data?.items;
-  if (!items) return;
+  if (!items) return [];
 
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    if (item.type.indexOf("image") === -1) continue;
-    const blob = item.getAsFile();
-    if (!blob) continue;
+
+  const parts = await Promise.all([...items].map((async item => {
+    const file = item.getAsFile();
+    if (!file) return null;
     const reader = new FileReader();
 
-    return new Promise((resolve) => {
-      reader.onload = () => {
-        resolve(reader.result as string);
-      };
-      reader.readAsDataURL(blob);
+    return new Promise<{ name: string, url: string }>((resolve) => {
+      reader.onload = () => resolve({
+        name: file.name,
+        url: reader.result as string
+      });
+      reader.readAsDataURL(file);
     });
-  }
+  })));
+
+  return parts.filter((part): part is { name: string, url: string } => !!part);
 }

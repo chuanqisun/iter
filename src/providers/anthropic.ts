@@ -1,4 +1,4 @@
-import type { ImageBlockParam, MessageParam, TextBlockParam } from "@anthropic-ai/sdk/resources/index.mjs";
+import type { DocumentBlockParam, ImageBlockParam, MessageParam, TextBlockParam } from "@anthropic-ai/sdk/resources/index.mjs";
 import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy, GenericChatParams, GenericMessage } from "./base";
 
 export interface AnthropicCredential extends BaseCredential {
@@ -123,6 +123,16 @@ export class AnthropicProvider implements BaseProvider {
             case "text": {
               return part satisfies TextBlockParam;
             }
+            case "application/pdf": {
+              return {
+                type: "document",
+                source: {
+                  ...this.dataUrlToDocumentPart(part.url),
+                  type: 'base64',
+                },
+                cache_control: { type: "ephemeral" }
+              } satisfies DocumentBlockParam;
+            }
             case "image_url": {
               return {
                 type: "image",
@@ -154,8 +164,20 @@ export class AnthropicProvider implements BaseProvider {
 
   private dataUrlToImagePart(dataUrl: string) {
     const split = dataUrl.split(",");
-    const supportedTypes: ImageBlockParam["source"]["media_type"][] = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    const supportedTypes: (ImageBlockParam["source"]["media_type"])[] = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     const media_type = split[0].split(";")[0].split(":")[1] as ImageBlockParam["source"]["media_type"];
+    if (!supportedTypes.includes(media_type)) throw new Error(`Unsupported media type: ${media_type}`);
+
+    return {
+      data: split[1],
+      media_type,
+    };
+  }
+
+  private dataUrlToDocumentPart(dataUrl: string) {
+    const split = dataUrl.split(",");
+    const supportedTypes: (DocumentBlockParam["source"]["media_type"])[] = ["application/pdf"];
+    const media_type = split[0].split(";")[0].split(":")[1] as DocumentBlockParam["source"]["media_type"];
     if (!supportedTypes.includes(media_type)) throw new Error(`Unsupported media type: ${media_type}`);
 
     return {
