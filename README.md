@@ -11,6 +11,7 @@ A minimalist frontend for Gen AI Chat models, optimized for rapid prompt iterati
 - **💻 Interpreter**: Process uploaded files with TypeScript and any browser-friendly npm packages
 - **📸 Vision input**: Handle visual inputs with multi-modal models
 - **🎙️ Speech input**: Use microphone to input text that can be mixed with typed message
+- **📋 Document input**: Interpret PDF and text files without conversion
 
 ## Screenshots
 
