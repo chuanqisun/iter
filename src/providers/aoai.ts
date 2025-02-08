@@ -22,7 +22,7 @@ export interface AzureOpenAIConnection extends BaseConnection {
 
 export class AzureOpenAIProvider implements BaseProvider {
   static type = "aoai";
-  static defaultModels = ["gpt-4o", "gpt-4o-mini"];
+  static defaultModels = ["o1-mini", "gpt-4o", "gpt-4o-mini"];
 
   parseNewCredentialForm(formData: FormData): AzureOpenAICredential[] {
     const endpoint = this.ensureTrailingSlash(formData.get("newEndpoint") as string);
