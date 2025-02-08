@@ -19,7 +19,7 @@ export interface GoogleGenAIConnection extends BaseConnection {
 
 export class GoogleGenAIProvider implements BaseProvider {
   static type = "google-gen-ai";
-  static defaultModels = ["gemini-2.0-flash", "gemini-2.0-flash-exp", "gemini-2.0-pro-exp-02-05", "gemini-2.0-flash-thinking-exp-01-21", "gemini-2.0-flash-lite-preview-02-05"];
+  static defaultModels = ["gemini-2.0-flash", "gemini-2.0-flash-exp", "gemini-2.0-pro-exp-02-05", "gemini-2.0-flash-lite-preview-02-05"];
 
   parseNewCredentialForm(formData: FormData): GoogleGenAICredential[] {
     const accountName = formData.get("newAccountName") as string;
@@ -111,10 +111,14 @@ export class GoogleGenAIProvider implements BaseProvider {
 
     messages.forEach((message) => {
       if (message.role === "system") {
-        system = message.content as string;
+        if (typeof message.content === "string") {
+          system = message.content as string;
+        } else {
+          system = message.content.filter(part => part.type === "text").map(part => part.text).join("\n")
+        }
       } else if (typeof message.content === "string") {
         convertedMessages.push({
-          role: message.role as "assistant" | "user",
+          role: this.toGeminiRole(message.role as "assistant" | "user"),
           parts: [{ text: message.content }],
         });
       } else {
@@ -138,7 +142,7 @@ export class GoogleGenAIProvider implements BaseProvider {
         });
 
         convertedMessages.push({
-          role: message.role as "assistant" | "user",
+          role: this.toGeminiRole(message.role as "assistant" | "user"),
           parts: convertedMessageParts.filter((part) => part !== null),
         });
       }
@@ -148,6 +152,10 @@ export class GoogleGenAIProvider implements BaseProvider {
       system,
       messages: convertedMessages,
     };
+  }
+
+  private toGeminiRole(role: "assistant" | "user") {
+    return role === "assistant" ? "model" : "user";
   }
 
   private dataUrlToImagePart(dataUrl: string) {

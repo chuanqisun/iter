@@ -1,4 +1,4 @@
-import type { DocumentBlockParam, ImageBlockParam, MessageParam, TextBlockParam } from "@anthropic-ai/sdk/resources/index.mjs";
+import type { Base64PDFSource, DocumentBlockParam, ImageBlockParam, MessageParam, TextBlockParam } from "@anthropic-ai/sdk/resources/index.mjs";
 import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy, GenericChatParams, GenericMessage } from "./base";
 
 export interface AnthropicCredential extends BaseCredential {
@@ -111,7 +111,11 @@ export class AnthropicProvider implements BaseProvider {
 
     messages.forEach((message) => {
       if (message.role === "system") {
-        system = message.content as string;
+        if (typeof message.content === "string") {
+          system = message.content as string;
+        } else {
+          system = message.content.filter(part => part.type === "text").map(part => part.text).join("\n")
+        }
       } else if (typeof message.content === "string") {
         convertedMessages.push({
           role: message.role as "assistant" | "user",
@@ -176,8 +180,8 @@ export class AnthropicProvider implements BaseProvider {
 
   private dataUrlToDocumentPart(dataUrl: string) {
     const split = dataUrl.split(",");
-    const supportedTypes: (DocumentBlockParam["source"]["media_type"])[] = ["application/pdf"];
-    const media_type = split[0].split(";")[0].split(":")[1] as DocumentBlockParam["source"]["media_type"];
+    const supportedTypes: (Base64PDFSource)["media_type"][] = ["application/pdf"];
+    const media_type = split[0].split(";")[0].split(":")[1] as (Base64PDFSource)["media_type"];
     if (!supportedTypes.includes(media_type)) throw new Error(`Unsupported media type: ${media_type}`);
 
     return {
