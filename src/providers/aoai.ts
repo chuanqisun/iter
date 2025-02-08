@@ -89,13 +89,18 @@ export class AzureOpenAIProvider implements BaseProvider {
         dangerouslyAllowBrowser: true,
       });
 
+      const systemRoleName = connection.deployment.startsWith("o") ? "developer" : "system";
+      const isTemperatureSupported = !connection.deployment.startsWith("o");
+
       const stream = await client.chat.completions.create(
         {
           stream: true,
-          messages: that.getOpenAIMessages(messages),
+          messages: that.getOpenAIMessages(messages, {
+            systemRoleName
+          }),
           model: connection.deployment,
-          temperature: config?.temperature,
-          max_tokens: config?.maxTokens,
+          temperature: isTemperatureSupported ? config?.temperature : undefined,
+          max_completion_tokens: config?.maxTokens,
           top_p: config?.topP,
         },
         {
@@ -110,7 +115,9 @@ export class AzureOpenAIProvider implements BaseProvider {
     };
   }
 
-  private getOpenAIMessages(messages: GenericMessage[]): ChatCompletionMessageParam[] {
+  private getOpenAIMessages(messages: GenericMessage[], options: {
+    systemRoleName: string;
+  }): ChatCompletionMessageParam[] {
     const convertedMessage = messages.map((message) => {
       switch (message.role) {
         case "user":
@@ -136,10 +143,11 @@ export class AzureOpenAIProvider implements BaseProvider {
           }
         }
         case "system":
+
           if (typeof message.content === "string") {
-            return { role: "system", content: message.content }
+            return { role: options.systemRoleName, content: message.content }
           } else {
-            return { role: "system", content: message.content.filter(part => part.type === "text/plain").map(part => this.decodeAsPlaintext(part.url)).join("\n") }
+            return { role: options.systemRoleName, content: message.content.filter(part => part.type === "text/plain").map(part => this.decodeAsPlaintext(part.url)).join("\n") }
           }
         default: {
           console.warn("Unknown message type", message);

@@ -29,6 +29,7 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ GPT-4o
   - ✅ GPT-4o-mini
 - Azure OpenAI
+  - ✅ o1-mini
   - ✅ GPT-4o
   - ✅ GPT-4o-mini
 - Anthropic
