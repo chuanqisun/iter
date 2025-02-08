@@ -19,7 +19,7 @@ export interface OpenAIConnection extends BaseConnection {
 
 export class OpenAIProvider implements BaseProvider {
   static type = "openai";
-  static defaultModels = ["gpt-4o", "gpt-4o-mini", "o1-mini"];
+  static defaultModels = ["gpt-4o", "gpt-4o-mini", "o1-mini", "o3-mini"];
 
   parseNewCredentialForm(formData: FormData): OpenAICredential[] {
     const accountName = formData.get("newAccountName") as string;
@@ -74,8 +74,7 @@ export class OpenAIProvider implements BaseProvider {
         dangerouslyAllowBrowser: true,
       });
 
-      const supportsMaxToken = !connection.model.startsWith("o1");
-      const supportsTemperature = !connection.model.startsWith("o1");
+      const supportsTemperature = !connection.model.startsWith("o1") && !connection.model.startsWith("o3");
 
       const stream = await client.chat.completions.create(
         {
@@ -83,7 +82,7 @@ export class OpenAIProvider implements BaseProvider {
           messages: that.getOpenAIMessages(messages),
           model: connection.model,
           temperature: supportsTemperature ? config?.temperature : undefined,
-          max_tokens: supportsMaxToken ? config?.maxTokens : undefined,
+          max_completion_tokens: config?.maxTokens,
           top_p: config?.topP,
         },
         {
@@ -125,9 +124,9 @@ export class OpenAIProvider implements BaseProvider {
         }
         case "system":
           if (typeof message.content === "string") {
-            return { role: "system", content: message.content }
+            return { role: "developer", content: message.content }
           } else {
-            return { role: "system", content: message.content.filter(part => part.type === "text/plain").map(part => this.decodeAsPlaintext(part.url)).join("\n") }
+            return { role: "developer", content: message.content.filter(part => part.type === "text/plain").map(part => this.decodeAsPlaintext(part.url)).join("\n") }
           }
         default: {
           console.warn("Unknown message type", message);

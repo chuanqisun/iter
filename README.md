@@ -24,6 +24,7 @@ Recreate the UI of Airbnb with a single screenshot
 ## Supported model providers
 
 - OpenAI
+  - ✅ o3-mini
   - ✅ o1-mini
   - ✅ GPT-4o
   - ✅ GPT-4o-mini
