@@ -14,6 +14,7 @@ import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import { setChatInstance } from "./chat-instance";
 import { getParts } from "./clipboard";
+import { textToDataUrl } from './codec';
 import { dictateToTextarea } from "./dictation";
 import { getReadableFileSize } from "./file-size";
 import { autoFocusNthInput } from "./focus";
@@ -279,9 +280,7 @@ export function ChatTree() {
         if (!node) throw new Error(`Node ${id} not found`);
 
         const filePostScript = getFileAccessPostscript(node.files ?? []);
-
-        const rawContent = `${node.content}${filePostScript}`;
-        const rawContentDataUrl = `data:text/plain;base64,${btoa(rawContent)}`;
+        const rawContentDataUrl = textToDataUrl(`${node.content}${filePostScript}`);
 
         const message: GenericMessage = {
           role: node.role,
