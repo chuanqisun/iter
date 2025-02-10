@@ -378,6 +378,7 @@ export function ChatTree() {
             .then(() => showToast("✅ Saved"))
             .catch((e) => showToast(`❌ Error ${e?.message}`));
           break;
+        case "ctrl+shift+e":
         case "ctrl+shift+s":
           exportChat()
             .then((file) => showToast(`✅ Exported ${file.name} (${getReadableFileSize(file.size)})`))
