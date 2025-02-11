@@ -155,8 +155,4 @@ export class OpenAIProvider implements BaseProvider {
   private isOpenAIConnection(connection: BaseConnection): connection is OpenAIConnection {
     return connection.type === "openai";
   }
-
-  private decodeAsPlaintext(dataUrl: string) {
-    return atob(dataUrl.split(",")[1]);
-  }
 }

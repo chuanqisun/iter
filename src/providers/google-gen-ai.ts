@@ -181,7 +181,4 @@ export class GoogleGenAIProvider implements BaseProvider {
       mimeType: split[0].split(";")[0].split(":")[1],
     };
   }
-  private decodeAsPlaintext(dataUrl: string) {
-    return atob(dataUrl.split(",")[1]);
-  }
 }
