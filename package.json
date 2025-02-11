@@ -22,11 +22,11 @@
   "homepage": "https://github.com/chuanqisun/iter#readme",
   "devDependencies": {
     "@types/dom-speech-recognition": "^0.0.4",
-    "@types/react": "^19.0.2",
-    "@types/react-dom": "^19.0.2",
-    "@vitejs/plugin-react-swc": "^3.7.2",
-    "typescript": "^5.7.2",
-    "vite": "^6.0.6"
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react-swc": "^3.8.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",
@@ -41,7 +41,7 @@
     "@uiw/codemirror-theme-github": "^4.23.8",
     "dompurify": "^3.2.4",
     "idb-keyval": "^6.2.1",
-    "marked": "^15.0.6",
+    "marked": "^15.0.7",
     "marked-shiki": "^1.2.0",
     "mermaid": "^11.4.1",
     "openai": "^4.83.0",
