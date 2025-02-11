@@ -1,4 +1,5 @@
 import type { Base64PDFSource, DocumentBlockParam, ImageBlockParam, MessageParam, TextBlockParam } from "@anthropic-ai/sdk/resources/index.mjs";
+import { dataUrlToText } from "../storage/codec";
 import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy, GenericChatParams, GenericMessage } from "./base";
 
 export interface AnthropicCredential extends BaseCredential {
@@ -51,7 +52,7 @@ export class AnthropicProvider implements BaseProvider {
           model,
           apiKey: credential.apiKey,
           apiVersion: "2023-06-01",
-        }) satisfies AnthropicConnection
+        } satisfies AnthropicConnection)
     );
   }
 
@@ -114,7 +115,10 @@ export class AnthropicProvider implements BaseProvider {
         if (typeof message.content === "string") {
           system = message.content;
         } else {
-          system = message.content.filter(part => part.type === "text/plain").map(part => this.decodeAsPlaintext(part.url)).join("\n")
+          system = message.content
+            .filter((part) => part.type === "text/plain")
+            .map((part) => dataUrlToText(part.url))
+            .join("\n");
         }
       } else if (typeof message.content === "string") {
         convertedMessages.push({
@@ -127,7 +131,7 @@ export class AnthropicProvider implements BaseProvider {
             case "text/plain": {
               return {
                 type: "text",
-                text: this.decodeAsPlaintext(part.url),
+                text: dataUrlToText(part.url),
               } satisfies TextBlockParam;
             }
             case "application/pdf": {
@@ -135,9 +139,9 @@ export class AnthropicProvider implements BaseProvider {
                 type: "document",
                 source: {
                   ...this.dataUrlToDocumentPart(part.url),
-                  type: 'base64',
+                  type: "base64",
                 },
-                cache_control: { type: "ephemeral" }
+                cache_control: { type: "ephemeral" },
               } satisfies DocumentBlockParam;
             }
             case "image/jpeg":
@@ -174,7 +178,7 @@ export class AnthropicProvider implements BaseProvider {
 
   private dataUrlToImagePart(dataUrl: string) {
     const split = dataUrl.split(",");
-    const supportedTypes: (ImageBlockParam["source"]["media_type"])[] = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    const supportedTypes: ImageBlockParam["source"]["media_type"][] = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     const media_type = split[0].split(";")[0].split(":")[1] as ImageBlockParam["source"]["media_type"];
     if (!supportedTypes.includes(media_type)) throw new Error(`Unsupported media type: ${media_type}`);
 
@@ -186,17 +190,13 @@ export class AnthropicProvider implements BaseProvider {
 
   private dataUrlToDocumentPart(dataUrl: string) {
     const split = dataUrl.split(",");
-    const supportedTypes: (Base64PDFSource)["media_type"][] = ["application/pdf"];
-    const media_type = split[0].split(";")[0].split(":")[1] as (Base64PDFSource)["media_type"];
+    const supportedTypes: Base64PDFSource["media_type"][] = ["application/pdf"];
+    const media_type = split[0].split(";")[0].split(":")[1] as Base64PDFSource["media_type"];
     if (!supportedTypes.includes(media_type)) throw new Error(`Unsupported media type: ${media_type}`);
 
     return {
       data: split[1],
       media_type,
     };
-  }
-
-  private decodeAsPlaintext(dataUrl: string) {
-    return atob(dataUrl.split(",")[1]);
   }
 }

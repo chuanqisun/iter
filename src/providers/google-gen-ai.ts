@@ -1,4 +1,5 @@
 import type { Content, InlineDataPart, TextPart } from "@google/generative-ai";
+import { dataUrlToText } from "../storage/codec";
 import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy, GenericChatParams, GenericMessage } from "./base";
 
 export interface GoogleGenAICredential extends BaseCredential {
@@ -19,7 +20,13 @@ export interface GoogleGenAIConnection extends BaseConnection {
 
 export class GoogleGenAIProvider implements BaseProvider {
   static type = "google-gen-ai";
-  static defaultModels = ["gemini-2.0-flash", "gemini-2.0-flash-exp", "gemini-2.0-pro-exp-02-05", "gemini-2.0-flash-lite-preview-02-05", "gemini-2.0-flash-thinking-exp-01-21"];
+  static defaultModels = [
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-exp",
+    "gemini-2.0-pro-exp-02-05",
+    "gemini-2.0-flash-lite-preview-02-05",
+    "gemini-2.0-flash-thinking-exp-01-21",
+  ];
 
   parseNewCredentialForm(formData: FormData): GoogleGenAICredential[] {
     const accountName = formData.get("newAccountName") as string;
@@ -49,7 +56,7 @@ export class GoogleGenAIProvider implements BaseProvider {
           displayName: model,
           model,
           apiKey: credential.apiKey,
-        }) satisfies GoogleGenAIConnection
+        } satisfies GoogleGenAIConnection)
     );
   }
 
@@ -114,7 +121,10 @@ export class GoogleGenAIProvider implements BaseProvider {
         if (typeof message.content === "string") {
           system = message.content;
         } else {
-          system = message.content.filter(part => part.type === "text/plain").map(part => this.decodeAsPlaintext(part.url)).join("\n")
+          system = message.content
+            .filter((part) => part.type === "text/plain")
+            .map((part) => dataUrlToText(part.url))
+            .join("\n");
         }
       } else {
         if (typeof message.content === "string") {
@@ -128,7 +138,7 @@ export class GoogleGenAIProvider implements BaseProvider {
           switch (part.type) {
             case "text/plain": {
               return {
-                text: this.decodeAsPlaintext(part.url),
+                text: dataUrlToText(part.url),
               } satisfies TextPart;
             }
             case "image/gif":

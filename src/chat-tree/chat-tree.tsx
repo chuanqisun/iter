@@ -10,11 +10,11 @@ import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
 import { useConnections } from "../settings/use-connections";
 import { showToast } from "../shell/toast";
+import { textToDataUrl } from "../storage/codec";
 import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import { setChatInstance } from "./chat-instance";
 import { getParts } from "./clipboard";
-import { textToDataUrl } from './codec';
 import { dictateToTextarea } from "./dictation";
 import { getReadableFileSize } from "./file-size";
 import { autoFocusNthInput } from "./focus";
@@ -26,7 +26,7 @@ export interface ChatNode {
   id: string;
   role: "system" | "user" | "assistant";
   content: string;
-  parts?: ChatPart[]
+  parts?: ChatPart[];
   files?: File[]; // Files for interpreter
   isViewSource?: boolean;
   childIds?: string[]; // Storing multiple child ids to allow branching
@@ -285,15 +285,15 @@ export function ChatTree() {
         const message: GenericMessage = {
           role: node.role,
           content: [
-            ...(node.parts ?? []).map(part => ({ name: part.name, type: part.type as any, url: part.url })),
-            ...(node.content ? [{ type: "text/plain", url: rawContentDataUrl }] as const : []),
+            ...(node.parts ?? []).map((part) => ({ name: part.name, type: part.type as any, url: part.url })),
+            ...(node.content ? ([{ type: "text/plain", url: rawContentDataUrl }] as const) : []),
           ],
         };
 
         return message;
       });
 
-      return messages.filter(message => message.content.length);
+      return messages.filter((message) => message.content.length);
     },
     [treeNodes]
   );
@@ -631,14 +631,14 @@ export function ChatTree() {
       const parts = await getParts(e.clipboardData);
       if (!parts.length) return;
 
-
-
       setTreeNodes((nodes) =>
         nodes.map(
           patchNode(
             (node) => node.id === activeUserNodeId,
             (node) => ({
-              parts: [...node.parts ?? [], ...parts].filter((part, index, self) => self.findIndex(existing => existing.name === part.name && existing.url === part.url) === index),
+              parts: [...(node.parts ?? []), ...parts].filter(
+                (part, index, self) => self.findIndex((existing) => existing.name === part.name && existing.url === part.url) === index
+              ),
             })
           )
         )
@@ -799,19 +799,22 @@ export function ChatTree() {
                   </AutoResize>
                   {node.files?.length || node.parts?.length ? (
                     <AttachmentList>
+                      {node.parts
+                        ?.filter((part) => part.type.startsWith("image/"))
+                        ?.map((part) => (
+                          <AttachmentPreview key={part.url} onClick={(_) => handleRemoveAttachment(node.id, part.name, part.url)}>
+                            <img key={part.url} src={part.url} alt="attachment" />
+                          </AttachmentPreview>
+                        ))}
 
-                      {node.parts?.filter(part => part.type.startsWith("image/"))?.map((part) => (
-                        <AttachmentPreview key={part.url} onClick={(_) => handleRemoveAttachment(node.id, part.name, part.url)}>
-                          <img key={part.url} src={part.url} alt="attachment" />
-                        </AttachmentPreview>
-                      ))}
-
-                      {node.parts?.filter(part => !part.type.startsWith("image/"))?.map((part) => (
-                        <AttachmentPreview key={part.url} onClick={(_) => handleRemoveAttachment(node.id, part.name, part.url)}>
-                          <AttachmentFileName title={`${part.name}${part.type ? ` (${part.type})` : ""}`}>{part.name}</AttachmentFileName>
-                          <AttachmentFileSize>{getReadableFileSize(part.size)} inlined</AttachmentFileSize>
-                        </AttachmentPreview>
-                      ))}
+                      {node.parts
+                        ?.filter((part) => !part.type.startsWith("image/"))
+                        ?.map((part) => (
+                          <AttachmentPreview key={part.url} onClick={(_) => handleRemoveAttachment(node.id, part.name, part.url)}>
+                            <AttachmentFileName title={`${part.name}${part.type ? ` (${part.type})` : ""}`}>{part.name}</AttachmentFileName>
+                            <AttachmentFileSize>{getReadableFileSize(part.size)} inlined</AttachmentFileSize>
+                          </AttachmentPreview>
+                        ))}
 
                       {node.files?.map((file) => (
                         <AttachmentPreview key={file.name} onClick={(_) => hanldeRemoveFile(node.id, file.name)}>

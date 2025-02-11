@@ -1,4 +1,5 @@
 import type { ChatCompletionContentPartImage, ChatCompletionContentPartText, ChatCompletionMessageParam } from "openai/resources/index.mjs";
+import { dataUrlToText } from "../storage/codec";
 import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy, GenericChatParams, GenericMessage } from "./base";
 
 export interface OpenAICredential extends BaseCredential {
@@ -42,14 +43,14 @@ export class OpenAIProvider implements BaseProvider {
 
     return OpenAIProvider.defaultModels.map(
       (model) =>
-      ({
-        id: `${model}:${credential.id}`,
-        type: "openai",
-        displayGroup: credential.accountName,
-        displayName: model,
-        model,
-        apiKey: credential.apiKey,
-      } satisfies OpenAIConnection)
+        ({
+          id: `${model}:${credential.id}`,
+          type: "openai",
+          displayGroup: credential.accountName,
+          displayName: model,
+          model,
+          apiKey: credential.apiKey,
+        } satisfies OpenAIConnection)
     );
   }
 
@@ -102,31 +103,40 @@ export class OpenAIProvider implements BaseProvider {
       switch (message.role) {
         case "user":
         case "assistant": {
-          if (typeof message.content === "string") return { role: message.role, content: message.content }
+          if (typeof message.content === "string") return { role: message.role, content: message.content };
 
           return {
-            role: message.role, content: message.content.map(part => {
-              if (part.type === "text/plain") {
-                return { type: "text", text: this.decodeAsPlaintext(part.url) } satisfies ChatCompletionContentPartText
-              } else if (part.type.startsWith("image/")) {
-                return {
-                  type: "image_url",
-                  image_url: {
-                    url: part.url,
-                  }
-                } satisfies ChatCompletionContentPartImage
-              } else {
-                console.warn("Unsupported message part", part);
-                return null;
-              }
-            }).filter(part => part !== null)
-          }
+            role: message.role,
+            content: message.content
+              .map((part) => {
+                if (part.type === "text/plain") {
+                  return { type: "text", text: dataUrlToText(part.url) } satisfies ChatCompletionContentPartText;
+                } else if (part.type.startsWith("image/")) {
+                  return {
+                    type: "image_url",
+                    image_url: {
+                      url: part.url,
+                    },
+                  } satisfies ChatCompletionContentPartImage;
+                } else {
+                  console.warn("Unsupported message part", part);
+                  return null;
+                }
+              })
+              .filter((part) => part !== null),
+          };
         }
         case "system":
           if (typeof message.content === "string") {
-            return { role: "developer", content: message.content }
+            return { role: "developer", content: message.content };
           } else {
-            return { role: "developer", content: message.content.filter(part => part.type === "text/plain").map(part => this.decodeAsPlaintext(part.url)).join("\n") }
+            return {
+              role: "developer",
+              content: message.content
+                .filter((part) => part.type === "text/plain")
+                .map((part) => dataUrlToText(part.url))
+                .join("\n"),
+            };
           }
         default: {
           console.warn("Unknown message type", message);
@@ -145,7 +155,6 @@ export class OpenAIProvider implements BaseProvider {
   private isOpenAIConnection(connection: BaseConnection): connection is OpenAIConnection {
     return connection.type === "openai";
   }
-
 
   private decodeAsPlaintext(dataUrl: string) {
     return atob(dataUrl.split(",")[1]);
