@@ -26,6 +26,7 @@ Recreate the UI of Airbnb with a single screenshot
 - OpenAI
   - ✅ o3-mini
   - ✅ o1-mini
+  - ✅ GPT-4.5-preview
   - ✅ GPT-4o
   - ✅ GPT-4o-mini
 - Azure OpenAI
@@ -33,6 +34,7 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ GPT-4o
   - ✅ GPT-4o-mini
 - Anthropic
+  - ✅ Claude 3.7 Sonnet
   - ✅ Claude 3.5 Sonnet
   - ✅ Claude 3.5 Haiku
 - Google Generative AI
