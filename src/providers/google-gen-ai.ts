@@ -21,9 +21,9 @@ export interface GoogleGenAIConnection extends BaseConnection {
 export class GoogleGenAIProvider implements BaseProvider {
   static type = "google-gen-ai";
   static defaultModels = [
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-exp",
     "gemini-2.0-pro-exp-02-05",
+    "gemini-2.0-flash-exp",
+    "gemini-2.0-flash",
     "gemini-2.0-flash-lite-preview-02-05",
     "gemini-2.0-flash-thinking-exp-01-21",
   ];
@@ -49,14 +49,14 @@ export class GoogleGenAIProvider implements BaseProvider {
 
     return GoogleGenAIProvider.defaultModels.map(
       (model) =>
-        ({
-          id: `${model}:${credential.id}`,
-          type: "google-gen-ai",
-          displayGroup: credential.accountName,
-          displayName: model,
-          model,
-          apiKey: credential.apiKey,
-        } satisfies GoogleGenAIConnection)
+      ({
+        id: `${model}:${credential.id}`,
+        type: "google-gen-ai",
+        displayGroup: credential.accountName,
+        displayName: model,
+        model,
+        apiKey: credential.apiKey,
+      } satisfies GoogleGenAIConnection)
     );
   }
 
