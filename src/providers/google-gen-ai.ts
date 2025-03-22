@@ -49,14 +49,14 @@ export class GoogleGenAIProvider implements BaseProvider {
 
     return GoogleGenAIProvider.defaultModels.map(
       (model) =>
-      ({
-        id: `${model}:${credential.id}`,
-        type: "google-gen-ai",
-        displayGroup: credential.accountName,
-        displayName: model,
-        model,
-        apiKey: credential.apiKey,
-      } satisfies GoogleGenAIConnection)
+        ({
+          id: `${model}:${credential.id}`,
+          type: "google-gen-ai",
+          displayGroup: credential.accountName,
+          displayName: model,
+          model,
+          apiKey: credential.apiKey,
+        } satisfies GoogleGenAIConnection)
     );
   }
 
@@ -129,7 +129,7 @@ export class GoogleGenAIProvider implements BaseProvider {
       } else {
         if (typeof message.content === "string") {
           return {
-            role: this.toGeminiRoleName(message.role as "assistant" | "user"),
+            role: this.toGeminiRoleName(message.role),
             parts: [{ text: message.content }],
           } satisfies Content;
         }
@@ -157,7 +157,7 @@ export class GoogleGenAIProvider implements BaseProvider {
         });
 
         convertedMessages.push({
-          role: this.toGeminiRoleName(message.role as "assistant" | "user"),
+          role: this.toGeminiRoleName(message.role),
           parts: convertedMessageParts.filter((part) => part !== null),
         });
       }

@@ -129,7 +129,7 @@ export class AnthropicProvider implements BaseProvider {
         }
       } else if (typeof message.content === "string") {
         convertedMessages.push({
-          role: message.role as "assistant" | "user",
+          role: message.role,
           content: message.content,
         });
       } else {
@@ -171,7 +171,7 @@ export class AnthropicProvider implements BaseProvider {
         });
 
         convertedMessages.push({
-          role: message.role as "assistant" | "user",
+          role: message.role,
           content: convertedMessageParts.filter((part) => part !== null),
         });
       }

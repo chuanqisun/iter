@@ -92,12 +92,14 @@ export class AzureOpenAIProvider implements BaseProvider {
 
       const systemRoleName = connection.deployment.startsWith("o") ? "developer" : "system";
       const isTemperatureSupported = !connection.deployment.startsWith("o");
+      const isSystemMessageSupported = !connection.deployment.startsWith("o1-mini");
 
       const stream = await client.chat.completions.create(
         {
           stream: true,
           messages: that.getOpenAIMessages(messages, {
             systemRoleName,
+            isSystemMessageSupported,
           }),
           model: connection.deployment,
           temperature: isTemperatureSupported ? config?.temperature : undefined,
@@ -120,6 +122,7 @@ export class AzureOpenAIProvider implements BaseProvider {
     messages: GenericMessage[],
     options: {
       systemRoleName: string;
+      isSystemMessageSupported?: boolean;
     }
   ): ChatCompletionMessageParam[] {
     const convertedMessage = messages.map((message) => {
@@ -150,11 +153,16 @@ export class AzureOpenAIProvider implements BaseProvider {
           };
         }
         case "system":
+          let finalRole = options.systemRoleName;
+          if (!options?.isSystemMessageSupported) {
+            console.error("System message is not supported for this model, converted to user message");
+            finalRole = "user";
+          }
           if (typeof message.content === "string") {
-            return { role: options.systemRoleName, content: message.content };
+            return { role: finalRole, content: message.content };
           } else {
             return {
-              role: options.systemRoleName,
+              role: finalRole,
               content: message.content
                 .filter((part) => part.type === "text/plain")
                 .map((part) => dataUrlToText(part.url))

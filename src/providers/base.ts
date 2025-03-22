@@ -24,9 +24,11 @@ export interface BaseProvider {
 }
 
 export interface GenericMessage {
-  role: string;
-  content: string | CustomContentPart[]
+  role: GenericMessageRole;
+  content: string | CustomContentPart[];
 }
+
+export type GenericMessageRole = "system" | "user" | "assistant";
 
 export interface CustomContentPart {
   name?: string;
