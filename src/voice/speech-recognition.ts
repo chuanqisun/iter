@@ -38,7 +38,7 @@ export class WebSpeechRecognitionNode extends EventTarget {
               replace: latestItem[0].transcript,
               isFinal: true,
             },
-          })
+          }),
         );
 
         this.interim = "";
@@ -51,7 +51,7 @@ export class WebSpeechRecognitionNode extends EventTarget {
               previous,
               replace: this.interim,
             },
-          })
+          }),
         );
       }
     };

@@ -17,7 +17,9 @@ export function useRouteCache(options: UseRouteCacheOptions) {
 
   useEffect(() => {
     const cachedParams = getJson<Record<string, string>>("last-search-params") ?? {};
-    const allowedParams = Object.fromEntries(Object.entries(cachedParams).filter(([key]) => options.parameters.includes(key)));
+    const allowedParams = Object.fromEntries(
+      Object.entries(cachedParams).filter(([key]) => options.parameters.includes(key)),
+    );
     const cachedKeys = new Set(Object.keys(allowedParams));
     if (cachedKeys.size === 0) return;
 
@@ -26,7 +28,10 @@ export function useRouteCache(options: UseRouteCacheOptions) {
 
     const isSafeToRestoreCache = initialKeys.isDisjointFrom(cachedKeys);
     if (isSafeToRestoreCache) {
-      console.log(`[url route cache] will restore`, { cachedKeys, initialKeys });
+      console.log(`[url route cache] will restore`, {
+        cachedKeys,
+        initialKeys,
+      });
       const newSearchParams = new URLSearchParams(window.location.search);
       for (const key of cachedKeys) {
         newSearchParams.set(key, allowedParams[key]);

@@ -7,7 +7,14 @@ import type {
   TextBlockParam,
 } from "@anthropic-ai/sdk/resources/index.mjs";
 import { dataUrlToText } from "../storage/codec";
-import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy, GenericChatParams, GenericMessage } from "./base";
+import type {
+  BaseConnection,
+  BaseCredential,
+  BaseProvider,
+  ChatStreamProxy,
+  GenericChatParams,
+  GenericMessage,
+} from "./base";
 
 export interface AnthropicCredential extends BaseCredential {
   id: string;
@@ -59,7 +66,7 @@ export class AnthropicProvider implements BaseProvider {
           model,
           apiKey: credential.apiKey,
           apiVersion: "2023-06-01",
-        } satisfies AnthropicConnection)
+        }) satisfies AnthropicConnection,
     );
   }
 
@@ -79,7 +86,10 @@ export class AnthropicProvider implements BaseProvider {
 
     return async function* ({ messages, abortSignal, ...config }: GenericChatParams) {
       const Anthropic = await import("@anthropic-ai/sdk").then((res) => res.Anthropic);
-      const client = new Anthropic({ apiKey: connection.apiKey, dangerouslyAllowBrowser: true });
+      const client = new Anthropic({
+        apiKey: connection.apiKey,
+        dangerouslyAllowBrowser: true,
+      });
 
       const { system, messages: anthropicMessages } = that.getAnthropicMessages(messages);
 
@@ -94,7 +104,7 @@ export class AnthropicProvider implements BaseProvider {
         },
         {
           signal: abortSignal,
-        }
+        },
       );
 
       for await (const message of stream) {
@@ -113,7 +123,10 @@ export class AnthropicProvider implements BaseProvider {
     return connection.type === "anthropic";
   }
 
-  private getAnthropicMessages(messages: GenericMessage[]): { system?: string; messages: MessageParam[] } {
+  private getAnthropicMessages(messages: GenericMessage[]): {
+    system?: string;
+    messages: MessageParam[];
+  } {
     let system;
     const convertedMessages: MessageParam[] = [];
 

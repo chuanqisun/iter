@@ -13,7 +13,13 @@ declare module "react" {
         oncontentchange?: (event: CustomEvent<string>) => void;
       };
       "code-block-events": CustomElement<HTMLElement> & {
-        oncodeblockchange?: (event: CustomEvent<{ index: number; previous: string; current: string }>) => void;
+        oncodeblockchange?: (
+          event: CustomEvent<{
+            index: number;
+            previous: string;
+            current: string;
+          }>,
+        ) => void;
       };
     }
   }

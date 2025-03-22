@@ -1,6 +1,13 @@
 import type { Content, InlineDataPart, TextPart } from "@google/generative-ai";
 import { dataUrlToText } from "../storage/codec";
-import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy, GenericChatParams, GenericMessage } from "./base";
+import type {
+  BaseConnection,
+  BaseCredential,
+  BaseProvider,
+  ChatStreamProxy,
+  GenericChatParams,
+  GenericMessage,
+} from "./base";
 
 export interface GoogleGenAICredential extends BaseCredential {
   id: string;
@@ -56,7 +63,7 @@ export class GoogleGenAIProvider implements BaseProvider {
           displayName: model,
           model,
           apiKey: credential.apiKey,
-        } satisfies GoogleGenAIConnection)
+        }) satisfies GoogleGenAIConnection,
     );
   }
 
@@ -94,7 +101,7 @@ export class GoogleGenAIProvider implements BaseProvider {
         },
         {
           signal: abortSignal,
-        }
+        },
       );
 
       for await (const message of result.stream) {
@@ -112,7 +119,10 @@ export class GoogleGenAIProvider implements BaseProvider {
     return connection.type === "google-gen-ai";
   }
 
-  private getGoogleGenAIMessages(messages: GenericMessage[]): { system?: string; messages: Content[] } {
+  private getGoogleGenAIMessages(messages: GenericMessage[]): {
+    system?: string;
+    messages: Content[];
+  } {
     let system: string | undefined;
     const convertedMessages: Content[] = [];
 

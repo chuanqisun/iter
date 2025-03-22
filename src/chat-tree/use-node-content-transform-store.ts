@@ -10,9 +10,15 @@ type InputMap = Record<string, string>;
 /**
  * When nodes change, run transform asynchronously and updates the output
  */
-export function useNodeContentTransformStore(nodes: ChatNode[], transform: (input: string) => string | Promise<string>): OutputMap {
+export function useNodeContentTransformStore(
+  nodes: ChatNode[],
+  transform: (input: string) => string | Promise<string>,
+): OutputMap {
   // pending stores ids -> input map
-  const [state, setState] = useState<{ outputMap: OutputMap; inputMap: InputMap }>({ outputMap: {}, inputMap: {} });
+  const [state, setState] = useState<{
+    outputMap: OutputMap;
+    inputMap: InputMap;
+  }>({ outputMap: {}, inputMap: {} });
 
   const resolveHighlight = (id: string, highlighted: string) =>
     setState((state) => {
@@ -44,10 +50,17 @@ export function useNodeContentTransformStore(nodes: ChatNode[], transform: (inpu
       });
 
       // we can only delete here. Updates are made during resolve
-      const outputMap = removedIdSet.size ? Object.fromEntries(Object.entries(state.outputMap).filter(([id]) => !removedIdSet.has(id))) : state.outputMap;
+      const outputMap = removedIdSet.size
+        ? Object.fromEntries(Object.entries(state.outputMap).filter(([id]) => !removedIdSet.has(id)))
+        : state.outputMap;
 
       // reflect changedNodes in status
-      const inputMap = changedNodes.length ? { ...state.inputMap, ...Object.fromEntries(changedNodes.map((node) => [node.id, node.content])) } : state.inputMap;
+      const inputMap = changedNodes.length
+        ? {
+            ...state.inputMap,
+            ...Object.fromEntries(changedNodes.map((node) => [node.id, node.content])),
+          }
+        : state.inputMap;
 
       return {
         outputMap,

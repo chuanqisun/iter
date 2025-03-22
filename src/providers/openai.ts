@@ -1,6 +1,17 @@
-import type { ChatCompletionContentPartImage, ChatCompletionContentPartText, ChatCompletionMessageParam } from "openai/resources/index.mjs";
+import type {
+  ChatCompletionContentPartImage,
+  ChatCompletionContentPartText,
+  ChatCompletionMessageParam,
+} from "openai/resources/index.mjs";
 import { dataUrlToText } from "../storage/codec";
-import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy, GenericChatParams, GenericMessage } from "./base";
+import type {
+  BaseConnection,
+  BaseCredential,
+  BaseProvider,
+  ChatStreamProxy,
+  GenericChatParams,
+  GenericMessage,
+} from "./base";
 
 export interface OpenAICredential extends BaseCredential {
   id: string;
@@ -50,7 +61,7 @@ export class OpenAIProvider implements BaseProvider {
           displayName: model,
           model,
           apiKey: credential.apiKey,
-        } satisfies OpenAIConnection)
+        }) satisfies OpenAIConnection,
     );
   }
 
@@ -81,7 +92,9 @@ export class OpenAIProvider implements BaseProvider {
       const stream = await client.chat.completions.create(
         {
           stream: true,
-          messages: that.getOpenAIMessages(messages, { isSystemMessageSupported: isSystemMessageSupported }),
+          messages: that.getOpenAIMessages(messages, {
+            isSystemMessageSupported: isSystemMessageSupported,
+          }),
           model: connection.model,
           temperature: isTemperatureSupported ? config?.temperature : undefined,
           max_completion_tokens: config?.maxTokens,
@@ -89,7 +102,7 @@ export class OpenAIProvider implements BaseProvider {
         },
         {
           signal: abortSignal,
-        }
+        },
       );
 
       for await (const message of stream) {
@@ -103,7 +116,7 @@ export class OpenAIProvider implements BaseProvider {
     messages: GenericMessage[],
     options?: {
       isSystemMessageSupported?: boolean;
-    }
+    },
   ): ChatCompletionMessageParam[] {
     const convertedMessage = messages.map((message) => {
       switch (message.role) {
@@ -116,7 +129,10 @@ export class OpenAIProvider implements BaseProvider {
             content: message.content
               .map((part) => {
                 if (part.type === "text/plain") {
-                  return { type: "text", text: dataUrlToText(part.url) } satisfies ChatCompletionContentPartText;
+                  return {
+                    type: "text",
+                    text: dataUrlToText(part.url),
+                  } satisfies ChatCompletionContentPartText;
                 } else if (part.type.startsWith("image/")) {
                   return {
                     type: "image_url",
