@@ -1,4 +1,5 @@
 import type {
+  ChatCompletionContentPart,
   ChatCompletionContentPartImage,
   ChatCompletionContentPartText,
   ChatCompletionMessageParam,
@@ -92,9 +93,7 @@ export class OpenAIProvider implements BaseProvider {
       const stream = await client.chat.completions.create(
         {
           stream: true,
-          messages: that.getOpenAIMessages(messages, {
-            isSystemMessageSupported: isSystemMessageSupported,
-          }),
+          messages: that.getOpenAIMessages(messages, { isSystemMessageSupported: isSystemMessageSupported }),
           model: connection.model,
           temperature: isTemperatureSupported ? config?.temperature : undefined,
           max_completion_tokens: config?.maxTokens,
@@ -129,10 +128,7 @@ export class OpenAIProvider implements BaseProvider {
             content: message.content
               .map((part) => {
                 if (part.type === "text/plain") {
-                  return {
-                    type: "text",
-                    text: dataUrlToText(part.url),
-                  } satisfies ChatCompletionContentPartText;
+                  return { type: "text", text: dataUrlToText(part.url) } satisfies ChatCompletionContentPartText;
                 } else if (part.type.startsWith("image/")) {
                   return {
                     type: "image_url",
@@ -140,6 +136,14 @@ export class OpenAIProvider implements BaseProvider {
                       url: part.url,
                     },
                   } satisfies ChatCompletionContentPartImage;
+                } else if (part.type === "application/pdf") {
+                  return {
+                    type: "file",
+                    file: {
+                      file_data: part.url,
+                      filename: part.name,
+                    },
+                  } satisfies ChatCompletionContentPart.File;
                 } else {
                   console.warn("Unsupported message part", part);
                   return null;
