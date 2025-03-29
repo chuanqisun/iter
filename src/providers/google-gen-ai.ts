@@ -137,14 +137,12 @@ export class GoogleGenAIProvider implements BaseProvider {
             .map((part) => dataUrlToText(part.url))
             .join("\n");
         }
+      } else if (typeof message.content === "string") {
+        convertedMessages.push({
+          role: this.toGeminiRoleName(message.role),
+          parts: [{ text: message.content }],
+        });
       } else {
-        if (typeof message.content === "string") {
-          return {
-            role: this.toGeminiRoleName(message.role),
-            parts: [{ text: message.content }],
-          } satisfies Content;
-        }
-
         const convertedMessageParts = message.content.map((part) => {
           switch (part.type) {
             case "text/plain": {
