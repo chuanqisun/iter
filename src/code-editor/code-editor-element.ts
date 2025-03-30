@@ -27,6 +27,7 @@ export class CodeEditorElement extends HTMLElement {
     drawSelection(),
     syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
     ...chatPanel(),
+    EditorView.lineWrapping,
     keymap.of([
       {
         key: "Ctrl-Enter",
