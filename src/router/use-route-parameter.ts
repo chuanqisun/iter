@@ -10,7 +10,7 @@ export function useRouteParameter<T>(options: RouteParameterOptions<T>) {
   const [value, setValue] = useState<T>(
     new URLSearchParams(window.location.search).get(options.name)
       ? options.decode(new URLSearchParams(window.location.search).get(options.name) as string)
-      : options.initial
+      : options.initial,
   );
 
   const push = useCallback((value: T) => {

@@ -1,6 +1,18 @@
-import type { ChatCompletionContentPartImage, ChatCompletionContentPartText, ChatCompletionMessageParam } from "openai/resources/index.mjs";
+import type {
+  ChatCompletionContentPart,
+  ChatCompletionContentPartImage,
+  ChatCompletionContentPartText,
+  ChatCompletionMessageParam,
+} from "openai/resources/index.mjs";
 import { dataUrlToText } from "../storage/codec";
-import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy, GenericChatParams, GenericMessage } from "./base";
+import type {
+  BaseConnection,
+  BaseCredential,
+  BaseProvider,
+  ChatStreamProxy,
+  GenericChatParams,
+  GenericMessage,
+} from "./base";
 
 export interface OpenAICredential extends BaseCredential {
   id: string;
@@ -75,20 +87,21 @@ export class OpenAIProvider implements BaseProvider {
         dangerouslyAllowBrowser: true,
       });
 
-      const supportsTemperature = !connection.model.startsWith("o1") && !connection.model.startsWith("o3");
+      const isTemperatureSupported = !connection.model.startsWith("o1") && !connection.model.startsWith("o3");
+      const isSystemMessageSupported = !connection.model.startsWith("o1-mini");
 
       const stream = await client.chat.completions.create(
         {
           stream: true,
-          messages: that.getOpenAIMessages(messages),
+          messages: that.getOpenAIMessages(messages, { isSystemMessageSupported: isSystemMessageSupported }),
           model: connection.model,
-          temperature: supportsTemperature ? config?.temperature : undefined,
+          temperature: isTemperatureSupported ? config?.temperature : undefined,
           max_completion_tokens: config?.maxTokens,
           top_p: config?.topP,
         },
         {
           signal: abortSignal,
-        }
+        },
       );
 
       for await (const message of stream) {
@@ -98,7 +111,12 @@ export class OpenAIProvider implements BaseProvider {
     };
   }
 
-  private getOpenAIMessages(messages: GenericMessage[]): ChatCompletionMessageParam[] {
+  private getOpenAIMessages(
+    messages: GenericMessage[],
+    options?: {
+      isSystemMessageSupported?: boolean;
+    },
+  ): ChatCompletionMessageParam[] {
     const convertedMessage = messages.map((message) => {
       switch (message.role) {
         case "user":
@@ -118,6 +136,14 @@ export class OpenAIProvider implements BaseProvider {
                       url: part.url,
                     },
                   } satisfies ChatCompletionContentPartImage;
+                } else if (part.type === "application/pdf") {
+                  return {
+                    type: "file",
+                    file: {
+                      file_data: part.url,
+                      filename: part.name,
+                    },
+                  } satisfies ChatCompletionContentPart.File;
                 } else {
                   console.warn("Unsupported message part", part);
                   return null;
@@ -127,11 +153,16 @@ export class OpenAIProvider implements BaseProvider {
           };
         }
         case "system":
+          let finalRole = "developer";
+          if (!options?.isSystemMessageSupported) {
+            console.error("System message is not supported for this model, converted to user message");
+            finalRole = "user";
+          }
           if (typeof message.content === "string") {
-            return { role: "developer", content: message.content };
+            return { role: finalRole, content: message.content };
           } else {
             return {
-              role: "developer",
+              role: finalRole,
               content: message.content
                 .filter((part) => part.type === "text/plain")
                 .map((part) => dataUrlToText(part.url))

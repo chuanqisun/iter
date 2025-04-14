@@ -21,7 +21,8 @@ export function injectIframeFileAccessToDocument(html: string) {
     return;
   }
 
-  const injectedCode = html.slice(0, insertPosition) + `<script>${iframeFileAccessAPISource()}</script>` + html.slice(insertPosition);
+  const injectedCode =
+    html.slice(0, insertPosition) + `<script>${iframeFileAccessAPISource()}</script>` + html.slice(insertPosition);
   return injectedCode;
 }
 
@@ -57,7 +58,11 @@ export async function embedFileAccessToDocument(html: string) {
 
   // convert each file to <script type="embedded-file"></script>
   const scripts = [
-    ...(await Promise.all(files.map((file) => fileToUrl(file).then((url) => `<script type="embedded-file" filename="${file.name}" data="${url}"></script>`)))),
+    ...(await Promise.all(
+      files.map((file) =>
+        fileToUrl(file).then((url) => `<script type="embedded-file" filename="${file.name}" data="${url}"></script>`),
+      ),
+    )),
     `<script>${embedFileAccessAPISource()}</script>`,
   ].join("\n");
   // add <script></script> before the 1st <script> element, or at the end of the <head> element;

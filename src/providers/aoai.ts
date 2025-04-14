@@ -1,6 +1,17 @@
-import type { ChatCompletionContentPartImage, ChatCompletionContentPartText, ChatCompletionMessageParam } from "openai/resources/index.mjs";
+import type {
+  ChatCompletionContentPartImage,
+  ChatCompletionContentPartText,
+  ChatCompletionMessageParam,
+} from "openai/resources/index.mjs";
 import { dataUrlToText } from "../storage/codec";
-import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy, GenericChatParams, GenericMessage } from "./base";
+import type {
+  BaseConnection,
+  BaseCredential,
+  BaseProvider,
+  ChatStreamProxy,
+  GenericChatParams,
+  GenericMessage,
+} from "./base";
 
 export interface AzureOpenAICredential extends BaseCredential {
   id: string;
@@ -62,7 +73,7 @@ export class AzureOpenAIProvider implements BaseProvider {
           deployment,
           apiKey: credential.apiKey,
           apiVersion: "2025-01-01-preview",
-        } satisfies AzureOpenAIConnection)
+        }) satisfies AzureOpenAIConnection,
     );
   }
 
@@ -92,12 +103,14 @@ export class AzureOpenAIProvider implements BaseProvider {
 
       const systemRoleName = connection.deployment.startsWith("o") ? "developer" : "system";
       const isTemperatureSupported = !connection.deployment.startsWith("o");
+      const isSystemMessageSupported = !connection.deployment.startsWith("o1-mini");
 
       const stream = await client.chat.completions.create(
         {
           stream: true,
           messages: that.getOpenAIMessages(messages, {
             systemRoleName,
+            isSystemMessageSupported,
           }),
           model: connection.deployment,
           temperature: isTemperatureSupported ? config?.temperature : undefined,
@@ -106,7 +119,7 @@ export class AzureOpenAIProvider implements BaseProvider {
         },
         {
           signal: abortSignal,
-        }
+        },
       );
 
       for await (const message of stream) {
@@ -120,7 +133,8 @@ export class AzureOpenAIProvider implements BaseProvider {
     messages: GenericMessage[],
     options: {
       systemRoleName: string;
-    }
+      isSystemMessageSupported?: boolean;
+    },
   ): ChatCompletionMessageParam[] {
     const convertedMessage = messages.map((message) => {
       switch (message.role) {
@@ -133,7 +147,10 @@ export class AzureOpenAIProvider implements BaseProvider {
             content: message.content
               .map((part) => {
                 if (part.type === "text/plain") {
-                  return { type: "text", text: dataUrlToText(part.url) } satisfies ChatCompletionContentPartText;
+                  return {
+                    type: "text",
+                    text: dataUrlToText(part.url),
+                  } satisfies ChatCompletionContentPartText;
                 } else if (part.type.startsWith("image/")) {
                   return {
                     type: "image_url",
@@ -150,11 +167,16 @@ export class AzureOpenAIProvider implements BaseProvider {
           };
         }
         case "system":
+          let finalRole = options.systemRoleName;
+          if (!options?.isSystemMessageSupported) {
+            console.error("System message is not supported for this model, converted to user message");
+            finalRole = "user";
+          }
           if (typeof message.content === "string") {
-            return { role: options.systemRoleName, content: message.content };
+            return { role: finalRole, content: message.content };
           } else {
             return {
-              role: options.systemRoleName,
+              role: finalRole,
               content: message.content
                 .filter((part) => part.type === "text/plain")
                 .map((part) => dataUrlToText(part.url))

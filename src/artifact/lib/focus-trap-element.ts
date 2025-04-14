@@ -29,12 +29,12 @@ export class FocusTrapElement extends HTMLElement {
     this.append(
       FocusTrapElement.createSentinel(() => {
         this.queryFocusableChildren()[0]?.focus();
-      })
+      }),
     );
     this.prepend(
       FocusTrapElement.createSentinel(() => {
         [...this.queryFocusableChildren()].at(-1)?.focus();
-      })
+      }),
     );
 
     this.updateDisabled(this.hasAttribute("disabled"));

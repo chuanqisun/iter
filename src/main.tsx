@@ -16,5 +16,5 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <CenterClamp>
       <ChatTree />
     </CenterClamp>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

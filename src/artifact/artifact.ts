@@ -14,7 +14,12 @@ import "./artifact.css";
 
 export const supportedLanguages = Object.keys(bundledLanguages);
 
-const supportedArtifacts: ArtifactSupport[] = [new ScriptArtifact(), new XmlArtifact(), new MermaidArtifact(), new GenericArtifact()];
+const supportedArtifacts: ArtifactSupport[] = [
+  new ScriptArtifact(),
+  new XmlArtifact(),
+  new MermaidArtifact(),
+  new GenericArtifact(),
+];
 
 async function initializeMarked() {
   const highlighter = await createHighlighter({
@@ -51,7 +56,7 @@ async function initializeMarked() {
           </artifact-focus-trap-element>
         </artifact-element>`;
       },
-    })
+    }),
   );
 
   return marked;
@@ -186,7 +191,11 @@ function onEditExit({ trigger, code }: ArtifactContext) {
   artifactElement
     .closest(".js-message")
     ?.querySelector("code-block-events")
-    ?.dispatchEvent(new CustomEvent("codeblockchange", { detail: { index, prev: code, current: latestSourceCode } }));
+    ?.dispatchEvent(
+      new CustomEvent("codeblockchange", {
+        detail: { index, prev: code, current: latestSourceCode },
+      }),
+    );
 
   (editor as any).returnFocus?.();
   editor.remove();

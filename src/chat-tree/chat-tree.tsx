@@ -67,7 +67,10 @@ function getUserNode(id: string, configOverrides?: Partial<ChatNode>): ChatNode 
   };
 }
 
-function patchNode(predicate: (node: ChatNode) => boolean, patch: Partial<ChatNode> | ((node: ChatNode) => Partial<ChatNode>)) {
+function patchNode(
+  predicate: (node: ChatNode) => boolean,
+  patch: Partial<ChatNode> | ((node: ChatNode) => Partial<ChatNode>),
+) {
   return (candidateNode: ChatNode) => {
     if (predicate(candidateNode)) {
       const patched = patch instanceof Function ? patch(candidateNode) : patch;
@@ -110,9 +113,24 @@ export function ChatTree() {
 
   const handleConnectionsButtonClick = () => document.querySelector("settings-element")?.closest("dialog")?.showModal();
 
-  const connectionKey = useRouteParameter({ name: "connection", initial: null as null | string, encode: String, decode: String });
-  const temperature = useRouteParameter({ name: "temperature", initial: 0, encode: String, decode: Number });
-  const maxTokens = useRouteParameter({ name: "max_tokens", initial: 200, encode: String, decode: Number });
+  const connectionKey = useRouteParameter({
+    name: "connection",
+    initial: null as null | string,
+    encode: String,
+    decode: String,
+  });
+  const temperature = useRouteParameter({
+    name: "temperature",
+    initial: 0,
+    encode: String,
+    decode: Number,
+  });
+  const maxTokens = useRouteParameter({
+    name: "max_tokens",
+    initial: 200,
+    encode: String,
+    decode: Number,
+  });
 
   const assistantNodes = useMemo(() => treeNodes.filter((node) => node.role === "assistant"), [treeNodes]);
   const previews = useNodeContentTransformStore(assistantNodes, markdownToHtml);
@@ -132,7 +150,7 @@ export function ChatTree() {
         abortSignal,
       });
     },
-    [connectionKey.value, getChatStreamProxy, temperature.value, maxTokens.value]
+    [connectionKey.value, getChatStreamProxy, temperature.value, maxTokens.value],
   );
 
   // expose latest chatStreamingProxy to web components
@@ -183,9 +201,9 @@ export function ChatTree() {
           (node) => {
             const replaced = replaceNthMatch(node.content, multilineTrippleTickCodeBlockPattern, code, blockIndex);
             return { content: replaced };
-          }
-        )
-      )
+          },
+        ),
+      ),
     );
   }, []);
 
@@ -209,7 +227,10 @@ export function ChatTree() {
         // link parents to childIds
         const newNodes = remainingNodes.map((node) => {
           if (node.id === parentId) {
-            return { ...node, childIds: [...(node.childIds ?? []).filter((id) => id !== nodeId), ...childIds] };
+            return {
+              ...node,
+              childIds: [...(node.childIds ?? []).filter((id) => id !== nodeId), ...childIds],
+            };
           } else {
             return node;
           }
@@ -228,7 +249,7 @@ export function ChatTree() {
         return updatedNodes;
       });
     },
-    [treeNodes]
+    [treeNodes],
   );
 
   const handleDeleteBelow = useCallback((nodeId: string) => {
@@ -237,8 +258,8 @@ export function ChatTree() {
       const newNodes = nodes.map(
         patchNode(
           (node) => node.id === nodeId,
-          (_node) => ({ childIds: [] })
-        )
+          (_node) => ({ childIds: [] }),
+        ),
       );
 
       const reachableIds = getReachableIds(newNodes, nodes.at(0)!.id);
@@ -285,7 +306,11 @@ export function ChatTree() {
         const message: GenericMessage = {
           role: node.role,
           content: [
-            ...(node.parts ?? []).map((part) => ({ name: part.name, type: part.type as any, url: part.url })),
+            ...(node.parts ?? []).map((part) => ({
+              name: part.name,
+              type: part.type as any,
+              url: part.url,
+            })),
             ...(node.content ? ([{ type: "text/plain", url: rawContentDataUrl }] as const) : []),
           ],
         };
@@ -295,7 +320,7 @@ export function ChatTree() {
 
       return messages.filter((message) => message.content.length);
     },
-    [treeNodes]
+    [treeNodes],
   );
 
   const handleAbort = useCallback((nodeId: string) => {
@@ -308,9 +333,9 @@ export function ChatTree() {
             node.abortController.abort();
 
             return { abortController: undefined };
-          }
-        )
-      )
+          },
+        ),
+      ),
     );
   }, []);
 
@@ -325,7 +350,7 @@ export function ChatTree() {
       }
       return activeUserNodeId;
     },
-    [treeNodes]
+    [treeNodes],
   );
 
   // Speech to text
@@ -456,9 +481,18 @@ export function ChatTree() {
       }
     };
 
-    window.addEventListener("keydown", handleGlobalKeydown, { capture: true, signal: abortController.signal });
-    window.addEventListener("keydown", passthroughtBrowserNativeKey, { capture: true, signal: abortController.signal });
-    window.addEventListener("keyup", handleGlobalKeyup, { capture: true, signal: abortController.signal });
+    window.addEventListener("keydown", handleGlobalKeydown, {
+      capture: true,
+      signal: abortController.signal,
+    });
+    window.addEventListener("keydown", passthroughtBrowserNativeKey, {
+      capture: true,
+      signal: abortController.signal,
+    });
+    window.addEventListener("keyup", handleGlobalKeyup, {
+      capture: true,
+      signal: abortController.signal,
+    });
 
     return () => abortController.abort();
   }, [exportChat, importChat]);
@@ -487,7 +521,10 @@ export function ChatTree() {
 
         // Enter a code block
         if ((e.target as HTMLElement).closest("artifact-source")) {
-          (e.target as HTMLElement).closest("artifact-element")?.querySelector<HTMLButtonElement>(`[data-action="edit"]`)?.click();
+          (e.target as HTMLElement)
+            .closest("artifact-element")
+            ?.querySelector<HTMLButtonElement>(`[data-action="edit"]`)
+            ?.click();
         }
         return;
       }
@@ -498,7 +535,11 @@ export function ChatTree() {
         if (combo === "arrowup" || combo === "arrowdown") {
           const textarea = e.target as HTMLTextAreaElement;
 
-          if (combo === "arrowup" && textarea.selectionStart === 0 && (textarea.selectionEnd === 0 || textarea.selectionEnd === textarea.value.length)) {
+          if (
+            combo === "arrowup" &&
+            textarea.selectionStart === 0 &&
+            (textarea.selectionEnd === 0 || textarea.selectionEnd === textarea.value.length)
+          ) {
             e.preventDefault();
             targetId = getPrevId(nodeId);
           } else if (
@@ -550,7 +591,9 @@ export function ChatTree() {
           const reachableIds = getReachableIds(nodes, activeUserNodeId);
 
           // delete all reachable nodes, make sure the node itself remains
-          const remainingNodes = nodes.filter((node) => node.id === activeUserNodeId || !reachableIds.includes(node.id));
+          const remainingNodes = nodes.filter(
+            (node) => node.id === activeUserNodeId || !reachableIds.includes(node.id),
+          );
 
           const newNodes = [...remainingNodes, newAssistantNode];
           const targetNodeIndex = newNodes.findIndex((node) => node.id === activeUserNodeId);
@@ -571,9 +614,9 @@ export function ChatTree() {
               nodes.map(
                 patchNode(
                   (node) => node.id === newAssistantNode.id,
-                  (node) => ({ content: node.content + item })
-                )
-              )
+                  (node) => ({ content: node.content + item }),
+                ),
+              ),
             );
           }
 
@@ -617,7 +660,7 @@ export function ChatTree() {
         }
       }
     },
-    [chat, treeNodes, getMessageChain]
+    [chat, treeNodes, getMessageChain],
   );
 
   const handlePaste = useCallback(
@@ -637,14 +680,15 @@ export function ChatTree() {
             (node) => node.id === activeUserNodeId,
             (node) => ({
               parts: [...(node.parts ?? []), ...parts].filter(
-                (part, index, self) => self.findIndex((existing) => existing.name === part.name && existing.url === part.url) === index
+                (part, index, self) =>
+                  self.findIndex((existing) => existing.name === part.name && existing.url === part.url) === index,
               ),
-            })
-          )
-        )
+            }),
+          ),
+        ),
       );
     },
-    [treeNodes]
+    [treeNodes],
   );
 
   const handleRemoveAttachment = useCallback((nodeId: string, name: string, url: string) => {
@@ -652,9 +696,11 @@ export function ChatTree() {
       nodes.map(
         patchNode(
           (node) => node.id === nodeId,
-          (node) => ({ parts: node.parts?.filter((existingPart) => existingPart.name !== name || existingPart.url !== url) })
-        )
-      )
+          (node) => ({
+            parts: node.parts?.filter((existingPart) => existingPart.name !== name || existingPart.url !== url),
+          }),
+        ),
+      ),
     );
   }, []);
 
@@ -678,12 +724,12 @@ export function ChatTree() {
               });
               const newFiles = [...existingFileMap.values()];
               return { files: newFiles };
-            }
-          )
-        )
+            },
+          ),
+        ),
       );
     },
-    [treeNodes]
+    [treeNodes],
   );
 
   const hanldeRemoveFile = useCallback((nodeId: string, fileName: string) => {
@@ -691,9 +737,11 @@ export function ChatTree() {
       nodes.map(
         patchNode(
           (node) => node.id === nodeId,
-          (node) => ({ files: node.files?.filter((file) => file.name !== fileName) })
-        )
-      )
+          (node) => ({
+            files: node.files?.filter((file) => file.name !== fileName),
+          }),
+        ),
+      ),
     );
   }, []);
 
@@ -711,8 +759,8 @@ export function ChatTree() {
       return nodes.map(
         patchNode(
           (node) => node.id === nodeId,
-          (node) => ({ isViewSource: !node.isViewSource })
-        )
+          (node) => ({ isViewSource: !node.isViewSource }),
+        ),
       );
     });
   }, []);
@@ -725,8 +773,8 @@ export function ChatTree() {
       return nodes.map(
         patchNode(
           (node) => options?.toggleAll ?? node.id === nodeId,
-          (_node) => ({ isCollapsed: newState })
-        )
+          (_node) => ({ isCollapsed: newState }),
+        ),
       );
     });
   }, []);
@@ -751,7 +799,7 @@ export function ChatTree() {
         .reverse()
         .filter((file, index, self) => self.findIndex((f) => f.name === file.name) === index)
         .reverse()
-        .map((file) => [file.name, file])
+        .map((file) => [file.name, file]),
     );
 
     const handleIframeFileAccessRequest = (event: MessageEvent<any>) => {
@@ -778,10 +826,15 @@ export function ChatTree() {
               <AvatarIcon title={node.role}>{roleIcon[node.role]}</AvatarIcon>
             </Avatar>
             <MessageWithActions>
-              <code-block-events oncodeblockchange={(e) => handleCodeBlockChange(node.id, e.detail.current, e.detail.index)}></code-block-events>
+              <code-block-events
+                oncodeblockchange={(e) => handleCodeBlockChange(node.id, e.detail.current, e.detail.index)}
+              ></code-block-events>
               {node.role === "user" || node.role === "system" ? (
                 <>
-                  <AutoResize data-resize-textarea-content={node.content} $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}>
+                  <AutoResize
+                    data-resize-textarea-content={node.content}
+                    $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}
+                  >
                     <GhostTextArea
                       className="js-focusable"
                       id={node.id}
@@ -802,7 +855,10 @@ export function ChatTree() {
                       {node.parts
                         ?.filter((part) => part.type.startsWith("image/"))
                         ?.map((part) => (
-                          <AttachmentPreview key={part.url} onClick={(_) => handleRemoveAttachment(node.id, part.name, part.url)}>
+                          <AttachmentPreview
+                            key={part.url}
+                            onClick={(_) => handleRemoveAttachment(node.id, part.name, part.url)}
+                          >
                             <img key={part.url} src={part.url} alt="attachment" />
                           </AttachmentPreview>
                         ))}
@@ -810,15 +866,22 @@ export function ChatTree() {
                       {node.parts
                         ?.filter((part) => !part.type.startsWith("image/"))
                         ?.map((part) => (
-                          <AttachmentPreview key={part.url} onClick={(_) => handleRemoveAttachment(node.id, part.name, part.url)}>
-                            <AttachmentFileName title={`${part.name}${part.type ? ` (${part.type})` : ""}`}>{part.name}</AttachmentFileName>
+                          <AttachmentPreview
+                            key={part.url}
+                            onClick={(_) => handleRemoveAttachment(node.id, part.name, part.url)}
+                          >
+                            <AttachmentFileName title={`${part.name}${part.type ? ` (${part.type})` : ""}`}>
+                              {part.name}
+                            </AttachmentFileName>
                             <AttachmentFileSize>{getReadableFileSize(part.size)} inlined</AttachmentFileSize>
                           </AttachmentPreview>
                         ))}
 
                       {node.files?.map((file) => (
                         <AttachmentPreview key={file.name} onClick={(_) => hanldeRemoveFile(node.id, file.name)}>
-                          <AttachmentFileName title={`${file.name}${file.type ? ` (${file.type})` : ""}`}>{file.name}</AttachmentFileName>
+                          <AttachmentFileName title={`${file.name}${file.type ? ` (${file.type})` : ""}`}>
+                            {file.name}
+                          </AttachmentFileName>
                           <AttachmentFileSize>{getReadableFileSize(file.size)} uploaded</AttachmentFileSize>
                         </AttachmentPreview>
                       ))}
@@ -832,7 +895,11 @@ export function ChatTree() {
                       data-autofocus
                       data-value={node.content}
                       data-lang="md"
-                      style={{ "--max-height": node.isCollapsed ? `${COLLAPSED_HEIGHT}px` : undefined } as any}
+                      style={
+                        {
+                          "--max-height": node.isCollapsed ? `${COLLAPSED_HEIGHT}px` : undefined,
+                        } as any
+                      }
                       onescape={() => handleToggleViewFormat(node.id)}
                       oncontentchange={(e) => handleTextChange(node.id, e.detail)}
                     ></code-editor-element>
@@ -845,7 +912,9 @@ export function ChatTree() {
                         onDoubleClick={(e) => handlePreviewDoubleClick(node.id, e)}
                         id={node.id}
                         $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}
-                        dangerouslySetInnerHTML={{ __html: previews[node.id] ?? "" }}
+                        dangerouslySetInnerHTML={{
+                          __html: previews[node.id] ?? "",
+                        }}
                       />
                     </>
                   )}
@@ -854,7 +923,9 @@ export function ChatTree() {
                     <span> · </span>
                     <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
                     <span> · </span>
-                    <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "View" : "Edit"}</button>
+                    <button onClick={() => handleToggleViewFormat(node.id)}>
+                      {node.isViewSource ? "View" : "Edit"}
+                    </button>
                   </MessageActions>
                   {node.errorMessage ? (
                     <ErrorMessage>
@@ -898,7 +969,7 @@ export function ChatTree() {
         </Thread>
       );
     },
-    [handleKeydown, previews]
+    [handleKeydown, previews],
   );
 
   return (
@@ -949,7 +1020,9 @@ export function ChatTree() {
           </a>
         </ConfigMenu>
       </div>
-      <MessageList ref={treeRootRef}>{treeNodes.filter((node) => node.isEntry).map((node) => renderNode(node))}</MessageList>
+      <MessageList ref={treeRootRef}>
+        {treeNodes.filter((node) => node.isEntry).map((node) => renderNode(node))}
+      </MessageList>
     </ChatAppLayout>
   );
 }

@@ -27,6 +27,7 @@ export class CodeEditorElement extends HTMLElement {
     drawSelection(),
     syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
     ...chatPanel(),
+    EditorView.lineWrapping,
     keymap.of([
       {
         key: "Ctrl-Enter",
@@ -136,7 +137,7 @@ export class CodeEditorElement extends HTMLElement {
       EditorState.create({
         doc: text,
         extensions: this.extensions,
-      })
+      }),
     );
   }
 
@@ -227,6 +228,10 @@ async function getLanguageSupport(filenameOrExtension: string) {
     case "md":
       return markdown({ codeLanguages: languages });
     default:
-      return (await languages.find((lang) => lang.alias.includes(ext ?? "") || lang.extensions.includes(ext ?? ""))?.load()) ?? [];
+      return (
+        (await languages
+          .find((lang) => lang.alias.includes(ext ?? "") || lang.extensions.includes(ext ?? ""))
+          ?.load()) ?? []
+      );
   }
 }

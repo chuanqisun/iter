@@ -49,7 +49,7 @@ async function stringifyUserMessage(node: ChatNode) {
       object.name = file.name;
       object.data = await fileToBase64DataUrl(file);
       return object;
-    })
+    }),
   );
 
   section.append(...parts, ...objectNodes);
@@ -71,13 +71,19 @@ export async function parseChat(raw: string, preserveIds?: string[]): Promise<Ch
   const nodes = (
     await Promise.all(
       [...dom.querySelectorAll<HTMLElement>(`[data-role]`)].map(async (el) =>
-        el.dataset.role === "user" ? await parseUserMessage(el) : parseSystemOrAssistantMessage(el)
-      )
+        el.dataset.role === "user" ? await parseUserMessage(el) : parseSystemOrAssistantMessage(el),
+      ),
     )
   ).map((node, i) => ({ ...node, id: preserveIds?.at(i) ?? node.id }));
 
   // use the next node id as the current node's childId.
-  const linkedNodes = nodes.map((node, i) => ({ ...node, childIds: i < nodes.length - 1 ? [nodes[i + 1].id] : undefined } satisfies ChatNode));
+  const linkedNodes = nodes.map(
+    (node, i) =>
+      ({
+        ...node,
+        childIds: i < nodes.length - 1 ? [nodes[i + 1].id] : undefined,
+      }) satisfies ChatNode,
+  );
 
   return linkedNodes;
 }
@@ -98,8 +104,7 @@ async function parseUserMessage(node: HTMLElement): Promise<ChatNode> {
         name: obj.name,
         url: obj.data,
         size: parseInt(obj.getAttribute("data-size") ?? "0"),
-
-      }))
+      })),
   );
 
   const files: File[] = await Promise.all(
@@ -108,9 +113,15 @@ async function parseUserMessage(node: HTMLElement): Promise<ChatNode> {
       .map((obj) =>
         fetch(obj.data)
           .then((res) => res.blob())
-          .then((blob) => new File([blob], obj.name, { type: obj.type }))
-      )
+          .then((blob) => new File([blob], obj.name, { type: obj.type })),
+      ),
   );
 
-  return { id: crypto.randomUUID(), role: node.dataset.role as "user", parts, files, content };
+  return {
+    id: crypto.randomUUID(),
+    role: node.dataset.role as "user",
+    parts,
+    files,
+    content,
+  };
 }

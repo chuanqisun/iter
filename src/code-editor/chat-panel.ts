@@ -49,7 +49,12 @@ export function chatPanel(): Extension[] {
           textarea.value = "";
           focusInterrupt = new AbortController();
           chatInterrupt = new AbortController();
-          handleChatRequest({ view, prompt, focusInterrupt: focusInterrupt.signal, chatInterrupt: chatInterrupt.signal });
+          handleChatRequest({
+            view,
+            prompt,
+            focusInterrupt: focusInterrupt.signal,
+            chatInterrupt: chatInterrupt.signal,
+          });
           break;
       }
     });
@@ -62,7 +67,12 @@ export function chatPanel(): Extension[] {
     return { top: false, dom };
   }
 
-  async function handleChatRequest(params: { view: EditorView; prompt: string; focusInterrupt: AbortSignal; chatInterrupt: AbortSignal }) {
+  async function handleChatRequest(params: {
+    view: EditorView;
+    prompt: string;
+    focusInterrupt: AbortSignal;
+    chatInterrupt: AbortSignal;
+  }) {
     const { view, prompt } = params;
 
     const currentSelectionRange = view.state.selection.main;
@@ -72,7 +82,11 @@ export function chatPanel(): Extension[] {
 
     // surround the selectedText with <cursor></cursor>
     const fullTextWithCursor =
-      fullText.slice(0, currentSelectionRange.from) + "<cursor>" + selectedText + "</cursor>" + fullText.slice(currentSelectionRange.to);
+      fullText.slice(0, currentSelectionRange.from) +
+      "<cursor>" +
+      selectedText +
+      "</cursor>" +
+      fullText.slice(currentSelectionRange.to);
 
     const lang = params.view.contentDOM.closest("code-editor-element")?.getAttribute("data-lang") ?? "text";
     console.log({ selectedText, fullText, fullTextWithCursor, lang });
@@ -85,13 +99,23 @@ export function chatPanel(): Extension[] {
     });
 
     const chat = getChatInstance();
-    const chunks = chat({ messages: getCursorChatMessages({ prompt, lang, fullTextWithCursor }), abortSignal: params.chatInterrupt });
+    const chunks = chat({
+      messages: getCursorChatMessages({ prompt, lang, fullTextWithCursor }),
+      abortSignal: params.chatInterrupt,
+    });
 
     // clear the text in the currentSelectionRange
     // shrink the currentSelectionRange in chatView
     chatView.dispatch({
-      changes: { from: currentSelectionRange.from, to: currentSelectionRange.to, insert: "" },
-      selection: { head: currentSelectionRange.from, anchor: currentSelectionRange.from },
+      changes: {
+        from: currentSelectionRange.from,
+        to: currentSelectionRange.to,
+        insert: "",
+      },
+      selection: {
+        head: currentSelectionRange.from,
+        anchor: currentSelectionRange.from,
+      },
     });
 
     const newCursorContent = getTaggedStream(chunks, "cursor-new");
@@ -102,7 +126,10 @@ export function chatPanel(): Extension[] {
         fullResponse += chunk;
         chatView.dispatch({
           changes: { from: chatView.state.selection.main.from, insert: chunk },
-          selection: { anchor: chatView.state.selection.main.from + chunk.length, head: chatView.state.selection.main.from + chunk.length },
+          selection: {
+            anchor: chatView.state.selection.main.from + chunk.length,
+            head: chatView.state.selection.main.from + chunk.length,
+          },
         });
       }
     } catch (e) {
@@ -114,7 +141,10 @@ export function chatPanel(): Extension[] {
       // replay the entire insertion
       view.dispatch({
         // select the changed text, make sure the selection itself can be undo/redo
-        selection: { anchor: currentSelectionRange.from, head: currentSelectionRange.from + fullResponse.length },
+        selection: {
+          anchor: currentSelectionRange.from,
+          head: currentSelectionRange.from + fullResponse.length,
+        },
         annotations: [isolateHistory.of("full")],
       });
     }

@@ -1,6 +1,10 @@
 import type { GenericMessage } from "../providers/base";
 
-export function getCursorChatMessages(params: { prompt: string; lang: string; fullTextWithCursor: string }): GenericMessage[] {
+export function getCursorChatMessages(params: {
+  prompt: string;
+  lang: string;
+  fullTextWithCursor: string;
+}): GenericMessage[] {
   const { prompt, lang, fullTextWithCursor } = params;
 
   return [

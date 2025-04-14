@@ -1,6 +1,13 @@
 import type { Content, InlineDataPart, TextPart } from "@google/generative-ai";
 import { dataUrlToText } from "../storage/codec";
-import type { BaseConnection, BaseCredential, BaseProvider, ChatStreamProxy, GenericChatParams, GenericMessage } from "./base";
+import type {
+  BaseConnection,
+  BaseCredential,
+  BaseProvider,
+  ChatStreamProxy,
+  GenericChatParams,
+  GenericMessage,
+} from "./base";
 
 export interface GoogleGenAICredential extends BaseCredential {
   id: string;
@@ -21,6 +28,7 @@ export interface GoogleGenAIConnection extends BaseConnection {
 export class GoogleGenAIProvider implements BaseProvider {
   static type = "google-gen-ai";
   static defaultModels = [
+    "gemini-2.5-pro-exp-03-25",
     "gemini-2.0-pro-exp-02-05",
     "gemini-2.0-flash-exp",
     "gemini-2.0-flash",
@@ -49,14 +57,14 @@ export class GoogleGenAIProvider implements BaseProvider {
 
     return GoogleGenAIProvider.defaultModels.map(
       (model) =>
-      ({
-        id: `${model}:${credential.id}`,
-        type: "google-gen-ai",
-        displayGroup: credential.accountName,
-        displayName: model,
-        model,
-        apiKey: credential.apiKey,
-      } satisfies GoogleGenAIConnection)
+        ({
+          id: `${model}:${credential.id}`,
+          type: "google-gen-ai",
+          displayGroup: credential.accountName,
+          displayName: model,
+          model,
+          apiKey: credential.apiKey,
+        }) satisfies GoogleGenAIConnection,
     );
   }
 
@@ -94,7 +102,7 @@ export class GoogleGenAIProvider implements BaseProvider {
         },
         {
           signal: abortSignal,
-        }
+        },
       );
 
       for await (const message of result.stream) {
@@ -112,7 +120,10 @@ export class GoogleGenAIProvider implements BaseProvider {
     return connection.type === "google-gen-ai";
   }
 
-  private getGoogleGenAIMessages(messages: GenericMessage[]): { system?: string; messages: Content[] } {
+  private getGoogleGenAIMessages(messages: GenericMessage[]): {
+    system?: string;
+    messages: Content[];
+  } {
     let system: string | undefined;
     const convertedMessages: Content[] = [];
 
@@ -126,14 +137,12 @@ export class GoogleGenAIProvider implements BaseProvider {
             .map((part) => dataUrlToText(part.url))
             .join("\n");
         }
+      } else if (typeof message.content === "string") {
+        convertedMessages.push({
+          role: this.toGeminiRoleName(message.role),
+          parts: [{ text: message.content }],
+        });
       } else {
-        if (typeof message.content === "string") {
-          return {
-            role: this.toGeminiRoleName(message.role as "assistant" | "user"),
-            parts: [{ text: message.content }],
-          } satisfies Content;
-        }
-
         const convertedMessageParts = message.content.map((part) => {
           switch (part.type) {
             case "text/plain": {
@@ -157,7 +166,7 @@ export class GoogleGenAIProvider implements BaseProvider {
         });
 
         convertedMessages.push({
-          role: this.toGeminiRoleName(message.role as "assistant" | "user"),
+          role: this.toGeminiRoleName(message.role),
           parts: convertedMessageParts.filter((part) => part !== null),
         });
       }
