@@ -830,21 +830,36 @@ export function ChatTree() {
               ></code-block-events>
               {node.role === "user" || node.role === "system" ? (
                 <>
-                  <GhostTextArea
-                    $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}
-                    className="js-focusable"
-                    id={node.id}
-                    value={node.content}
-                    rows={1}
-                    onKeyDown={(e) => handleKeydown(node.id, e)}
-                    onPaste={(e) => handlePaste(node.id, e)}
-                    onChange={(e) => handleTextChange(node.id, e.target.value)}
-                    placeholder={
-                      node.role === "user"
-                        ? "Ctrl + Enter to send, Esc to cancel, paste images for vision models, Shift + Space to dictate"
-                        : "System message"
-                    }
-                  />
+                  {node.isViewSource ? (
+                    <code-editor-element
+                      data-autofocus
+                      data-value={node.content}
+                      data-lang="md"
+                      style={
+                        {
+                          "--max-height": node.isCollapsed ? `${COLLAPSED_HEIGHT}px` : undefined,
+                        } as any
+                      }
+                      onescape={() => handleToggleViewFormat(node.id)}
+                      oncontentchange={(e) => handleTextChange(node.id, e.detail)}
+                    ></code-editor-element>
+                  ) : (
+                    <ResizableTextArea
+                      $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}
+                      className="js-focusable"
+                      id={node.id}
+                      value={node.content}
+                      rows={1}
+                      onKeyDown={(e) => handleKeydown(node.id, e)}
+                      onPaste={(e) => handlePaste(node.id, e)}
+                      onChange={(e) => handleTextChange(node.id, e.target.value)}
+                      placeholder={
+                        node.role === "user"
+                          ? "Ctrl + Enter to send, Esc to cancel, paste images for vision models, Shift + Space to dictate"
+                          : "System message"
+                      }
+                    />
+                  )}
                   {node.files?.length || node.parts?.length ? (
                     <AttachmentList>
                       {node.parts
@@ -934,6 +949,8 @@ export function ChatTree() {
                   <button onClick={() => handleDelete(node.id)}>Delete</button>
                   <span> · </span>
                   <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
+                  <span> · </span>
+                  <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "Chat" : "Code"}</button>
                 </MessageActions>
               ) : null}
               {node.role === "user" ? (
@@ -949,6 +966,8 @@ export function ChatTree() {
                   <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
                   <span> · </span>
                   <button onClick={() => handleUploadFiles(node.id)}>Upload</button>
+                  <span> · </span>
+                  <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "Chat" : "Code"}</button>
                 </MessageActions>
               ) : null}
             </MessageWithActions>
@@ -1022,7 +1041,7 @@ export function ChatTree() {
   );
 }
 
-const GhostTextArea = styled.textarea<{ $maxHeight?: number }>`
+const ResizableTextArea = styled.textarea<{ $maxHeight?: number }>`
   border-radius: 2px;
   field-sizing: content;
   max-height: ${(props) => (props.$maxHeight ? `${props.$maxHeight}px` : "none")};
