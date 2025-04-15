@@ -22,13 +22,13 @@
   },
   "homepage": "https://github.com/chuanqisun/iter#readme",
   "devDependencies": {
-    "@types/dom-speech-recognition": "^0.0.4",
-    "@types/react": "^19.0.8",
-    "@types/react-dom": "^19.0.3",
-    "@vitejs/plugin-react-swc": "^3.8.0",
+    "@types/dom-speech-recognition": "^0.0.6",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react-swc": "^3.8.1",
     "prettier": "^3.5.3",
-    "typescript": "^5.7.3",
-    "vite": "^6.1.0"
+    "typescript": "^5.8.3",
+    "vite": "^6.2.6"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
@@ -43,13 +43,13 @@
     "@uiw/codemirror-theme-github": "^4.23.8",
     "dompurify": "^3.2.4",
     "idb-keyval": "^6.2.1",
-    "marked": "^15.0.7",
+    "marked": "^15.0.8",
     "marked-shiki": "^1.2.0",
-    "mermaid": "^11.4.1",
+    "mermaid": "^11.6.0",
     "openai": "^4.94.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "shiki": "^3.2.2",
-    "styled-components": "^6.1.15"
+    "styled-components": "^6.1.17"
   }
 }
