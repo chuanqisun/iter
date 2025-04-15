@@ -1043,14 +1043,14 @@ export function ChatTree() {
 
 const ResizableTextArea = styled.textarea<{ $maxHeight?: number }>`
   border-radius: 2px;
+  line-height: 18px;
   field-sizing: content;
-  max-height: ${(props) => (props.$maxHeight ? `${props.$maxHeight}px` : "none")};
   white-space: pre-wrap;
-  padding: var(--input-padding-block) var(--input-padding-inline);
+  padding: 7px var(--input-padding-inline);
   border-width: var(--input-border-width);
   resize: none;
   ${(props) => props.$maxHeight && `max-height: ${props.$maxHeight}px;`}
-  overflow-y: auto;
+  overflow-y: ${(props) => (props.$maxHeight ? "scroll" : "auto")};
   scrollbar-gutter: stable;
 
   &[data-speaking] {
