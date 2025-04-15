@@ -825,6 +825,41 @@ export function ChatTree() {
               <AvatarIcon title={node.role}>{roleIcon[node.role]}</AvatarIcon>
             </Avatar>
             <MessageWithActions>
+              {node.role === "system" ? (
+                <MessageActions>
+                  <button onClick={() => handleDelete(node.id)}>Delete</button>
+                  <span> · </span>
+                  <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
+                  <span> · </span>
+                  <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "Chat" : "Code"}</button>
+                </MessageActions>
+              ) : null}
+              {node.role === "user" ? (
+                <MessageActions>
+                  {node.abortController ? (
+                    <>
+                      <button onClick={() => handleAbort(node.id)}>Stop</button>
+                      <span> · </span>
+                    </>
+                  ) : null}
+                  <button onClick={() => handleDelete(node.id)}>Delete</button>
+                  <span> · </span>
+                  <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
+                  <span> · </span>
+                  <button onClick={() => handleUploadFiles(node.id)}>Upload</button>
+                  <span> · </span>
+                  <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "Chat" : "Code"}</button>
+                </MessageActions>
+              ) : null}
+              {node.role === "assistant" ? (
+                <MessageActions>
+                  <button onClick={() => handleDelete(node.id)}>Delete</button>
+                  <span> · </span>
+                  <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
+                  <span> · </span>
+                  <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "View" : "Edit"}</button>
+                </MessageActions>
+              ) : null}
               <code-block-events
                 oncodeblockchange={(e) => handleCodeBlockChange(node.id, e.detail.current, e.detail.index)}
               ></code-block-events>
@@ -928,15 +963,7 @@ export function ChatTree() {
                       />
                     </>
                   )}
-                  <MessageActions>
-                    <button onClick={() => handleDelete(node.id)}>Delete</button>
-                    <span> · </span>
-                    <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
-                    <span> · </span>
-                    <button onClick={() => handleToggleViewFormat(node.id)}>
-                      {node.isViewSource ? "View" : "Edit"}
-                    </button>
-                  </MessageActions>
+
                   {node.errorMessage ? (
                     <ErrorMessage>
                       {node.content.length ? <br /> : null}❌ {node.errorMessage}
@@ -944,32 +971,6 @@ export function ChatTree() {
                   ) : null}
                 </>
               )}
-              {node.role === "system" ? (
-                <MessageActions>
-                  <button onClick={() => handleDelete(node.id)}>Delete</button>
-                  <span> · </span>
-                  <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
-                  <span> · </span>
-                  <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "Chat" : "Code"}</button>
-                </MessageActions>
-              ) : null}
-              {node.role === "user" ? (
-                <MessageActions>
-                  {node.abortController ? (
-                    <>
-                      <button onClick={() => handleAbort(node.id)}>Stop</button>
-                      <span> · </span>
-                    </>
-                  ) : null}
-                  <button onClick={() => handleDelete(node.id)}>Delete</button>
-                  <span> · </span>
-                  <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
-                  <span> · </span>
-                  <button onClick={() => handleUploadFiles(node.id)}>Upload</button>
-                  <span> · </span>
-                  <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "Chat" : "Code"}</button>
-                </MessageActions>
-              ) : null}
             </MessageWithActions>
           </MessageLayout>
           {!!node.childIds?.length ? (
@@ -1093,12 +1094,15 @@ const MessageList = styled.div`
 `;
 
 const MessageActions = styled.span`
-  padding: 0 calc(1px + var(--input-padding-inline));
   min-height: 30px;
   line-height: 30px;
   display: flex;
   align-items: center;
   gap: 4px;
+  position: sticky;
+  top: 0;
+  background-color: var(--body-background);
+  z-index: 1;
 
   > * {
     opacity: 0.5;
@@ -1132,6 +1136,7 @@ const MessageLayout = styled.div`
 `;
 
 const Avatar = styled.button`
+  padding-top: 30px;
   font-size: 22px;
   line-height: 30px;
   width: 28px;
@@ -1151,6 +1156,8 @@ const Avatar = styled.button`
 const AvatarIcon = styled.span`
   width: 28px;
   text-align: center;
+  position: sticky;
+  top: 30px;
 `;
 
 const FixedWidthInput = styled(BasicFormInput)`
