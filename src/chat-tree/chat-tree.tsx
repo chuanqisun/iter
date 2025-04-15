@@ -3,7 +3,6 @@ import styled from "styled-components";
 import { markdownToHtml, useArtifactActions } from "../artifact/artifact";
 import { getFileAccessPostscript, respondFileAccess, respondFileList } from "../artifact/lib/file-access";
 import type { CodeEditorElement } from "../code-editor/code-editor-element";
-import { AutoResize } from "../form/auto-resize";
 import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import { type GenericMessage } from "../providers/base";
 import { useRouteCache } from "../router/use-route-cache";
@@ -831,25 +830,21 @@ export function ChatTree() {
               ></code-block-events>
               {node.role === "user" || node.role === "system" ? (
                 <>
-                  <AutoResize
-                    data-resize-textarea-content={node.content}
+                  <GhostTextArea
                     $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}
-                  >
-                    <GhostTextArea
-                      className="js-focusable"
-                      id={node.id}
-                      value={node.content}
-                      rows={1}
-                      onKeyDown={(e) => handleKeydown(node.id, e)}
-                      onPaste={(e) => handlePaste(node.id, e)}
-                      onChange={(e) => handleTextChange(node.id, e.target.value)}
-                      placeholder={
-                        node.role === "user"
-                          ? "Ctrl + Enter to send, Esc to cancel, paste images for vision models, Shift + Space to dictate"
-                          : "System message"
-                      }
-                    />
-                  </AutoResize>
+                    className="js-focusable"
+                    id={node.id}
+                    value={node.content}
+                    rows={1}
+                    onKeyDown={(e) => handleKeydown(node.id, e)}
+                    onPaste={(e) => handlePaste(node.id, e)}
+                    onChange={(e) => handleTextChange(node.id, e.target.value)}
+                    placeholder={
+                      node.role === "user"
+                        ? "Ctrl + Enter to send, Esc to cancel, paste images for vision models, Shift + Space to dictate"
+                        : "System message"
+                    }
+                  />
                   {node.files?.length || node.parts?.length ? (
                     <AttachmentList>
                       {node.parts
@@ -1027,8 +1022,17 @@ export function ChatTree() {
   );
 }
 
-const GhostTextArea = styled.textarea`
+const GhostTextArea = styled.textarea<{ $maxHeight?: number }>`
   border-radius: 2px;
+  field-sizing: content;
+  max-height: ${(props) => (props.$maxHeight ? `${props.$maxHeight}px` : "none")};
+  white-space: pre-wrap;
+  padding: var(--input-padding-block) var(--input-padding-inline);
+  border-width: var(--input-border-width);
+  resize: none;
+  ${(props) => props.$maxHeight && `max-height: ${props.$maxHeight}px;`}
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 
   &[data-speaking] {
     color: GrayText;
