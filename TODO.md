@@ -1,0 +1,8 @@
+- Simplify data model to a flat array (rather than linked list)
+- Use rxjs to handle streaming
+- Avoid re-rendering using rxjs
+- CPU throttling for markdown rendering
+- Use spawn cursor to allow selection during generation
+- Busy indicator
+- Language override for editor
+- Manual code interpreter (with shebang line)
