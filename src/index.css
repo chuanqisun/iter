@@ -19,6 +19,10 @@
   --ghost-button-hover-background: #eeeeee;
   --table-border-color: #cccccc;
   --table-hover-color: #eeeeee;
+
+  --action-bar-z-index: 1;
+  --artifact-editor-z-index: 2;
+  --toast-z-index: 1000;
 }
 
 @media (prefers-color-scheme: dark) {

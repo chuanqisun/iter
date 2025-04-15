@@ -496,6 +496,102 @@ export function ChatTree() {
     return () => abortController.abort();
   }, [exportChat, importChat]);
 
+  const handleRunNode = useCallback(
+    async (nodeId: string) => {
+      const targetNode = treeNodes.find((node) => node.id === nodeId);
+      if (!targetNode) return;
+
+      const activeUserNodeId = getActiveUserNodeId(treeNodes.find((node) => node.id === nodeId));
+      if (!activeUserNodeId) return;
+
+      const messages = getMessageChain(activeUserNodeId);
+
+      const abortController = new AbortController();
+
+      // clean up all downstream node
+      // resurvively find all ids to be deleted
+      handleAbort(activeUserNodeId);
+
+      const newAssistantNode: ChatNode = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: "",
+        isLocked: true,
+      };
+
+      setTreeNodes((nodes) => {
+        const reachableIds = getReachableIds(nodes, activeUserNodeId);
+
+        // delete all reachable nodes, make sure the node itself remains
+        const remainingNodes = nodes.filter((node) => node.id === activeUserNodeId || !reachableIds.includes(node.id));
+
+        const newNodes = [...remainingNodes, newAssistantNode];
+        const targetNodeIndex = newNodes.findIndex((node) => node.id === activeUserNodeId);
+        newNodes[targetNodeIndex] = {
+          ...newNodes[targetNodeIndex],
+          childIds: [newAssistantNode.id], // ok to override since we just cloned the node
+          lastSubmittedContent: targetNode.content,
+          abortController,
+        };
+
+        return newNodes;
+      });
+
+      try {
+        const stream = chat(messages, abortController.signal);
+        for await (const item of stream) {
+          setTreeNodes((nodes) =>
+            nodes.map(
+              patchNode(
+                (node) => node.id === newAssistantNode.id,
+                (node) => ({ content: node.content + item }),
+              ),
+            ),
+          );
+        }
+
+        setTreeNodes((nodes) => {
+          const newUserNode = getUserNode(crypto.randomUUID());
+          const newNodes = [...nodes, newUserNode];
+          const targetNodeIndex = newNodes.findIndex((node) => node.id === activeUserNodeId);
+          const assistantNodeIndex = newNodes.findIndex((node) => node.id === newAssistantNode.id);
+
+          newNodes[targetNodeIndex] = {
+            ...newNodes[targetNodeIndex],
+            abortController: undefined,
+            isLocked: true,
+          };
+
+          newNodes[assistantNodeIndex] = {
+            ...newNodes[assistantNodeIndex],
+            childIds: [newUserNode.id],
+          };
+
+          return newNodes;
+        });
+      } catch (e: any) {
+        setTreeNodes((nodes) => {
+          const newNodes = [...nodes];
+          const targetNodeIndex = newNodes.findIndex((node) => node.id === activeUserNodeId);
+          const assistantNodeIndex = newNodes.findIndex((node) => node.id === newAssistantNode.id);
+
+          newNodes[targetNodeIndex] = {
+            ...newNodes[targetNodeIndex],
+            abortController: undefined,
+          };
+
+          newNodes[assistantNodeIndex] = {
+            ...newNodes[assistantNodeIndex],
+            errorMessage: `${e?.name} ${(e as any).message}`,
+          };
+
+          return newNodes;
+        });
+      }
+    },
+    [chat, treeNodes, getMessageChain],
+  );
+
   const handleKeydown = useCallback(
     async (nodeId: string, e: React.KeyboardEvent<HTMLTextAreaElement | HTMLDivElement>) => {
       const targetNode = treeNodes.find((node) => node.id === nodeId);
@@ -570,96 +666,10 @@ export function ChatTree() {
       if (combo === "ctrl+enter") {
         if (!activeUserNodeId) return;
         e.preventDefault();
-
-        const messages = getMessageChain(activeUserNodeId);
-
-        const abortController = new AbortController();
-
-        // clean up all downstream node
-        // resurvively find all ids to be deleted
-        handleAbort(activeUserNodeId);
-
-        const newAssistantNode: ChatNode = {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: "",
-          isLocked: true,
-        };
-
-        setTreeNodes((nodes) => {
-          const reachableIds = getReachableIds(nodes, activeUserNodeId);
-
-          // delete all reachable nodes, make sure the node itself remains
-          const remainingNodes = nodes.filter(
-            (node) => node.id === activeUserNodeId || !reachableIds.includes(node.id),
-          );
-
-          const newNodes = [...remainingNodes, newAssistantNode];
-          const targetNodeIndex = newNodes.findIndex((node) => node.id === activeUserNodeId);
-          newNodes[targetNodeIndex] = {
-            ...newNodes[targetNodeIndex],
-            childIds: [newAssistantNode.id], // ok to override since we just cloned the node
-            lastSubmittedContent: targetNode.content,
-            abortController,
-          };
-
-          return newNodes;
-        });
-
-        try {
-          const stream = chat(messages, abortController.signal);
-          for await (const item of stream) {
-            setTreeNodes((nodes) =>
-              nodes.map(
-                patchNode(
-                  (node) => node.id === newAssistantNode.id,
-                  (node) => ({ content: node.content + item }),
-                ),
-              ),
-            );
-          }
-
-          setTreeNodes((nodes) => {
-            const newUserNode = getUserNode(crypto.randomUUID());
-            const newNodes = [...nodes, newUserNode];
-            const targetNodeIndex = newNodes.findIndex((node) => node.id === activeUserNodeId);
-            const assistantNodeIndex = newNodes.findIndex((node) => node.id === newAssistantNode.id);
-
-            newNodes[targetNodeIndex] = {
-              ...newNodes[targetNodeIndex],
-              abortController: undefined,
-              isLocked: true,
-            };
-
-            newNodes[assistantNodeIndex] = {
-              ...newNodes[assistantNodeIndex],
-              childIds: [newUserNode.id],
-            };
-
-            return newNodes;
-          });
-        } catch (e: any) {
-          setTreeNodes((nodes) => {
-            const newNodes = [...nodes];
-            const targetNodeIndex = newNodes.findIndex((node) => node.id === activeUserNodeId);
-            const assistantNodeIndex = newNodes.findIndex((node) => node.id === newAssistantNode.id);
-
-            newNodes[targetNodeIndex] = {
-              ...newNodes[targetNodeIndex],
-              abortController: undefined,
-            };
-
-            newNodes[assistantNodeIndex] = {
-              ...newNodes[assistantNodeIndex],
-              errorMessage: `${e?.name} ${(e as any).message}`,
-            };
-
-            return newNodes;
-          });
-        }
+        handleRunNode(activeUserNodeId);
       }
     },
-    [chat, treeNodes, getMessageChain],
+    [treeNodes, handleRunNode],
   );
 
   const handlePaste = useCallback(
@@ -877,6 +887,10 @@ export function ChatTree() {
                       }
                       onescape={() => handleToggleViewFormat(node.id)}
                       oncontentchange={(e) => handleTextChange(node.id, e.detail)}
+                      onrun={(e) => {
+                        handleTextChange(node.id, e.detail);
+                        handleRunNode(node.id);
+                      }}
                     ></code-editor-element>
                   ) : (
                     <ResizableTextArea
@@ -1102,7 +1116,7 @@ const MessageActions = styled.span`
   position: sticky;
   top: 0;
   background-color: var(--body-background);
-  z-index: 1;
+  z-index: var(--action-bar-z-index);
 
   > * {
     opacity: 0.5;

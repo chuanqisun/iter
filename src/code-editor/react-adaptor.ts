@@ -11,6 +11,7 @@ declare module "react" {
         "data-lang"?: string | undefined;
         onescape?: (event: Event) => void;
         oncontentchange?: (event: CustomEvent<string>) => void;
+        onrun?: (event: CustomEvent<string>) => void;
       };
       "code-block-events": CustomElement<HTMLElement> & {
         oncodeblockchange?: (

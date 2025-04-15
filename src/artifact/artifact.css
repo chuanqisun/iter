@@ -22,7 +22,7 @@ artifact-preview {
 
 artifact-element:has([data-action="edit"].running) {
   position: fixed;
-  z-index: 1;
+  z-index: var(--artifact-editor-z-index);
   inset: 0;
 
   code-editor-element {
