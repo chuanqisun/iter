@@ -1,0 +1,44 @@
+import type { ChatNode } from "./chat-tree";
+
+export const INITIAL_USER_NODE = getUserNode(crypto.randomUUID());
+export const INITIAL_SYSTEM_NODE: ChatNode = {
+  id: crypto.randomUUID(),
+  role: "system",
+  content: "",
+  isEntry: true,
+};
+export const INITIAL_NODES = [INITIAL_SYSTEM_NODE, INITIAL_USER_NODE];
+
+export function getUserNode(id: string): ChatNode {
+  return {
+    id,
+    role: "user",
+    content: "",
+  };
+}
+
+export function patchNode(
+  predicate: (node: ChatNode) => boolean,
+  patch: Partial<ChatNode> | ((node: ChatNode) => Partial<ChatNode>),
+) {
+  return (candidateNode: ChatNode) => {
+    if (predicate(candidateNode)) {
+      const patched = patch instanceof Function ? patch(candidateNode) : patch;
+      return { ...candidateNode, ...patched };
+    } else {
+      return candidateNode;
+    }
+  };
+}
+
+export function getPrevId(currentId: string, nodes: ChatNode[]): string | null {
+  const idx = nodes.findIndex((n) => n.id === currentId);
+  if (idx > 0) return nodes[idx - 1].id;
+  return null;
+}
+
+export function getNextId(currentId: string, nodes: ChatNode[]): string | null {
+  const idx = nodes.findIndex((n) => n.id === currentId);
+  if (idx >= 0 && idx < nodes.length - 1) return nodes[idx + 1].id;
+  return null;
+}

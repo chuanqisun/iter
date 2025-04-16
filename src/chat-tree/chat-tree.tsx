@@ -19,6 +19,7 @@ import { dictateToTextarea } from "./dictation";
 import { getReadableFileSize } from "./file-size";
 import { autoFocusNthInput } from "./focus";
 import { getCombo } from "./keyboard";
+import { getNextId, getPrevId, getUserNode, INITIAL_NODES, patchNode } from "./tree-helper";
 import { useNodeContentTransformStore } from "./use-node-content-transform-store";
 
 export interface ChatNode {
@@ -42,50 +43,6 @@ export interface ChatPart {
   type: string;
   url: string;
   size: number;
-}
-
-const INITIAL_USER_NODE = getUserNode(crypto.randomUUID());
-const INITIAL_SYSTEM_NODE: ChatNode = {
-  id: crypto.randomUUID(),
-  role: "system",
-  content: "",
-  isEntry: true,
-};
-const INITIAL_NODES = [INITIAL_SYSTEM_NODE, INITIAL_USER_NODE];
-
-function getUserNode(id: string, configOverrides?: Partial<ChatNode>): ChatNode {
-  return {
-    id,
-    role: "user",
-    content: "",
-    ...configOverrides,
-  };
-}
-
-function patchNode(
-  predicate: (node: ChatNode) => boolean,
-  patch: Partial<ChatNode> | ((node: ChatNode) => Partial<ChatNode>),
-) {
-  return (candidateNode: ChatNode) => {
-    if (predicate(candidateNode)) {
-      const patched = patch instanceof Function ? patch(candidateNode) : patch;
-      return { ...candidateNode, ...patched };
-    } else {
-      return candidateNode;
-    }
-  };
-}
-
-function getPrevId(currentId: string, nodes: ChatNode[]): string | null {
-  const idx = nodes.findIndex((n) => n.id === currentId);
-  if (idx > 0) return nodes[idx - 1].id;
-  return null;
-}
-
-function getNextId(currentId: string, nodes: ChatNode[]): string | null {
-  const idx = nodes.findIndex((n) => n.id === currentId);
-  if (idx >= 0 && idx < nodes.length - 1) return nodes[idx + 1].id;
-  return null;
 }
 
 export function ChatTree() {
