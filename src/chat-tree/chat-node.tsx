@@ -2,7 +2,6 @@ import styled from "styled-components";
 import type { ChatNode } from "./chat-tree";
 import { getReadableFileSize } from "./file-size";
 import { tableStyles } from "./table";
-import type { OutputMap } from "./use-node-content-transform-store";
 
 const roleIcon = {
   system: "⚙️",
@@ -28,7 +27,7 @@ export interface ChatNodeProps {
   onCodeBlockChange: (id: string, current: string, index: number) => void;
   onAbort: (id: string) => void;
   onPreviewDoubleClick: (id: string, e: React.MouseEvent) => void;
-  previews: OutputMap;
+  previewHtml: string;
 }
 
 export function ChatNode(props: ChatNodeProps) {
@@ -48,7 +47,7 @@ export function ChatNode(props: ChatNodeProps) {
     onAbort,
     onPreviewDoubleClick,
     onRemoveFile,
-    previews,
+    previewHtml,
   } = props;
 
   return (
@@ -195,7 +194,7 @@ export function ChatNode(props: ChatNodeProps) {
                     id={node.id}
                     $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}
                     dangerouslySetInnerHTML={{
-                      __html: previews[node.id] ?? "",
+                      __html: previewHtml,
                     }}
                   />
                 </>

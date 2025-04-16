@@ -758,7 +758,7 @@ export function ChatTree() {
             onToggleShowMore={handleToggleShowMore}
             onPreviewDoubleClick={handlePreviewDoubleClick}
             onAbort={handleAbort}
-            previews={previews}
+            previewHtml={previews[node.id] ?? ""}
           />
         ))}
       </MessageList>
