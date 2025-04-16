@@ -3,7 +3,6 @@ import styled from "styled-components";
 import { markdownToHtml, useArtifactActions } from "../artifact/artifact";
 import { getFileAccessPostscript, respondFileAccess, respondFileList } from "../artifact/lib/file-access";
 import type { CodeEditorElement } from "../code-editor/code-editor-element";
-import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import { type GenericMessage } from "../providers/base";
 import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
@@ -12,6 +11,7 @@ import { showToast } from "../shell/toast";
 import { textToDataUrl } from "../storage/codec";
 import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
+import { ChatConfig } from "./chat-config";
 import { setChatInstance } from "./chat-instance";
 import { ChatNode } from "./chat-node";
 import { getParts } from "./clipboard";
@@ -51,7 +51,10 @@ export function ChatTree() {
   const { connections, getChatStreamProxy } = useConnections();
   const { saveChat, exportChat, loadChat, importChat } = useFileHooks(treeNodes, setTreeNodes);
 
-  const handleConnectionsButtonClick = () => document.querySelector("settings-element")?.closest("dialog")?.showModal();
+  const handleConnectionsButtonClick = useCallback(
+    () => document.querySelector("settings-element")?.closest("dialog")?.showModal(),
+    [],
+  );
 
   const connectionKey = useRouteParameter({
     name: "connection",
@@ -693,52 +696,13 @@ export function ChatTree() {
 
   return (
     <ChatAppLayout>
-      <div>
-        <ConfigMenu>
-          <BasicFormButton onClick={handleConnectionsButtonClick}>Menu</BasicFormButton>
-          {groupedConnections?.length ? (
-            <label>
-              Model
-              <BasicSelect value={connectionKey.value ?? ""} onChange={(e) => connectionKey.replace(e.target.value)}>
-                {groupedConnections.map(([key, group]) => (
-                  <optgroup key={key} label={key}>
-                    {group?.map((connection) => (
-                      <option key={connection.id} value={connection.id}>
-                        {connection.displayName}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </BasicSelect>
-            </label>
-          ) : null}
-          <label>
-            Temperature
-            <FixedWidthInput
-              type="number"
-              min={0}
-              max={2}
-              value={temperature.value}
-              step={0.05}
-              onChange={(e) => temperature.replace((e.target as HTMLInputElement).valueAsNumber)}
-            />
-          </label>
-          <label>
-            Max tokens
-            <FixedWidthInput
-              type="number"
-              min={0}
-              max={32000}
-              step={100}
-              value={maxTokens.value}
-              onChange={(e) => maxTokens.replace((e.target as HTMLInputElement).valueAsNumber)}
-            />
-          </label>
-          <a href="https://github.com/chuanqisun/iter" target="_blank">
-            GitHub
-          </a>
-        </ConfigMenu>
-      </div>
+      <ChatConfig
+        onConnectionsButtonClick={handleConnectionsButtonClick}
+        groupedConnections={groupedConnections}
+        connectionKey={connectionKey}
+        temperature={temperature}
+        maxTokens={maxTokens}
+      />
       <MessageList ref={treeRootRef}>
         {treeNodes.map((node) => (
           <ChatNode
@@ -771,27 +735,7 @@ const ChatAppLayout = styled.div`
   gap: 16px;
 `;
 
-const ConfigMenu = styled.menu`
-  padding: 0;
-  display: flex;
-  gap: 12px;
-  padding-left: 32px;
-  flex-wrap: wrap;
-  align-items: center;
-
-  label {
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-`;
-
 const MessageList = styled.div`
   display: grid;
   gap: 16px;
-`;
-
-const FixedWidthInput = styled(BasicFormInput)`
-  width: 72px;
 `;
