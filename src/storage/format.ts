@@ -77,15 +77,7 @@ export async function parseChat(raw: string, preserveIds?: string[]): Promise<Ch
   ).map((node, i) => ({ ...node, id: preserveIds?.at(i) ?? node.id }));
 
   // use the next node id as the current node's childId.
-  const linkedNodes = nodes.map(
-    (node, i) =>
-      ({
-        ...node,
-        childIds: i < nodes.length - 1 ? [nodes[i + 1].id] : undefined,
-      }) satisfies ChatNode,
-  );
-
-  return linkedNodes;
+  return nodes;
 }
 
 function parseSystemOrAssistantMessage(node: HTMLElement): ChatNode {
