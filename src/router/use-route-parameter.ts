@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 export interface RouteParameterOptions<T> {
   name: string;
@@ -6,7 +6,14 @@ export interface RouteParameterOptions<T> {
   encode: (value: T) => string;
   decode: (value: string) => T;
 }
-export function useRouteParameter<T>(options: RouteParameterOptions<T>) {
+
+export interface RouteParameter<T> {
+  value: T;
+  push: (value: T) => void;
+  replace: (value: T) => void;
+}
+
+export function useRouteParameter<T>(options: RouteParameterOptions<T>): RouteParameter<T> {
   const [value, setValue] = useState<T>(
     new URLSearchParams(window.location.search).get(options.name)
       ? options.decode(new URLSearchParams(window.location.search).get(options.name) as string)
@@ -27,9 +34,14 @@ export function useRouteParameter<T>(options: RouteParameterOptions<T>) {
     setValue(value);
   }, []);
 
-  return {
-    value,
-    push,
-    replace,
-  };
+  const param = useMemo(
+    () => ({
+      value,
+      push,
+      replace,
+    }),
+    [value, push, replace],
+  );
+
+  return param;
 }

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { ChatNode } from "./chat-tree";
 
 /** id -> output */
-type OutputMap = Record<string, string>;
+export type OutputMap = Record<string, string>;
 
 /** id -> input */
 type InputMap = Record<string, string>;

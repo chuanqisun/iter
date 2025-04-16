@@ -3,7 +3,6 @@ import styled from "styled-components";
 import { markdownToHtml, useArtifactActions } from "../artifact/artifact";
 import { getFileAccessPostscript, respondFileAccess, respondFileList } from "../artifact/lib/file-access";
 import type { CodeEditorElement } from "../code-editor/code-editor-element";
-import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import { type GenericMessage } from "../providers/base";
 import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
@@ -12,13 +11,15 @@ import { showToast } from "../shell/toast";
 import { textToDataUrl } from "../storage/codec";
 import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
+import { ChatConfig } from "./chat-config";
 import { setChatInstance } from "./chat-instance";
+import { ChatNode } from "./chat-node";
 import { getParts } from "./clipboard";
 import { dictateToTextarea } from "./dictation";
 import { getReadableFileSize } from "./file-size";
 import { autoFocusNthInput } from "./focus";
 import { getCombo } from "./keyboard";
-import { tableStyles } from "./table";
+import { getNextId, getPrevId, getUserNode, INITIAL_NODES, patchNode } from "./tree-helper";
 import { useNodeContentTransformStore } from "./use-node-content-transform-store";
 
 export interface ChatNode {
@@ -28,7 +29,6 @@ export interface ChatNode {
   parts?: ChatPart[];
   files?: File[]; // Files for interpreter
   isViewSource?: boolean;
-  childIds?: string[]; // Storing multiple child ids to allow branching
   isLocked?: boolean;
   isListening?: boolean;
   isCollapsed?: boolean;
@@ -45,72 +45,16 @@ export interface ChatPart {
   size: number;
 }
 
-const INITIAL_USER_NODE = getUserNode(crypto.randomUUID());
-const INITIAL_SYSTEM_NODE: ChatNode = {
-  id: crypto.randomUUID(),
-  role: "system",
-  content: "",
-  isEntry: true,
-  childIds: [INITIAL_USER_NODE.id],
-};
-const INITIAL_NODES = [INITIAL_SYSTEM_NODE, INITIAL_USER_NODE];
-
-const COLLAPSED_HEIGHT = 72;
-
-function getUserNode(id: string, configOverrides?: Partial<ChatNode>): ChatNode {
-  return {
-    id,
-    role: "user",
-    content: "",
-    ...configOverrides,
-  };
-}
-
-function patchNode(
-  predicate: (node: ChatNode) => boolean,
-  patch: Partial<ChatNode> | ((node: ChatNode) => Partial<ChatNode>),
-) {
-  return (candidateNode: ChatNode) => {
-    if (predicate(candidateNode)) {
-      const patched = patch instanceof Function ? patch(candidateNode) : patch;
-      return { ...candidateNode, ...patched };
-    } else {
-      return candidateNode;
-    }
-  };
-}
-
-const roleIcon = {
-  system: "⚙️",
-  user: "👤",
-  assistant: "🤖",
-};
-
-function getReachableIds(nodes: ChatNode[], rootId: string): string[] {
-  const rootNode = nodes.find((node) => node.id === rootId);
-  if (!rootNode) return [];
-
-  return [rootId, ...(rootNode.childIds ?? []).flatMap((childId) => getReachableIds(nodes, childId))];
-}
-
-function getPrevId(currentId: string): string | null {
-  const allTextAreas = [...document.querySelectorAll<HTMLTextAreaElement>(`.js-focusable`)];
-  const currentIndex = allTextAreas.findIndex((item) => item.id === currentId);
-  return allTextAreas.at(Math.max(0, currentIndex - 1))?.id ?? null;
-}
-function getNextId(currentId: string): string | null {
-  const allTextAreas = [...document.querySelectorAll<HTMLTextAreaElement>(`.js-focusable`)];
-  const currentIndex = allTextAreas.findIndex((item) => item.id === currentId);
-  return allTextAreas.at(Math.min((allTextAreas.length - 1, currentIndex + 1)))?.id ?? null;
-}
-
 export function ChatTree() {
   const [treeNodes, setTreeNodes] = useState(INITIAL_NODES);
   const treeRootRef = useRef<HTMLDivElement>(null);
   const { connections, getChatStreamProxy } = useConnections();
   const { saveChat, exportChat, loadChat, importChat } = useFileHooks(treeNodes, setTreeNodes);
 
-  const handleConnectionsButtonClick = () => document.querySelector("settings-element")?.closest("dialog")?.showModal();
+  const handleConnectionsButtonClick = useCallback(
+    () => document.querySelector("settings-element")?.closest("dialog")?.showModal(),
+    [],
+  );
 
   const connectionKey = useRouteParameter({
     name: "connection",
@@ -216,36 +160,17 @@ export function ChatTree() {
         return;
       }
 
-      // if delete non-root, delete the node itself and fix the linked list
       setTreeNodes((nodes) => {
-        const remainingNodes = nodes.filter((node) => node.id !== nodeId);
+        const targetIndex = nodes.findIndex((n) => n.id === nodeId);
+        if (targetIndex === -1) return nodes;
+        const newNodes = nodes.filter((n) => n.id !== nodeId);
 
-        const parentId = nodes.find((node) => node.childIds?.includes(nodeId))?.id;
-        const childIds = nodes.find((node) => node.id === nodeId)?.childIds ?? [];
-
-        // link parents to childIds
-        const newNodes = remainingNodes.map((node) => {
-          if (node.id === parentId) {
-            return {
-              ...node,
-              childIds: [...(node.childIds ?? []).filter((id) => id !== nodeId), ...childIds],
-            };
-          } else {
-            return node;
-          }
-        });
-
-        // make sure the last node is a user node
-        const updatedNodes = newNodes.flatMap((node) => {
-          if (!node.childIds?.length && node.role !== "user") {
-            const newUserNode = getUserNode(crypto.randomUUID());
-            return [{ ...node, childIds: [newUserNode.id] }, newUserNode];
-          }
-
-          return [node];
-        });
-
-        return updatedNodes;
+        // If last node is not user, append a user node
+        if (newNodes.length && newNodes[newNodes.length - 1].role !== "user") {
+          const newUserNode = getUserNode(crypto.randomUUID());
+          return [...newNodes, newUserNode];
+        }
+        return newNodes;
       });
     },
     [treeNodes],
@@ -253,71 +178,44 @@ export function ChatTree() {
 
   const handleDeleteBelow = useCallback((nodeId: string) => {
     setTreeNodes((nodes) => {
-      // clear current node childIds
-      const newNodes = nodes.map(
-        patchNode(
-          (node) => node.id === nodeId,
-          (_node) => ({ childIds: [] }),
-        ),
-      );
+      const targetIndex = nodes.findIndex((n) => n.id === nodeId);
+      if (targetIndex === -1) return nodes;
+      const newNodes = nodes.slice(0, targetIndex + 1);
 
-      const reachableIds = getReachableIds(newNodes, nodes.at(0)!.id);
-
-      // remove unreachable
-      const remaining = newNodes.filter((node) => reachableIds.includes(node.id));
-
-      // ensure the last node is a user node
-      return remaining.flatMap((node) => {
-        if (!node.childIds?.length && node.role !== "user") {
-          const newUserNode = getUserNode(crypto.randomUUID());
-          return [{ ...node, childIds: [newUserNode.id] }, newUserNode];
-        }
-
-        return [node];
-      });
+      // Ensure last node is user
+      if (newNodes.length && newNodes[newNodes.length - 1].role !== "user") {
+        const newUserNode = getUserNode(crypto.randomUUID());
+        return [...newNodes, newUserNode];
+      }
+      return newNodes;
     });
   }, []);
 
   const getMessageChain = useCallback(
     (id: string) => {
-      const treeDict = new Map(treeNodes.map((node) => [node.id, node]));
-      const parentDict = new Map<string, string>();
+      const targetIndex = treeNodes.findIndex((n) => n.id === id);
+      if (targetIndex === -1) return [];
+      return treeNodes
+        .slice(0, targetIndex + 1)
+        .map((node) => {
+          const filePostScript = getFileAccessPostscript(node.files ?? []);
+          const rawContentDataUrl = textToDataUrl(`${node.content}${filePostScript}`);
 
-      treeNodes.forEach((node) => {
-        node.childIds?.forEach((childId) => {
-          parentDict.set(childId, node.id);
-        });
-      });
+          const message: GenericMessage = {
+            role: node.role,
+            content: [
+              ...(node.parts ?? []).map((part) => ({
+                name: part.name,
+                type: part.type as any,
+                url: part.url,
+              })),
+              ...(node.content ? ([{ type: "text/plain", url: rawContentDataUrl }] as const) : []),
+            ],
+          };
 
-      function getSourcePath(id: string): string[] {
-        const parentId = parentDict.get(id);
-        if (!parentId) return [id];
-        return [...getSourcePath(parentId), id];
-      }
-
-      const messages = getSourcePath(id).map((id) => {
-        const node = treeDict.get(id);
-        if (!node) throw new Error(`Node ${id} not found`);
-
-        const filePostScript = getFileAccessPostscript(node.files ?? []);
-        const rawContentDataUrl = textToDataUrl(`${node.content}${filePostScript}`);
-
-        const message: GenericMessage = {
-          role: node.role,
-          content: [
-            ...(node.parts ?? []).map((part) => ({
-              name: part.name,
-              type: part.type as any,
-              url: part.url,
-            })),
-            ...(node.content ? ([{ type: "text/plain", url: rawContentDataUrl }] as const) : []),
-          ],
-        };
-
-        return message;
-      });
-
-      return messages.filter((message) => message.content.length);
+          return message;
+        })
+        .filter((message) => message.content.length);
     },
     [treeNodes],
   );
@@ -508,8 +406,6 @@ export function ChatTree() {
 
       const abortController = new AbortController();
 
-      // clean up all downstream node
-      // resurvively find all ids to be deleted
       handleAbort(activeUserNodeId);
 
       const newAssistantNode: ChatNode = {
@@ -520,21 +416,17 @@ export function ChatTree() {
       };
 
       setTreeNodes((nodes) => {
-        const reachableIds = getReachableIds(nodes, activeUserNodeId);
+        const activeUserNodeIndex = nodes.findIndex((n) => n.id === activeUserNodeId);
+        if (activeUserNodeIndex === -1) return nodes;
 
-        // delete all reachable nodes, make sure the node itself remains
-        const remainingNodes = nodes.filter((node) => node.id === activeUserNodeId || !reachableIds.includes(node.id));
-
-        const newNodes = [...remainingNodes, newAssistantNode];
-        const targetNodeIndex = newNodes.findIndex((node) => node.id === activeUserNodeId);
-        newNodes[targetNodeIndex] = {
-          ...newNodes[targetNodeIndex],
-          childIds: [newAssistantNode.id], // ok to override since we just cloned the node
-          lastSubmittedContent: targetNode.content,
-          abortController,
-        };
-
-        return newNodes;
+        // Remove all nodes after activeUserNodeId
+        const base = nodes.slice(0, activeUserNodeIndex + 1);
+        return [
+          ...base.map((n, i) =>
+            i === activeUserNodeIndex ? { ...n, lastSubmittedContent: targetNode.content, abortController } : n,
+          ),
+          newAssistantNode,
+        ];
       });
 
       try {
@@ -552,41 +444,20 @@ export function ChatTree() {
 
         setTreeNodes((nodes) => {
           const newUserNode = getUserNode(crypto.randomUUID());
-          const newNodes = [...nodes, newUserNode];
-          const targetNodeIndex = newNodes.findIndex((node) => node.id === activeUserNodeId);
-          const assistantNodeIndex = newNodes.findIndex((node) => node.id === newAssistantNode.id);
-
-          newNodes[targetNodeIndex] = {
-            ...newNodes[targetNodeIndex],
-            abortController: undefined,
-            isLocked: true,
-          };
-
-          newNodes[assistantNodeIndex] = {
-            ...newNodes[assistantNodeIndex],
-            childIds: [newUserNode.id],
-          };
-
-          return newNodes;
+          return nodes
+            .map((n) => (n.id === activeUserNodeId ? { ...n, abortController: undefined, isLocked: true } : n))
+            .concat(newUserNode);
         });
       } catch (e: any) {
-        setTreeNodes((nodes) => {
-          const newNodes = [...nodes];
-          const targetNodeIndex = newNodes.findIndex((node) => node.id === activeUserNodeId);
-          const assistantNodeIndex = newNodes.findIndex((node) => node.id === newAssistantNode.id);
-
-          newNodes[targetNodeIndex] = {
-            ...newNodes[targetNodeIndex],
-            abortController: undefined,
-          };
-
-          newNodes[assistantNodeIndex] = {
-            ...newNodes[assistantNodeIndex],
-            errorMessage: `${e?.name} ${(e as any).message}`,
-          };
-
-          return newNodes;
-        });
+        setTreeNodes((nodes) =>
+          nodes.map((node) =>
+            node.id === activeUserNodeId
+              ? { ...node, abortController: undefined } // Mark user node as done
+              : node.id === newAssistantNode.id
+                ? { ...node, errorMessage: `${e?.name} ${(e as any).message}` } // Mark assistant node as error
+                : node,
+          ),
+        );
       }
     },
     [chat, treeNodes, getMessageChain],
@@ -636,24 +507,23 @@ export function ChatTree() {
             (textarea.selectionEnd === 0 || textarea.selectionEnd === textarea.value.length)
           ) {
             e.preventDefault();
-            targetId = getPrevId(nodeId);
+            targetId = getPrevId(nodeId, treeNodes);
           } else if (
             combo === "arrowdown" &&
             (textarea.selectionStart === 0 || textarea.selectionStart === textarea.value.length) &&
             textarea.selectionEnd === textarea.value.length
           ) {
             e.preventDefault();
-            targetId = getNextId(nodeId);
+            targetId = getNextId(nodeId, treeNodes);
           }
         }
       } else if ((e.target as HTMLElement).classList.contains("js-focusable")) {
-        // navigate on general elements
         if (combo === "arrowup") {
           e.preventDefault();
-          targetId = getPrevId(nodeId);
+          targetId = getPrevId(nodeId, treeNodes);
         } else if (combo === "arrowdown") {
           e.preventDefault();
-          targetId = getNextId(nodeId);
+          targetId = getNextId(nodeId, treeNodes);
         }
       }
 
@@ -826,434 +696,48 @@ export function ChatTree() {
     autoFocusNthInput(-1);
   }, []);
 
-  const renderNode = useCallback(
-    (node: ChatNode, hasSibling?: boolean) => {
-      return (
-        <Thread showrail={hasSibling ? "true" : undefined} key={node.id}>
-          <MessageLayout className="js-message">
-            <Avatar onClick={(e) => handleToggleShowMore(node.id, e.ctrlKey ? { toggleAll: true } : undefined)}>
-              <AvatarIcon title={node.role}>{roleIcon[node.role]}</AvatarIcon>
-            </Avatar>
-            <MessageWithActions>
-              {node.role === "system" ? (
-                <MessageActions>
-                  <button onClick={() => handleDelete(node.id)}>Delete</button>
-                  <span> · </span>
-                  <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
-                  <span> · </span>
-                  <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "Chat" : "Code"}</button>
-                </MessageActions>
-              ) : null}
-              {node.role === "user" ? (
-                <MessageActions>
-                  {node.abortController ? (
-                    <>
-                      <button onClick={() => handleAbort(node.id)}>Stop</button>
-                      <span> · </span>
-                    </>
-                  ) : null}
-                  <button onClick={() => handleDelete(node.id)}>Delete</button>
-                  <span> · </span>
-                  <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
-                  <span> · </span>
-                  <button onClick={() => handleUploadFiles(node.id)}>Upload</button>
-                  <span> · </span>
-                  <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "Chat" : "Code"}</button>
-                </MessageActions>
-              ) : null}
-              {node.role === "assistant" ? (
-                <MessageActions>
-                  <button onClick={() => handleDelete(node.id)}>Delete</button>
-                  <span> · </span>
-                  <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
-                  <span> · </span>
-                  <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "View" : "Edit"}</button>
-                </MessageActions>
-              ) : null}
-              <code-block-events
-                oncodeblockchange={(e) => handleCodeBlockChange(node.id, e.detail.current, e.detail.index)}
-              ></code-block-events>
-              {node.role === "user" || node.role === "system" ? (
-                <>
-                  {node.isViewSource ? (
-                    <code-editor-element
-                      data-autofocus
-                      data-value={node.content}
-                      data-lang="md"
-                      style={
-                        {
-                          "--max-height": node.isCollapsed ? `${COLLAPSED_HEIGHT}px` : undefined,
-                        } as any
-                      }
-                      onescape={() => handleToggleViewFormat(node.id)}
-                      oncontentchange={(e) => handleTextChange(node.id, e.detail)}
-                      onrun={(e) => {
-                        handleTextChange(node.id, e.detail);
-                        handleRunNode(node.id);
-                      }}
-                    ></code-editor-element>
-                  ) : (
-                    <ResizableTextArea
-                      $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}
-                      className="js-focusable"
-                      id={node.id}
-                      value={node.content}
-                      rows={1}
-                      onKeyDown={(e) => handleKeydown(node.id, e)}
-                      onPaste={(e) => handlePaste(node.id, e)}
-                      onChange={(e) => handleTextChange(node.id, e.target.value)}
-                      placeholder={
-                        node.role === "user"
-                          ? "Ctrl + Enter to send, Esc to cancel, paste images for vision models, Shift + Space to dictate"
-                          : "System message"
-                      }
-                    />
-                  )}
-                  {node.files?.length || node.parts?.length ? (
-                    <AttachmentList>
-                      {node.parts
-                        ?.filter((part) => part.type.startsWith("image/"))
-                        ?.map((part) => (
-                          <AttachmentPreview
-                            key={part.url}
-                            onClick={(_) => handleRemoveAttachment(node.id, part.name, part.url)}
-                          >
-                            <img key={part.url} src={part.url} alt="attachment" />
-                          </AttachmentPreview>
-                        ))}
-
-                      {node.parts
-                        ?.filter((part) => !part.type.startsWith("image/"))
-                        ?.map((part) => (
-                          <AttachmentPreview
-                            key={part.url}
-                            onClick={(_) => handleRemoveAttachment(node.id, part.name, part.url)}
-                          >
-                            <AttachmentFileName title={`${part.name}${part.type ? ` (${part.type})` : ""}`}>
-                              {part.name}
-                            </AttachmentFileName>
-                            <AttachmentFileSize>{getReadableFileSize(part.size)} inlined</AttachmentFileSize>
-                          </AttachmentPreview>
-                        ))}
-
-                      {node.files?.map((file) => (
-                        <AttachmentPreview key={file.name} onClick={(_) => hanldeRemoveFile(node.id, file.name)}>
-                          <AttachmentFileName title={`${file.name}${file.type ? ` (${file.type})` : ""}`}>
-                            {file.name}
-                          </AttachmentFileName>
-                          <AttachmentFileSize>{getReadableFileSize(file.size)} uploaded</AttachmentFileSize>
-                        </AttachmentPreview>
-                      ))}
-                    </AttachmentList>
-                  ) : null}
-                </>
-              ) : (
-                <>
-                  {node.isViewSource ? (
-                    <code-editor-element
-                      data-autofocus
-                      data-value={node.content}
-                      data-lang="md"
-                      style={
-                        {
-                          "--max-height": node.isCollapsed ? `${COLLAPSED_HEIGHT}px` : undefined,
-                        } as any
-                      }
-                      onescape={() => handleToggleViewFormat(node.id)}
-                      oncontentchange={(e) => handleTextChange(node.id, e.detail)}
-                    ></code-editor-element>
-                  ) : (
-                    <>
-                      <MarkdownPreview
-                        tabIndex={0}
-                        className="js-focusable"
-                        onKeyDown={(e) => handleKeydown(node.id, e)}
-                        onDoubleClick={(e) => handlePreviewDoubleClick(node.id, e)}
-                        id={node.id}
-                        $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}
-                        dangerouslySetInnerHTML={{
-                          __html: previews[node.id] ?? "",
-                        }}
-                      />
-                    </>
-                  )}
-
-                  {node.errorMessage ? (
-                    <ErrorMessage>
-                      {node.content.length ? <br /> : null}❌ {node.errorMessage}
-                    </ErrorMessage>
-                  ) : null}
-                </>
-              )}
-            </MessageWithActions>
-          </MessageLayout>
-          {!!node.childIds?.length ? (
-            <MessageList>
-              {node.childIds
-                ?.map((id) => treeNodes.find((node) => node.id === id))
-                .filter(Boolean)
-                .map((childNode) => renderNode(childNode as ChatNode, (node?.childIds ?? []).length > 1))}
-            </MessageList>
-          ) : null}
-        </Thread>
-      );
-    },
-    [handleKeydown, previews],
-  );
-
   return (
     <ChatAppLayout>
-      <div>
-        <ConfigMenu>
-          <BasicFormButton onClick={handleConnectionsButtonClick}>Menu</BasicFormButton>
-          {groupedConnections?.length ? (
-            <label>
-              Model
-              <BasicSelect value={connectionKey.value ?? ""} onChange={(e) => connectionKey.replace(e.target.value)}>
-                {groupedConnections.map(([key, group]) => (
-                  <optgroup key={key} label={key}>
-                    {group?.map((connection) => (
-                      <option key={connection.id} value={connection.id}>
-                        {connection.displayName}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </BasicSelect>
-            </label>
-          ) : null}
-          <label>
-            Temperature
-            <FixedWidthInput
-              type="number"
-              min={0}
-              max={2}
-              value={temperature.value}
-              step={0.05}
-              onChange={(e) => temperature.replace((e.target as HTMLInputElement).valueAsNumber)}
-            />
-          </label>
-          <label>
-            Max tokens
-            <FixedWidthInput
-              type="number"
-              min={0}
-              max={32000}
-              step={100}
-              value={maxTokens.value}
-              onChange={(e) => maxTokens.replace((e.target as HTMLInputElement).valueAsNumber)}
-            />
-          </label>
-          <a href="https://github.com/chuanqisun/iter" target="_blank">
-            GitHub
-          </a>
-        </ConfigMenu>
-      </div>
+      <ChatConfig
+        onConnectionsButtonClick={handleConnectionsButtonClick}
+        groupedConnections={groupedConnections}
+        connectionKey={connectionKey}
+        temperature={temperature}
+        maxTokens={maxTokens}
+      />
       <MessageList ref={treeRootRef}>
-        {treeNodes.filter((node) => node.isEntry).map((node) => renderNode(node))}
+        {treeNodes.map((node) => (
+          <ChatNode
+            key={node.id}
+            node={node}
+            onTextChange={handleTextChange}
+            onCodeBlockChange={handleCodeBlockChange}
+            onDelete={handleDelete}
+            onDeleteBelow={handleDeleteBelow}
+            onRunNode={handleRunNode}
+            onKeydown={handleKeydown}
+            onPaste={handlePaste}
+            onUploadFiles={handleUploadFiles}
+            onRemoveAttachment={handleRemoveAttachment}
+            onRemoveFile={hanldeRemoveFile}
+            onToggleViewFormat={handleToggleViewFormat}
+            onToggleShowMore={handleToggleShowMore}
+            onPreviewDoubleClick={handlePreviewDoubleClick}
+            onAbort={handleAbort}
+            previewHtml={previews[node.id] ?? ""}
+          />
+        ))}
       </MessageList>
     </ChatAppLayout>
   );
 }
-
-const ResizableTextArea = styled.textarea<{ $maxHeight?: number }>`
-  border-radius: 2px;
-  line-height: 18px;
-  field-sizing: content;
-  white-space: pre-wrap;
-  padding: 7px var(--input-padding-inline);
-  border-width: var(--input-border-width);
-  resize: none;
-  ${(props) => props.$maxHeight && `max-height: ${props.$maxHeight}px;`}
-  overflow-y: ${(props) => (props.$maxHeight ? "scroll" : "auto")};
-  scrollbar-gutter: stable;
-
-  &[data-speaking] {
-    color: GrayText;
-  }
-`;
 
 const ChatAppLayout = styled.div`
   display: grid;
   gap: 16px;
 `;
 
-const ConfigMenu = styled.menu`
-  padding: 0;
-  display: flex;
-  gap: 12px;
-  padding-left: 32px;
-  flex-wrap: wrap;
-  align-items: center;
-
-  label {
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-`;
-
-const Thread = styled.div<{ showrail?: "true" }>`
-  display: grid;
-  gap: 8px;
-  margin-left: ${(props) => (props.showrail ? "14px" : "0")};
-  padding-left: ${(props) => (props.showrail ? "13px" : "0")};
-  border-left: ${(props) => (props.showrail ? "1px solid #aaa" : "none")};
-`;
-
 const MessageList = styled.div`
   display: grid;
   gap: 16px;
-`;
-
-const MessageActions = styled.span`
-  min-height: 30px;
-  line-height: 30px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  position: sticky;
-  top: 0;
-  background-color: var(--body-background);
-  z-index: var(--action-bar-z-index);
-
-  > * {
-    opacity: 0.5;
-  }
-  button {
-    cursor: pointer;
-    background: none;
-    border: none;
-    padding: 0;
-    &:hover {
-      opacity: 1;
-      text-decoration: underline;
-    }
-  }
-`;
-
-const MessageWithActions = styled.div`
-  display: grid;
-  align-content: start;
-`;
-
-const ErrorMessage = styled.span`
-  padding-block: 4px;
-  color: red;
-`;
-
-const MessageLayout = styled.div`
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px;
-`;
-
-const Avatar = styled.button`
-  padding-top: 30px;
-  font-size: 22px;
-  line-height: 30px;
-  width: 28px;
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  background: none;
-  border: none;
-  cursor: pointer;
-  border-radius: 2px;
-
-  &:hover {
-    background-color: var(--ghost-button-hover-background);
-  }
-`;
-
-const AvatarIcon = styled.span`
-  width: 28px;
-  text-align: center;
-  position: sticky;
-  top: 30px;
-`;
-
-const FixedWidthInput = styled(BasicFormInput)`
-  width: 72px;
-`;
-
-const AttachmentList = styled.div`
-  margin-top: 8px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-`;
-const AttachmentPreview = styled.button`
-  display: grid;
-  text-align: start;
-  align-content: center;
-  height: 48px;
-
-  img {
-    min-width: 40px;
-    max-width: 60px;
-    height: 40px;
-
-    object-fit: contain;
-  }
-`;
-
-const AttachmentFileName = styled.div`
-  font-size: 14px;
-
-  // text longer than 100px will show ...
-  // no wrap
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 120px;
-`;
-const AttachmentFileSize = styled.div`
-  opacity: 0.625;
-  font-size: 12px;
-`;
-
-const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
-  min-height: 31px; // match that of single line textarea
-  overflow: auto;
-  ${(props) => props.$maxHeight && `max-height: ${props.$maxHeight}px;`}
-  padding: var(--input-padding-block) var(--input-padding-inline);
-  line-height: var(--text-line-height);
-  border-width: var(--input-border-width);
-  border-radius: 2px;
-  border-style: solid;
-  border-color: var(--readonly-text-border-color);
-  border-color: transparent;
-  background-color: var(--readonly-text-background);
-
-  & > * + * {
-    margin-top: 0.5rem;
-  }
-
-  hr {
-    border: none;
-    border-bottom: 1px solid GrayText;
-  }
-
-  code:not(pre > *) {
-    background-color: var(--inline-code-background);
-    font-family: var(--monospace-font);
-    font-size: 14px;
-    padding: 0 2px;
-  }
-
-  .shiki {
-    overflow-x: auto;
-    padding: 8px;
-    line-height: var(--code-line-height);
-    color-scheme: dark;
-
-    code {
-      font-size: 14px;
-      font-family: var(--monospace-font);
-    }
-  }
-
-  ${tableStyles}
 `;
