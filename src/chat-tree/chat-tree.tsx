@@ -28,7 +28,6 @@ export interface ChatNode {
   parts?: ChatPart[];
   files?: File[]; // Files for interpreter
   isViewSource?: boolean;
-  childIds?: string[]; // Storing multiple child ids to allow branching
   isLocked?: boolean;
   isListening?: boolean;
   isCollapsed?: boolean;
@@ -51,7 +50,6 @@ const INITIAL_SYSTEM_NODE: ChatNode = {
   role: "system",
   content: "",
   isEntry: true,
-  childIds: [INITIAL_USER_NODE.id],
 };
 const INITIAL_NODES = [INITIAL_SYSTEM_NODE, INITIAL_USER_NODE];
 
@@ -86,22 +84,16 @@ const roleIcon = {
   assistant: "🤖",
 };
 
-function getReachableIds(nodes: ChatNode[], rootId: string): string[] {
-  const rootNode = nodes.find((node) => node.id === rootId);
-  if (!rootNode) return [];
-
-  return [rootId, ...(rootNode.childIds ?? []).flatMap((childId) => getReachableIds(nodes, childId))];
+function getPrevId(currentId: string, nodes: ChatNode[]): string | null {
+  const idx = nodes.findIndex((n) => n.id === currentId);
+  if (idx > 0) return nodes[idx - 1].id;
+  return null;
 }
 
-function getPrevId(currentId: string): string | null {
-  const allTextAreas = [...document.querySelectorAll<HTMLTextAreaElement>(`.js-focusable`)];
-  const currentIndex = allTextAreas.findIndex((item) => item.id === currentId);
-  return allTextAreas.at(Math.max(0, currentIndex - 1))?.id ?? null;
-}
-function getNextId(currentId: string): string | null {
-  const allTextAreas = [...document.querySelectorAll<HTMLTextAreaElement>(`.js-focusable`)];
-  const currentIndex = allTextAreas.findIndex((item) => item.id === currentId);
-  return allTextAreas.at(Math.min((allTextAreas.length - 1, currentIndex + 1)))?.id ?? null;
+function getNextId(currentId: string, nodes: ChatNode[]): string | null {
+  const idx = nodes.findIndex((n) => n.id === currentId);
+  if (idx >= 0 && idx < nodes.length - 1) return nodes[idx + 1].id;
+  return null;
 }
 
 export function ChatTree() {
@@ -216,36 +208,17 @@ export function ChatTree() {
         return;
       }
 
-      // if delete non-root, delete the node itself and fix the linked list
       setTreeNodes((nodes) => {
-        const remainingNodes = nodes.filter((node) => node.id !== nodeId);
+        const idx = nodes.findIndex((n) => n.id === nodeId);
+        if (idx === -1) return nodes;
+        const newNodes = nodes.filter((n) => n.id !== nodeId);
 
-        const parentId = nodes.find((node) => node.childIds?.includes(nodeId))?.id;
-        const childIds = nodes.find((node) => node.id === nodeId)?.childIds ?? [];
-
-        // link parents to childIds
-        const newNodes = remainingNodes.map((node) => {
-          if (node.id === parentId) {
-            return {
-              ...node,
-              childIds: [...(node.childIds ?? []).filter((id) => id !== nodeId), ...childIds],
-            };
-          } else {
-            return node;
-          }
-        });
-
-        // make sure the last node is a user node
-        const updatedNodes = newNodes.flatMap((node) => {
-          if (!node.childIds?.length && node.role !== "user") {
-            const newUserNode = getUserNode(crypto.randomUUID());
-            return [{ ...node, childIds: [newUserNode.id] }, newUserNode];
-          }
-
-          return [node];
-        });
-
-        return updatedNodes;
+        // If last node is not user, append a user node
+        if (newNodes.length && newNodes[newNodes.length - 1].role !== "user") {
+          const newUserNode = getUserNode(crypto.randomUUID());
+          return [...newNodes, newUserNode];
+        }
+        return newNodes;
       });
     },
     [treeNodes],
@@ -253,71 +226,44 @@ export function ChatTree() {
 
   const handleDeleteBelow = useCallback((nodeId: string) => {
     setTreeNodes((nodes) => {
-      // clear current node childIds
-      const newNodes = nodes.map(
-        patchNode(
-          (node) => node.id === nodeId,
-          (_node) => ({ childIds: [] }),
-        ),
-      );
+      const idx = nodes.findIndex((n) => n.id === nodeId);
+      if (idx === -1) return nodes;
+      const newNodes = nodes.slice(0, idx + 1);
 
-      const reachableIds = getReachableIds(newNodes, nodes.at(0)!.id);
-
-      // remove unreachable
-      const remaining = newNodes.filter((node) => reachableIds.includes(node.id));
-
-      // ensure the last node is a user node
-      return remaining.flatMap((node) => {
-        if (!node.childIds?.length && node.role !== "user") {
-          const newUserNode = getUserNode(crypto.randomUUID());
-          return [{ ...node, childIds: [newUserNode.id] }, newUserNode];
-        }
-
-        return [node];
-      });
+      // Ensure last node is user
+      if (newNodes.length && newNodes[newNodes.length - 1].role !== "user") {
+        const newUserNode = getUserNode(crypto.randomUUID());
+        return [...newNodes, newUserNode];
+      }
+      return newNodes;
     });
   }, []);
 
   const getMessageChain = useCallback(
     (id: string) => {
-      const treeDict = new Map(treeNodes.map((node) => [node.id, node]));
-      const parentDict = new Map<string, string>();
+      const idx = treeNodes.findIndex((n) => n.id === id);
+      if (idx === -1) return [];
+      return treeNodes
+        .slice(0, idx + 1)
+        .map((node) => {
+          const filePostScript = getFileAccessPostscript(node.files ?? []);
+          const rawContentDataUrl = textToDataUrl(`${node.content}${filePostScript}`);
 
-      treeNodes.forEach((node) => {
-        node.childIds?.forEach((childId) => {
-          parentDict.set(childId, node.id);
-        });
-      });
+          const message: GenericMessage = {
+            role: node.role,
+            content: [
+              ...(node.parts ?? []).map((part) => ({
+                name: part.name,
+                type: part.type as any,
+                url: part.url,
+              })),
+              ...(node.content ? ([{ type: "text/plain", url: rawContentDataUrl }] as const) : []),
+            ],
+          };
 
-      function getSourcePath(id: string): string[] {
-        const parentId = parentDict.get(id);
-        if (!parentId) return [id];
-        return [...getSourcePath(parentId), id];
-      }
-
-      const messages = getSourcePath(id).map((id) => {
-        const node = treeDict.get(id);
-        if (!node) throw new Error(`Node ${id} not found`);
-
-        const filePostScript = getFileAccessPostscript(node.files ?? []);
-        const rawContentDataUrl = textToDataUrl(`${node.content}${filePostScript}`);
-
-        const message: GenericMessage = {
-          role: node.role,
-          content: [
-            ...(node.parts ?? []).map((part) => ({
-              name: part.name,
-              type: part.type as any,
-              url: part.url,
-            })),
-            ...(node.content ? ([{ type: "text/plain", url: rawContentDataUrl }] as const) : []),
-          ],
-        };
-
-        return message;
-      });
-
-      return messages.filter((message) => message.content.length);
+          return message;
+        })
+        .filter((message) => message.content.length);
     },
     [treeNodes],
   );
@@ -508,8 +454,6 @@ export function ChatTree() {
 
       const abortController = new AbortController();
 
-      // clean up all downstream node
-      // resurvively find all ids to be deleted
       handleAbort(activeUserNodeId);
 
       const newAssistantNode: ChatNode = {
@@ -520,21 +464,15 @@ export function ChatTree() {
       };
 
       setTreeNodes((nodes) => {
-        const reachableIds = getReachableIds(nodes, activeUserNodeId);
+        const idx = nodes.findIndex((n) => n.id === activeUserNodeId);
+        if (idx === -1) return nodes;
 
-        // delete all reachable nodes, make sure the node itself remains
-        const remainingNodes = nodes.filter((node) => node.id === activeUserNodeId || !reachableIds.includes(node.id));
-
-        const newNodes = [...remainingNodes, newAssistantNode];
-        const targetNodeIndex = newNodes.findIndex((node) => node.id === activeUserNodeId);
-        newNodes[targetNodeIndex] = {
-          ...newNodes[targetNodeIndex],
-          childIds: [newAssistantNode.id], // ok to override since we just cloned the node
-          lastSubmittedContent: targetNode.content,
-          abortController,
-        };
-
-        return newNodes;
+        // Remove all nodes after activeUserNodeId
+        const base = nodes.slice(0, idx + 1);
+        return [
+          ...base.map((n, i) => (i === idx ? { ...n, lastSubmittedContent: targetNode.content, abortController } : n)),
+          newAssistantNode,
+        ];
       });
 
       try {
@@ -552,40 +490,19 @@ export function ChatTree() {
 
         setTreeNodes((nodes) => {
           const newUserNode = getUserNode(crypto.randomUUID());
-          const newNodes = [...nodes, newUserNode];
-          const targetNodeIndex = newNodes.findIndex((node) => node.id === activeUserNodeId);
-          const assistantNodeIndex = newNodes.findIndex((node) => node.id === newAssistantNode.id);
-
-          newNodes[targetNodeIndex] = {
-            ...newNodes[targetNodeIndex],
-            abortController: undefined,
-            isLocked: true,
-          };
-
-          newNodes[assistantNodeIndex] = {
-            ...newNodes[assistantNodeIndex],
-            childIds: [newUserNode.id],
-          };
-
-          return newNodes;
+          return nodes
+            .map((n) => (n.id === activeUserNodeId ? { ...n, abortController: undefined, isLocked: true } : n))
+            .concat(newUserNode);
         });
       } catch (e: any) {
         setTreeNodes((nodes) => {
-          const newNodes = [...nodes];
-          const targetNodeIndex = newNodes.findIndex((node) => node.id === activeUserNodeId);
-          const assistantNodeIndex = newNodes.findIndex((node) => node.id === newAssistantNode.id);
-
-          newNodes[targetNodeIndex] = {
-            ...newNodes[targetNodeIndex],
-            abortController: undefined,
-          };
-
-          newNodes[assistantNodeIndex] = {
-            ...newNodes[assistantNodeIndex],
-            errorMessage: `${e?.name} ${(e as any).message}`,
-          };
-
-          return newNodes;
+          return nodes.map((n) =>
+            n.id === activeUserNodeId
+              ? { ...n, abortController: undefined }
+              : n.id === newAssistantNode.id
+                ? { ...n, errorMessage: `${e?.name} ${(e as any).message}` }
+                : n,
+          );
         });
       }
     },
@@ -636,24 +553,23 @@ export function ChatTree() {
             (textarea.selectionEnd === 0 || textarea.selectionEnd === textarea.value.length)
           ) {
             e.preventDefault();
-            targetId = getPrevId(nodeId);
+            targetId = getPrevId(nodeId, treeNodes);
           } else if (
             combo === "arrowdown" &&
             (textarea.selectionStart === 0 || textarea.selectionStart === textarea.value.length) &&
             textarea.selectionEnd === textarea.value.length
           ) {
             e.preventDefault();
-            targetId = getNextId(nodeId);
+            targetId = getNextId(nodeId, treeNodes);
           }
         }
       } else if ((e.target as HTMLElement).classList.contains("js-focusable")) {
-        // navigate on general elements
         if (combo === "arrowup") {
           e.preventDefault();
-          targetId = getPrevId(nodeId);
+          targetId = getPrevId(nodeId, treeNodes);
         } else if (combo === "arrowdown") {
           e.preventDefault();
-          targetId = getNextId(nodeId);
+          targetId = getNextId(nodeId, treeNodes);
         }
       }
 
@@ -827,9 +743,9 @@ export function ChatTree() {
   }, []);
 
   const renderNode = useCallback(
-    (node: ChatNode, hasSibling?: boolean) => {
+    (node: ChatNode) => {
       return (
-        <Thread showrail={hasSibling ? "true" : undefined} key={node.id}>
+        <Thread key={node.id}>
           <MessageLayout className="js-message">
             <Avatar onClick={(e) => handleToggleShowMore(node.id, e.ctrlKey ? { toggleAll: true } : undefined)}>
               <AvatarIcon title={node.role}>{roleIcon[node.role]}</AvatarIcon>
@@ -987,14 +903,6 @@ export function ChatTree() {
               )}
             </MessageWithActions>
           </MessageLayout>
-          {!!node.childIds?.length ? (
-            <MessageList>
-              {node.childIds
-                ?.map((id) => treeNodes.find((node) => node.id === id))
-                .filter(Boolean)
-                .map((childNode) => renderNode(childNode as ChatNode, (node?.childIds ?? []).length > 1))}
-            </MessageList>
-          ) : null}
         </Thread>
       );
     },
@@ -1049,9 +957,7 @@ export function ChatTree() {
           </a>
         </ConfigMenu>
       </div>
-      <MessageList ref={treeRootRef}>
-        {treeNodes.filter((node) => node.isEntry).map((node) => renderNode(node))}
-      </MessageList>
+      <MessageList ref={treeRootRef}>{treeNodes.map(renderNode)}</MessageList>
     </ChatAppLayout>
   );
 }
@@ -1094,12 +1000,12 @@ const ConfigMenu = styled.menu`
   }
 `;
 
-const Thread = styled.div<{ showrail?: "true" }>`
+const Thread = styled.div`
   display: grid;
   gap: 8px;
-  margin-left: ${(props) => (props.showrail ? "14px" : "0")};
-  padding-left: ${(props) => (props.showrail ? "13px" : "0")};
-  border-left: ${(props) => (props.showrail ? "1px solid #aaa" : "none")};
+  margin-left: 0;
+  padding-left: 0;
+  border-left: none;
 `;
 
 const MessageList = styled.div`
