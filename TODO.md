@@ -1,3 +1,4 @@
+- Refactor tree nodes into a reducer or rxjs store
 - Use rxjs to handle streaming
 - Avoid re-rendering using rxjs
 - Allow dynamic role toggle
