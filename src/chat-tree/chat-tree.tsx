@@ -449,15 +449,15 @@ export function ChatTree() {
             .concat(newUserNode);
         });
       } catch (e: any) {
-        setTreeNodes((nodes) => {
-          return nodes.map((n) =>
-            n.id === activeUserNodeId
-              ? { ...n, abortController: undefined }
-              : n.id === newAssistantNode.id
-                ? { ...n, errorMessage: `${e?.name} ${(e as any).message}` }
-                : n,
-          );
-        });
+        setTreeNodes((nodes) =>
+          nodes.map((node) =>
+            node.id === activeUserNodeId
+              ? { ...node, abortController: undefined } // Mark user node as done
+              : node.id === newAssistantNode.id
+                ? { ...node, errorMessage: `${e?.name} ${(e as any).message}` } // Mark assistant node as error
+                : node,
+          ),
+        );
       }
     },
     [chat, treeNodes, getMessageChain],
