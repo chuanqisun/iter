@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 export interface RouteParameterOptions<T> {
   name: string;
@@ -34,9 +34,14 @@ export function useRouteParameter<T>(options: RouteParameterOptions<T>): RoutePa
     setValue(value);
   }, []);
 
-  return {
-    value,
-    push,
-    replace,
-  };
+  const param = useMemo(
+    () => ({
+      value,
+      push,
+      replace,
+    }),
+    [value, push, replace],
+  );
+
+  return param;
 }

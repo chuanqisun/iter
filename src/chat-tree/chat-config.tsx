@@ -1,3 +1,4 @@
+import { memo } from "react";
 import styled from "styled-components";
 import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
 import type { BaseConnection } from "../providers/base";
@@ -10,7 +11,10 @@ export interface ChatConfigProps {
   temperature: RouteParameter<number>;
   maxTokens: RouteParameter<number>;
 }
-export function ChatConfig(props: ChatConfigProps) {
+
+export const ChatConfig = memo(ChatConfigInternal);
+
+function ChatConfigInternal(props: ChatConfigProps) {
   return (
     <div>
       <ConfigMenu>
