@@ -32,7 +32,18 @@ export interface OpenAIConnection extends BaseConnection {
 
 export class OpenAIProvider implements BaseProvider {
   static type = "openai";
-  static defaultModels = ["gpt-4.5-preview", "o3-mini", "o1-mini", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "gpt-4o", "gpt-4o-mini"];
+  static defaultModels = [
+    "o4-mini",
+    "o3",
+    "o3-mini",
+    "o1-mini",
+    "gpt-4.5-preview",
+    "gpt-4.1",
+    "gpt-4.1-mini",
+    "gpt-4.1-nano",
+    "gpt-4o",
+    "gpt-4o-mini",
+  ];
 
   parseNewCredentialForm(formData: FormData): OpenAICredential[] {
     const accountName = formData.get("newAccountName") as string;
@@ -62,7 +73,7 @@ export class OpenAIProvider implements BaseProvider {
           displayName: model,
           model,
           apiKey: credential.apiKey,
-        } satisfies OpenAIConnection)
+        }) satisfies OpenAIConnection,
     );
   }
 
@@ -87,7 +98,8 @@ export class OpenAIProvider implements BaseProvider {
         dangerouslyAllowBrowser: true,
       });
 
-      const isTemperatureSupported = !connection.model.startsWith("o1") && !connection.model.startsWith("o3");
+      const isTemperatureSupported =
+        !connection.model.startsWith("o1") && !connection.model.startsWith("o3") && !connection.model.startsWith("o4");
       const isSystemMessageSupported = !connection.model.startsWith("o1-mini");
 
       const stream = await client.chat.completions.create(
