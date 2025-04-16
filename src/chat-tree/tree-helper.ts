@@ -32,13 +32,13 @@ export function patchNode(
 }
 
 export function getPrevId(currentId: string, nodes: ChatNode[]): string | null {
-  const idx = nodes.findIndex((n) => n.id === currentId);
-  if (idx > 0) return nodes[idx - 1].id;
+  const currentIndex = nodes.findIndex((n) => n.id === currentId);
+  if (currentIndex > 0) return nodes[currentIndex - 1].id;
   return null;
 }
 
 export function getNextId(currentId: string, nodes: ChatNode[]): string | null {
-  const idx = nodes.findIndex((n) => n.id === currentId);
-  if (idx >= 0 && idx < nodes.length - 1) return nodes[idx + 1].id;
+  const currentIndex = nodes.findIndex((n) => n.id === currentId);
+  if (currentIndex >= 0 && currentIndex < nodes.length - 1) return nodes[currentIndex + 1].id;
   return null;
 }

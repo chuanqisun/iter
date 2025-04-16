@@ -161,8 +161,8 @@ export function ChatTree() {
       }
 
       setTreeNodes((nodes) => {
-        const idx = nodes.findIndex((n) => n.id === nodeId);
-        if (idx === -1) return nodes;
+        const targetIndex = nodes.findIndex((n) => n.id === nodeId);
+        if (targetIndex === -1) return nodes;
         const newNodes = nodes.filter((n) => n.id !== nodeId);
 
         // If last node is not user, append a user node
@@ -178,9 +178,9 @@ export function ChatTree() {
 
   const handleDeleteBelow = useCallback((nodeId: string) => {
     setTreeNodes((nodes) => {
-      const idx = nodes.findIndex((n) => n.id === nodeId);
-      if (idx === -1) return nodes;
-      const newNodes = nodes.slice(0, idx + 1);
+      const targetIndex = nodes.findIndex((n) => n.id === nodeId);
+      if (targetIndex === -1) return nodes;
+      const newNodes = nodes.slice(0, targetIndex + 1);
 
       // Ensure last node is user
       if (newNodes.length && newNodes[newNodes.length - 1].role !== "user") {
@@ -193,10 +193,10 @@ export function ChatTree() {
 
   const getMessageChain = useCallback(
     (id: string) => {
-      const idx = treeNodes.findIndex((n) => n.id === id);
-      if (idx === -1) return [];
+      const targetIndex = treeNodes.findIndex((n) => n.id === id);
+      if (targetIndex === -1) return [];
       return treeNodes
-        .slice(0, idx + 1)
+        .slice(0, targetIndex + 1)
         .map((node) => {
           const filePostScript = getFileAccessPostscript(node.files ?? []);
           const rawContentDataUrl = textToDataUrl(`${node.content}${filePostScript}`);
@@ -416,13 +416,15 @@ export function ChatTree() {
       };
 
       setTreeNodes((nodes) => {
-        const idx = nodes.findIndex((n) => n.id === activeUserNodeId);
-        if (idx === -1) return nodes;
+        const activeUserNodeIndex = nodes.findIndex((n) => n.id === activeUserNodeId);
+        if (activeUserNodeIndex === -1) return nodes;
 
         // Remove all nodes after activeUserNodeId
-        const base = nodes.slice(0, idx + 1);
+        const base = nodes.slice(0, activeUserNodeIndex + 1);
         return [
-          ...base.map((n, i) => (i === idx ? { ...n, lastSubmittedContent: targetNode.content, abortController } : n)),
+          ...base.map((n, i) =>
+            i === activeUserNodeIndex ? { ...n, lastSubmittedContent: targetNode.content, abortController } : n,
+          ),
           newAssistantNode,
         ];
       });
