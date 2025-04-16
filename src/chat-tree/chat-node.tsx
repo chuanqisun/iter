@@ -14,87 +14,87 @@ const COLLAPSED_HEIGHT = 72;
 
 export interface ChatNodeProps {
   node: ChatNode;
-  handleToggleShowMore: (id: string, options?: { toggleAll?: boolean }) => void;
-  handleDelete: (id: string) => void;
-  handleDeleteBelow: (id: string) => void;
-  handleToggleViewFormat: (id: string) => void;
-  handleTextChange: (id: string, value: string) => void;
-  handleRunNode: (id: string) => void;
-  handleKeydown: (id: string, e: React.KeyboardEvent<HTMLTextAreaElement | HTMLDivElement>) => void;
-  handlePaste: (id: string, e: React.ClipboardEvent<HTMLTextAreaElement>) => void;
-  handleUploadFiles: (id: string) => void;
-  handleRemoveAttachment: (id: string, name: string, url: string) => void;
-  handleRemoveFile: (id: string, name: string) => void;
-  handleCodeBlockChange: (id: string, current: string, index: number) => void;
-  handleAbort: (id: string) => void;
-  handlePreviewDoubleClick: (id: string, e: React.MouseEvent) => void;
+  onToggleShowMore: (id: string, options?: { toggleAll?: boolean }) => void;
+  onDelete: (id: string) => void;
+  onDeleteBelow: (id: string) => void;
+  onToggleViewFormat: (id: string) => void;
+  onTextChange: (id: string, value: string) => void;
+  onRunNode: (id: string) => void;
+  onKeydown: (id: string, e: React.KeyboardEvent<HTMLTextAreaElement | HTMLDivElement>) => void;
+  onPaste: (id: string, e: React.ClipboardEvent<HTMLTextAreaElement>) => void;
+  onUploadFiles: (id: string) => void;
+  onRemoveAttachment: (id: string, name: string, url: string) => void;
+  onRemoveFile: (id: string, name: string) => void;
+  onCodeBlockChange: (id: string, current: string, index: number) => void;
+  onAbort: (id: string) => void;
+  onPreviewDoubleClick: (id: string, e: React.MouseEvent) => void;
   previews: OutputMap;
 }
 
 export function ChatNode(props: ChatNodeProps) {
   const {
     node,
-    handleToggleShowMore,
-    handleDelete,
-    handleDeleteBelow,
-    handleToggleViewFormat,
-    handleTextChange,
-    handleRunNode,
-    handleKeydown,
-    handlePaste,
-    handleUploadFiles,
-    handleRemoveAttachment,
-    handleCodeBlockChange,
-    handleAbort,
-    handlePreviewDoubleClick,
-    handleRemoveFile,
+    onToggleShowMore,
+    onDelete,
+    onDeleteBelow,
+    onToggleViewFormat,
+    onTextChange,
+    onRunNode,
+    onKeydown,
+    onPaste,
+    onUploadFiles,
+    onRemoveAttachment,
+    onCodeBlockChange,
+    onAbort,
+    onPreviewDoubleClick,
+    onRemoveFile,
     previews,
   } = props;
 
   return (
     <Thread key={node.id}>
       <MessageLayout className="js-message">
-        <Avatar onClick={(e) => handleToggleShowMore(node.id, e.ctrlKey ? { toggleAll: true } : undefined)}>
+        <Avatar onClick={(e) => onToggleShowMore(node.id, e.ctrlKey ? { toggleAll: true } : undefined)}>
           <AvatarIcon title={node.role}>{roleIcon[node.role]}</AvatarIcon>
         </Avatar>
         <MessageWithActions>
           {node.role === "system" ? (
             <MessageActions>
-              <button onClick={() => handleDelete(node.id)}>Delete</button>
+              <button onClick={() => onDelete(node.id)}>Delete</button>
               <span> · </span>
-              <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
+              <button onClick={() => onDeleteBelow(node.id)}>Trim</button>
               <span> · </span>
-              <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "Chat" : "Code"}</button>
+              <button onClick={() => onToggleViewFormat(node.id)}>{node.isViewSource ? "Chat" : "Code"}</button>
             </MessageActions>
           ) : null}
           {node.role === "user" ? (
             <MessageActions>
               {node.abortController ? (
                 <>
-                  <button onClick={() => handleAbort(node.id)}>Stop</button>
+                  <button onClick={() => onAbort(node.id)}>Stop</button>
                   <span> · </span>
                 </>
               ) : null}
-              <button onClick={() => handleDelete(node.id)}>Delete</button>
+              <button onClick={() => onDelete(node.id)}>Delete</button>
               <span> · </span>
-              <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
+              <button onClick={() => onDeleteBelow(node.id)}>Trim</button>
               <span> · </span>
-              <button onClick={() => handleUploadFiles(node.id)}>Upload</button>
+              <button onClick={() => onUploadFiles(node.id)}>Upload</button>
               <span> · </span>
-              <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "Chat" : "Code"}</button>
+              <button onClick={() => onToggleViewFormat(node.id)}>{node.isViewSource ? "Chat" : "Code"}</button>
             </MessageActions>
           ) : null}
           {node.role === "assistant" ? (
             <MessageActions>
-              <button onClick={() => handleDelete(node.id)}>Delete</button>
+              <button onClick={() => onDelete(node.id)}>Delete</button>
               <span> · </span>
-              <button onClick={() => handleDeleteBelow(node.id)}>Trim</button>
+              <button onClick={() => onDeleteBelow(node.id)}>Trim</button>
               <span> · </span>
-              <button onClick={() => handleToggleViewFormat(node.id)}>{node.isViewSource ? "View" : "Edit"}</button>
+              <button onClick={() => onToggleViewFormat(node.id)}>{node.isViewSource ? "View" : "Edit"}</button>
             </MessageActions>
           ) : null}
           <code-block-events
-            oncodeblockchange={(e) => handleCodeBlockChange(node.id, e.detail.current, e.detail.index)}
+            oncodeblockchange={(e) => onCodeBlockChange(node.id, e.detail.current, e.detail.index)}
           ></code-block-events>
           {node.role === "user" || node.role === "system" ? (
             <>
@@ -108,11 +108,11 @@ export function ChatNode(props: ChatNodeProps) {
                       "--max-height": node.isCollapsed ? `${COLLAPSED_HEIGHT}px` : undefined,
                     } as any
                   }
-                  onescape={() => handleToggleViewFormat(node.id)}
-                  oncontentchange={(e) => handleTextChange(node.id, e.detail)}
+                  onescape={() => onToggleViewFormat(node.id)}
+                  oncontentchange={(e) => onTextChange(node.id, e.detail)}
                   onrun={(e) => {
-                    handleTextChange(node.id, e.detail);
-                    handleRunNode(node.id);
+                    onTextChange(node.id, e.detail);
+                    onRunNode(node.id);
                   }}
                 ></code-editor-element>
               ) : (
@@ -122,9 +122,9 @@ export function ChatNode(props: ChatNodeProps) {
                   id={node.id}
                   value={node.content}
                   rows={1}
-                  onKeyDown={(e) => handleKeydown(node.id, e)}
-                  onPaste={(e) => handlePaste(node.id, e)}
-                  onChange={(e) => handleTextChange(node.id, e.target.value)}
+                  onKeyDown={(e) => onKeydown(node.id, e)}
+                  onPaste={(e) => onPaste(node.id, e)}
+                  onChange={(e) => onTextChange(node.id, e.target.value)}
                   placeholder={
                     node.role === "user"
                       ? "Ctrl + Enter to send, Esc to cancel, paste images for vision models, Shift + Space to dictate"
@@ -139,7 +139,7 @@ export function ChatNode(props: ChatNodeProps) {
                     ?.map((part) => (
                       <AttachmentPreview
                         key={part.url}
-                        onClick={(_) => handleRemoveAttachment(node.id, part.name, part.url)}
+                        onClick={(_) => onRemoveAttachment(node.id, part.name, part.url)}
                       >
                         <img key={part.url} src={part.url} alt="attachment" />
                       </AttachmentPreview>
@@ -150,7 +150,7 @@ export function ChatNode(props: ChatNodeProps) {
                     ?.map((part) => (
                       <AttachmentPreview
                         key={part.url}
-                        onClick={(_) => handleRemoveAttachment(node.id, part.name, part.url)}
+                        onClick={(_) => onRemoveAttachment(node.id, part.name, part.url)}
                       >
                         <AttachmentFileName title={`${part.name}${part.type ? ` (${part.type})` : ""}`}>
                           {part.name}
@@ -160,7 +160,7 @@ export function ChatNode(props: ChatNodeProps) {
                     ))}
 
                   {node.files?.map((file) => (
-                    <AttachmentPreview key={file.name} onClick={(_) => handleRemoveFile(node.id, file.name)}>
+                    <AttachmentPreview key={file.name} onClick={(_) => onRemoveFile(node.id, file.name)}>
                       <AttachmentFileName title={`${file.name}${file.type ? ` (${file.type})` : ""}`}>
                         {file.name}
                       </AttachmentFileName>
@@ -182,16 +182,16 @@ export function ChatNode(props: ChatNodeProps) {
                       "--max-height": node.isCollapsed ? `${COLLAPSED_HEIGHT}px` : undefined,
                     } as any
                   }
-                  onescape={() => handleToggleViewFormat(node.id)}
-                  oncontentchange={(e) => handleTextChange(node.id, e.detail)}
+                  onescape={() => onToggleViewFormat(node.id)}
+                  oncontentchange={(e) => onTextChange(node.id, e.detail)}
                 ></code-editor-element>
               ) : (
                 <>
                   <MarkdownPreview
                     tabIndex={0}
                     className="js-focusable"
-                    onKeyDown={(e) => handleKeydown(node.id, e)}
-                    onDoubleClick={(e) => handlePreviewDoubleClick(node.id, e)}
+                    onKeyDown={(e) => onKeydown(node.id, e)}
+                    onDoubleClick={(e) => onPreviewDoubleClick(node.id, e)}
                     id={node.id}
                     $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}
                     dangerouslySetInnerHTML={{

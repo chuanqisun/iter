@@ -787,20 +787,20 @@ export function ChatTree() {
           <ChatNode
             key={node.id}
             node={node}
-            handleTextChange={handleTextChange}
-            handleCodeBlockChange={handleCodeBlockChange}
-            handleDelete={handleDelete}
-            handleDeleteBelow={handleDeleteBelow}
-            handleRunNode={handleRunNode}
-            handleKeydown={handleKeydown}
-            handlePaste={handlePaste}
-            handleUploadFiles={handleUploadFiles}
-            handleRemoveAttachment={handleRemoveAttachment}
-            handleRemoveFile={hanldeRemoveFile}
-            handleToggleViewFormat={handleToggleViewFormat}
-            handleToggleShowMore={handleToggleShowMore}
-            handlePreviewDoubleClick={handlePreviewDoubleClick}
-            handleAbort={handleAbort}
+            onTextChange={handleTextChange}
+            onCodeBlockChange={handleCodeBlockChange}
+            onDelete={handleDelete}
+            onDeleteBelow={handleDeleteBelow}
+            onRunNode={handleRunNode}
+            onKeydown={handleKeydown}
+            onPaste={handlePaste}
+            onUploadFiles={handleUploadFiles}
+            onRemoveAttachment={handleRemoveAttachment}
+            onRemoveFile={hanldeRemoveFile}
+            onToggleViewFormat={handleToggleViewFormat}
+            onToggleShowMore={handleToggleShowMore}
+            onPreviewDoubleClick={handlePreviewDoubleClick}
+            onAbort={handleAbort}
             previews={previews}
           />
         ))}
