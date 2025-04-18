@@ -29,7 +29,6 @@ export interface ChatNode {
   parts?: ChatPart[];
   files?: File[]; // Files for interpreter
   isViewSource?: boolean;
-  isLocked?: boolean;
   isListening?: boolean;
   isCollapsed?: boolean;
   isEntry?: boolean;
@@ -412,7 +411,6 @@ export function ChatTree() {
         id: crypto.randomUUID(),
         role: "assistant",
         content: "",
-        isLocked: true,
       };
 
       setTreeNodes((nodes) => {
@@ -445,7 +443,7 @@ export function ChatTree() {
         setTreeNodes((nodes) => {
           const newUserNode = getUserNode(crypto.randomUUID());
           return nodes
-            .map((n) => (n.id === activeUserNodeId ? { ...n, abortController: undefined, isLocked: true } : n))
+            .map((n) => (n.id === activeUserNodeId ? { ...n, abortController: undefined } : n))
             .concat(newUserNode);
         });
       } catch (e: any) {
