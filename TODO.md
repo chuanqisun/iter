@@ -10,3 +10,4 @@
 - Language override for editor
 - Manual code interpreter (with shebang line)
 - Reference pinned code blocks
+- Migrate from styled components to CSS
