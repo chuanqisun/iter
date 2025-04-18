@@ -98,6 +98,7 @@ export function useTreeNodes(options?: TreeNodesOptions) {
 
   return {
     treeNodes,
+    treeNodes$: store.treeNodes$,
     setTreeNodes,
   };
 }
