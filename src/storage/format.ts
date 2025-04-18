@@ -1,4 +1,4 @@
-import type { ChatNode } from "../chat-tree/chat-tree";
+import type { ChatNode } from "../chat-tree/tree-store";
 
 export async function stringifyChat(nodes: ChatNode[]) {
   return `

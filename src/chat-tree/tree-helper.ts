@@ -1,4 +1,4 @@
-import type { ChatNode } from "./chat-tree";
+import type { ChatNode } from "./tree-store";
 
 export const INITIAL_USER_NODE = getUserNode(crypto.randomUUID());
 export const INITIAL_SYSTEM_NODE: ChatNode = {

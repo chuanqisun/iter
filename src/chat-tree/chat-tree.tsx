@@ -20,28 +20,8 @@ import { getReadableFileSize } from "./file-size";
 import { autoFocusNthInput } from "./focus";
 import { getCombo } from "./keyboard";
 import { getNextId, getPrevId, getUserNode, INITIAL_NODES, patchNode } from "./tree-helper";
-import { useTreeNodes } from "./tree-store";
+import { useTreeNodes, type ChatNode } from "./tree-store";
 import { useNodeContentTransformStore } from "./use-node-content-transform-store";
-
-export interface ChatNode {
-  id: string;
-  role: "system" | "user" | "assistant";
-  content: string;
-  parts?: ChatPart[];
-  files?: File[]; // Files for interpreter
-  isViewSource?: boolean;
-  isListening?: boolean;
-  isCollapsed?: boolean;
-  abortController?: AbortController;
-  errorMessage?: string;
-}
-
-export interface ChatPart {
-  name: string;
-  type: string;
-  url: string;
-  size: number;
-}
 
 export function ChatTree() {
   const { treeNodes, setTreeNodes, treeNodes$ } = useTreeNodes({ initialNodes: INITIAL_NODES });

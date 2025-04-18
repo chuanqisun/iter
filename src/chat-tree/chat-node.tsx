@@ -1,8 +1,8 @@
 import { memo } from "react";
 import styled from "styled-components";
-import type { ChatNode } from "./chat-tree";
 import { getReadableFileSize } from "./file-size";
 import { tableStyles } from "./table";
+import type { ChatNode } from "./tree-store";
 
 const roleIcon = {
   system: "⚙️",

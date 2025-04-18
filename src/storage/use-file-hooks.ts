@@ -1,6 +1,6 @@
 import { get, set } from "idb-keyval";
 import { useCallback } from "react";
-import type { ChatNode } from "../chat-tree/chat-tree";
+import type { ChatNode } from "../chat-tree/tree-store";
 import { parseChat, stringifyChat } from "./format";
 
 export function useFileHooks(treeNodes: ChatNode[], setTreeNodes: (value: React.SetStateAction<ChatNode[]>) => void) {
