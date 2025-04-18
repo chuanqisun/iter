@@ -11,3 +11,4 @@
 - Manual code interpreter (with shebang line)
 - Reference pinned code blocks
 - Migrate from styled components to CSS
+- Bug: trim during generation caused unwanted new nodes
