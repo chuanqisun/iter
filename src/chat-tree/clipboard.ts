@@ -1,4 +1,4 @@
-import type { ChatPart } from "./chat-tree";
+import type { ChatPart } from "./tree-store";
 
 export async function getParts(data?: DataTransfer): Promise<ChatPart[]> {
   const items = data?.items;
