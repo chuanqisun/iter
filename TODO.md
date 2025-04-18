@@ -1,4 +1,5 @@
-- Refactor tree nodes into a reducer or rxjs store
+# TODO
+
 - Use rxjs to handle streaming
 - Avoid re-rendering using rxjs
 - Allow dynamic role toggle
@@ -12,3 +13,10 @@
 - Reference pinned code blocks
 - Migrate from styled components to CSS
 - Bug: trim during generation caused unwanted new nodes
+- Investigate initial script loading size
+- Offload highlighting to worker
+
+# DONE
+
+- Refactor tree to be flat array
+- Refactor tree nodes into a reducer or rxjs store
