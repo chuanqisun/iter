@@ -8,6 +8,7 @@
 - CPU throttling for markdown rendering
 - Use spawn cursor to allow selection during generation
 - Busy indicator
+- Token usage indicator
 - Language override for editor
 - Manual code interpreter (with shebang line)
 - Reference pinned code blocks
