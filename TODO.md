@@ -17,6 +17,8 @@
 - Investigate initial script loading size
 - Offload highlighting to worker
 - Migrate to google genai sdk, pending https://github.com/googleapis/js-genai/issues/402
+- Support thinking budget
+- Bug: cannot open artifact when it lacks a lang attribute
 
 # DONE
 
