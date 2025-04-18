@@ -83,7 +83,7 @@ export async function parseChat(raw: string, preserveIds?: string[]): Promise<Ch
 function parseSystemOrAssistantMessage(node: HTMLElement): ChatNode {
   const content = [...node.querySelectorAll("p")].map((p) => p.textContent).join("\n\n");
   const role = node.dataset.role as "system" | "assistant";
-  return { id: crypto.randomUUID(), role, content, isEntry: role === "system" };
+  return { id: crypto.randomUUID(), role, content };
 }
 
 async function parseUserMessage(node: HTMLElement): Promise<ChatNode> {

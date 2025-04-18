@@ -31,7 +31,6 @@ export interface ChatNode {
   isViewSource?: boolean;
   isListening?: boolean;
   isCollapsed?: boolean;
-  isEntry?: boolean;
   abortController?: AbortController;
   errorMessage?: string;
   lastSubmittedContent?: string;

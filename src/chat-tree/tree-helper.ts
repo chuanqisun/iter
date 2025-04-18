@@ -5,7 +5,6 @@ export const INITIAL_SYSTEM_NODE: ChatNode = {
   id: crypto.randomUUID(),
   role: "system",
   content: "",
-  isEntry: true,
 };
 export const INITIAL_NODES = [INITIAL_SYSTEM_NODE, INITIAL_USER_NODE];
 
