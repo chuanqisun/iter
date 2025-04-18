@@ -12,9 +12,9 @@ export interface ChatConfigProps {
   maxTokens: RouteParameter<number>;
 }
 
-export const ChatConfig = memo(ChatConfigInternal);
+export const ChatConfigMemo = memo(ChatConfig);
 
-function ChatConfigInternal(props: ChatConfigProps) {
+function ChatConfig(props: ChatConfigProps) {
   return (
     <div>
       <ConfigMenu>

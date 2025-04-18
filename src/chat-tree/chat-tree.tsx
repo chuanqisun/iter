@@ -11,9 +11,9 @@ import { showToast } from "../shell/toast";
 import { textToDataUrl } from "../storage/codec";
 import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
-import { ChatConfig } from "./chat-config";
+import { ChatConfigMemo } from "./chat-config";
 import { setChatInstance } from "./chat-instance";
-import { ChatNode } from "./chat-node";
+import { ChatNodeMemo } from "./chat-node";
 import { getParts } from "./clipboard";
 import { dictateToTextarea } from "./dictation";
 import { getReadableFileSize } from "./file-size";
@@ -675,7 +675,7 @@ export function ChatTree() {
 
   return (
     <ChatAppLayout>
-      <ChatConfig
+      <ChatConfigMemo
         onConnectionsButtonClick={handleConnectionsButtonClick}
         groupedConnections={groupedConnections}
         connectionKey={connectionKey}
@@ -684,7 +684,7 @@ export function ChatTree() {
       />
       <MessageList ref={treeRootRef}>
         {treeNodes.map((node) => (
-          <ChatNode
+          <ChatNodeMemo
             key={node.id}
             node={node}
             onTextChange={handleTextChange}

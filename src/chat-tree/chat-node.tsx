@@ -1,3 +1,4 @@
+import { memo } from "react";
 import styled from "styled-components";
 import type { ChatNode } from "./chat-tree";
 import { getReadableFileSize } from "./file-size";
@@ -30,7 +31,9 @@ export interface ChatNodeProps {
   previewHtml: string;
 }
 
-export function ChatNode(props: ChatNodeProps) {
+export const ChatNodeMemo = memo(ChatNodeInternal);
+
+export function ChatNodeInternal(props: ChatNodeProps) {
   const {
     node,
     onToggleShowMore,
