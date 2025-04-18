@@ -1,7 +1,8 @@
+import { memo } from "react";
 import styled from "styled-components";
-import type { ChatNode } from "./chat-tree";
 import { getReadableFileSize } from "./file-size";
 import { tableStyles } from "./table";
+import type { ChatNode } from "./tree-store";
 
 const roleIcon = {
   system: "⚙️",
@@ -30,7 +31,9 @@ export interface ChatNodeProps {
   previewHtml: string;
 }
 
-export function ChatNode(props: ChatNodeProps) {
+export const ChatNodeMemo = memo(ChatNodeInternal);
+
+export function ChatNodeInternal(props: ChatNodeProps) {
   const {
     node,
     onToggleShowMore,

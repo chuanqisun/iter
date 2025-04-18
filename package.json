@@ -49,6 +49,7 @@
     "openai": "^4.94.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "rxjs": "^7.8.2",
     "shiki": "^3.2.2",
     "styled-components": "^6.1.17"
   }

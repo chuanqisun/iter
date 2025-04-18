@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ChatNode } from "./chat-tree";
+import type { ChatNode } from "./tree-store";
 
 /** id -> output */
 export type OutputMap = Record<string, string>;
