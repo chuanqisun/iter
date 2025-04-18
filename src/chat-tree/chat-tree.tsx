@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import styled from "styled-components";
 import { markdownToHtml, useArtifactActions } from "../artifact/artifact";
 import { getFileAccessPostscript, respondFileAccess, respondFileList } from "../artifact/lib/file-access";
@@ -20,6 +20,7 @@ import { getReadableFileSize } from "./file-size";
 import { autoFocusNthInput } from "./focus";
 import { getCombo } from "./keyboard";
 import { getNextId, getPrevId, getUserNode, INITIAL_NODES, patchNode } from "./tree-helper";
+import { useTreeNodes } from "./tree-store";
 import { useNodeContentTransformStore } from "./use-node-content-transform-store";
 
 export interface ChatNode {
@@ -43,7 +44,7 @@ export interface ChatPart {
 }
 
 export function ChatTree() {
-  const [treeNodes, setTreeNodes] = useState(INITIAL_NODES);
+  const { treeNodes, setTreeNodes } = useTreeNodes({ initialNodes: INITIAL_NODES });
   const treeRootRef = useRef<HTMLDivElement>(null);
   const { connections, getChatStreamProxy } = useConnections();
   const { saveChat, exportChat, loadChat, importChat } = useFileHooks(treeNodes, setTreeNodes);
