@@ -74,6 +74,10 @@ export function ChatTree() {
     [connectionKey.value, getChatStreamProxy, temperature.value, maxTokens.value],
   );
 
+  const groupedConnections = useMemo(() => {
+    return Object.entries(Object.groupBy(connections, (connection) => connection.displayGroup));
+  }, [connections]);
+
   // expose latest chatStreamingProxy to web components
   useEffect(() => {
     const chatStreamProxy = getChatStreamProxy?.(connectionKey.value ?? "");
@@ -81,10 +85,6 @@ export function ChatTree() {
 
     setChatInstance(chatStreamProxy);
   }, [connectionKey]);
-
-  const groupedConnections = useMemo(() => {
-    return Object.entries(Object.groupBy(connections, (connection) => connection.displayGroup));
-  }, [connections]);
 
   // auto resolve mistached connectionKey
   useEffect(() => {
@@ -96,128 +96,6 @@ export function ChatTree() {
     if (!defaultConnection) return;
     connectionKey.replace(defaultConnection.id);
   }, [connectionKey.value, connectionKey.replace, connections]);
-
-  const handleTextChange = useCallback((nodeId: string, content: string) => {
-    setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { content })));
-  }, []);
-
-  const handleCodeBlockChange = useCallback((nodeId: string, code: string, blockIndex: number) => {
-    const multilineTrippleTickCodeBlockPattern = /```.*\n([\s\S]*?)\n```/g;
-
-    const replaceNthMatch = (str: string, regex: RegExp, replacement: string, n: number) => {
-      let i = -1;
-      return str.replace(regex, (match, group1) => {
-        i++;
-        if (i === n) {
-          return match.replace(group1, replacement);
-        }
-        return match;
-      });
-    };
-
-    setTreeNodes((nodes) =>
-      nodes.map(
-        patchNode(
-          (node) => node.id === nodeId,
-          (node) => {
-            const replaced = replaceNthMatch(node.content, multilineTrippleTickCodeBlockPattern, code, blockIndex);
-            return { content: replaced };
-          },
-        ),
-      ),
-    );
-  }, []);
-
-  const handleDelete = useCallback((nodeId: string) => {
-    handleAbort(nodeId);
-
-    // if delete root: only clear its content
-    if (treeNodes$.value[0].id === nodeId) {
-      setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { content: "" })));
-      return;
-    }
-
-    setTreeNodes((nodes) => {
-      const targetIndex = nodes.findIndex((n) => n.id === nodeId);
-      if (targetIndex === -1) return nodes;
-      const newNodes = nodes.filter((n) => n.id !== nodeId);
-
-      // If last node is not user, append a user node
-      if (newNodes.length && newNodes[newNodes.length - 1].role !== "user") {
-        const newUserNode = getUserNode(crypto.randomUUID());
-        return [...newNodes, newUserNode];
-      }
-      return newNodes;
-    });
-  }, []);
-
-  const handleDeleteBelow = useCallback((nodeId: string) => {
-    setTreeNodes((nodes) => {
-      const targetIndex = nodes.findIndex((n) => n.id === nodeId);
-      if (targetIndex === -1) return nodes;
-      const newNodes = nodes.slice(0, targetIndex + 1);
-
-      // Ensure last node is user
-      if (newNodes.length && newNodes[newNodes.length - 1].role !== "user") {
-        const newUserNode = getUserNode(crypto.randomUUID());
-        return [...newNodes, newUserNode];
-      }
-      return newNodes;
-    });
-  }, []);
-
-  const getMessageChain = useCallback((id: string) => {
-    const targetIndex = treeNodes$.value.findIndex((n) => n.id === id);
-    if (targetIndex === -1) return [];
-    return treeNodes$.value
-      .slice(0, targetIndex + 1)
-      .map((node) => {
-        const filePostScript = getFileAccessPostscript(node.files ?? []);
-        const rawContentDataUrl = textToDataUrl(`${node.content}${filePostScript}`);
-
-        const message: GenericMessage = {
-          role: node.role,
-          content: [
-            ...(node.parts ?? []).map((part) => ({
-              name: part.name,
-              type: part.type as any,
-              url: part.url,
-            })),
-            ...(node.content ? ([{ type: "text/plain", url: rawContentDataUrl }] as const) : []),
-          ],
-        };
-
-        return message;
-      })
-      .filter((message) => message.content.length);
-  }, []);
-
-  const handleAbort = useCallback((nodeId: string) => {
-    setTreeNodes((nodes) =>
-      nodes.map(
-        patchNode(
-          (node) => node.id === nodeId,
-          (node) => {
-            if (!node?.abortController) return {};
-            node.abortController.abort();
-
-            return { abortController: undefined };
-          },
-        ),
-      ),
-    );
-  }, []);
-
-  // Nearest user message that can be submitted/stopped
-  const getActiveUserNodeId = useCallback((currentNode?: ChatNode) => {
-    let activeUserNodeId: string | null = null;
-    if (currentNode?.role === "system") {
-      activeUserNodeId = treeNodes$.value.at(1)?.id ?? null;
-    } else if (currentNode?.role === "user") {
-      activeUserNodeId = currentNode.id;
-    }
-    return activeUserNodeId;
-  }, []);
 
   // Speech to text
   useEffect(() => {
@@ -362,6 +240,156 @@ export function ChatTree() {
 
     return () => abortController.abort();
   }, [exportChat, importChat]);
+
+  // expose file access api
+  useEffect(() => {
+    const handleIframeFileAccessRequest = (event: MessageEvent<any>) => {
+      const allFiles = treeNodes$.value.flatMap((node) => node.files ?? []);
+
+      // use reverse to keep the last file
+      const latestFileMap = new Map(
+        allFiles
+          .reverse()
+          .filter((file, index, self) => self.findIndex((f) => f.name === file.name) === index)
+          .reverse()
+          .map((file) => [file.name, file]),
+      );
+
+      respondFileAccess((filename) => latestFileMap.get(filename), event);
+      respondFileList(() => [...latestFileMap.values()], event);
+    };
+
+    window.addEventListener("message", handleIframeFileAccessRequest);
+
+    return () => window.removeEventListener("message", handleIframeFileAccessRequest);
+  }, []);
+
+  // auto focus last textarea on startup
+  useEffect(() => {
+    autoFocusNthInput(-1);
+  }, []);
+
+  const handleTextChange = useCallback((nodeId: string, content: string) => {
+    setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { content })));
+  }, []);
+
+  const handleCodeBlockChange = useCallback((nodeId: string, code: string, blockIndex: number) => {
+    const multilineTrippleTickCodeBlockPattern = /```.*\n([\s\S]*?)\n```/g;
+
+    const replaceNthMatch = (str: string, regex: RegExp, replacement: string, n: number) => {
+      let i = -1;
+      return str.replace(regex, (match, group1) => {
+        i++;
+        if (i === n) {
+          return match.replace(group1, replacement);
+        }
+        return match;
+      });
+    };
+
+    setTreeNodes((nodes) =>
+      nodes.map(
+        patchNode(
+          (node) => node.id === nodeId,
+          (node) => {
+            const replaced = replaceNthMatch(node.content, multilineTrippleTickCodeBlockPattern, code, blockIndex);
+            return { content: replaced };
+          },
+        ),
+      ),
+    );
+  }, []);
+
+  const handleDelete = useCallback((nodeId: string) => {
+    handleAbort(nodeId);
+
+    // if delete root: only clear its content
+    if (treeNodes$.value[0].id === nodeId) {
+      setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { content: "" })));
+      return;
+    }
+
+    setTreeNodes((nodes) => {
+      const targetIndex = nodes.findIndex((n) => n.id === nodeId);
+      if (targetIndex === -1) return nodes;
+      const newNodes = nodes.filter((n) => n.id !== nodeId);
+
+      // If last node is not user, append a user node
+      if (newNodes.length && newNodes[newNodes.length - 1].role !== "user") {
+        const newUserNode = getUserNode(crypto.randomUUID());
+        return [...newNodes, newUserNode];
+      }
+      return newNodes;
+    });
+  }, []);
+
+  const handleDeleteBelow = useCallback((nodeId: string) => {
+    setTreeNodes((nodes) => {
+      const targetIndex = nodes.findIndex((n) => n.id === nodeId);
+      if (targetIndex === -1) return nodes;
+      const newNodes = nodes.slice(0, targetIndex + 1);
+
+      // Ensure last node is user
+      if (newNodes.length && newNodes[newNodes.length - 1].role !== "user") {
+        const newUserNode = getUserNode(crypto.randomUUID());
+        return [...newNodes, newUserNode];
+      }
+      return newNodes;
+    });
+  }, []);
+
+  const getMessageChain = useCallback((id: string) => {
+    const targetIndex = treeNodes$.value.findIndex((n) => n.id === id);
+    if (targetIndex === -1) return [];
+    return treeNodes$.value
+      .slice(0, targetIndex + 1)
+      .map((node) => {
+        const filePostScript = getFileAccessPostscript(node.files ?? []);
+        const rawContentDataUrl = textToDataUrl(`${node.content}${filePostScript}`);
+
+        const message: GenericMessage = {
+          role: node.role,
+          content: [
+            ...(node.parts ?? []).map((part) => ({
+              name: part.name,
+              type: part.type as any,
+              url: part.url,
+            })),
+            ...(node.content ? ([{ type: "text/plain", url: rawContentDataUrl }] as const) : []),
+          ],
+        };
+
+        return message;
+      })
+      .filter((message) => message.content.length);
+  }, []);
+
+  const handleAbort = useCallback((nodeId: string) => {
+    setTreeNodes((nodes) =>
+      nodes.map(
+        patchNode(
+          (node) => node.id === nodeId,
+          (node) => {
+            if (!node?.abortController) return {};
+            node.abortController.abort();
+
+            return { abortController: undefined };
+          },
+        ),
+      ),
+    );
+  }, []);
+
+  // Nearest user message that can be submitted/stopped
+  const getActiveUserNodeId = useCallback((currentNode?: ChatNode) => {
+    let activeUserNodeId: string | null = null;
+    if (currentNode?.role === "system") {
+      activeUserNodeId = treeNodes$.value.at(1)?.id ?? null;
+    } else if (currentNode?.role === "user") {
+      activeUserNodeId = currentNode.id;
+    }
+    return activeUserNodeId;
+  }, []);
 
   const handleRunNode = useCallback(
     async (nodeId: string) => {
@@ -623,34 +651,6 @@ export function ChatTree() {
     } else {
       handleToggleViewFormat(nodeId);
     }
-  }, []);
-
-  // expose file access api
-  useEffect(() => {
-    const allFiles = treeNodes.flatMap((node) => node.files ?? []);
-
-    // use reverse to keep the last file
-    const latestFileMap = new Map(
-      allFiles
-        .reverse()
-        .filter((file, index, self) => self.findIndex((f) => f.name === file.name) === index)
-        .reverse()
-        .map((file) => [file.name, file]),
-    );
-
-    const handleIframeFileAccessRequest = (event: MessageEvent<any>) => {
-      respondFileAccess((filename) => latestFileMap.get(filename), event);
-      respondFileList(() => [...latestFileMap.values()], event);
-    };
-
-    window.addEventListener("message", handleIframeFileAccessRequest);
-
-    return () => window.removeEventListener("message", handleIframeFileAccessRequest);
-  }, [treeNodes]);
-
-  // auto focus last textarea on startup
-  useEffect(() => {
-    autoFocusNthInput(-1);
   }, []);
 
   return (
