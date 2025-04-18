@@ -90,6 +90,7 @@ export class GoogleGenAIProvider implements BaseProvider {
       const { system, messages: googleMessages } = that.getGoogleGenAIMessages(messages);
 
       const model = client.getGenerativeModel({ model: connection.model });
+      const canDisableThinking = connection.model.startsWith("gemini-2.5-flash");
 
       const result = await model.generateContentStream(
         {
@@ -99,6 +100,14 @@ export class GoogleGenAIProvider implements BaseProvider {
             temperature: config?.temperature,
             topP: config?.topP,
             maxOutputTokens: config?.maxTokens,
+            // @ts-ignore ref: https://github.com/googleapis/js-genai/issues/402
+            ...(canDisableThinking
+              ? {
+                  thinkingConfig: {
+                    thinkingBudget: 0,
+                  },
+                }
+              : {}),
           },
         },
         {
