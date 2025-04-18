@@ -16,6 +16,7 @@
 - Bug: trim during generation caused unwanted new nodes
 - Investigate initial script loading size
 - Offload highlighting to worker
+- Migrate to google genai sdk, pending https://github.com/googleapis/js-genai/issues/402
 
 # DONE
 
