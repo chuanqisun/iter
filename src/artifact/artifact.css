@@ -1,6 +1,7 @@
 artifact-element {
   display: block;
   position: relative;
+  min-height: 36px; /* reserve space for the action buttons */
 }
 
 artifact-preview {
