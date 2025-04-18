@@ -33,7 +33,6 @@ export interface ChatNode {
   isCollapsed?: boolean;
   abortController?: AbortController;
   errorMessage?: string;
-  lastSubmittedContent?: string;
 }
 
 export interface ChatPart {
@@ -418,12 +417,7 @@ export function ChatTree() {
 
         // Remove all nodes after activeUserNodeId
         const base = nodes.slice(0, activeUserNodeIndex + 1);
-        return [
-          ...base.map((n, i) =>
-            i === activeUserNodeIndex ? { ...n, lastSubmittedContent: targetNode.content, abortController } : n,
-          ),
-          newAssistantNode,
-        ];
+        return [...base.map((n, i) => (i === activeUserNodeIndex ? { ...n, abortController } : n)), newAssistantNode];
       });
 
       try {
