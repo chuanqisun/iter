@@ -15,20 +15,20 @@ const COLLAPSED_HEIGHT = 72;
 
 export interface ChatNodeProps {
   node: ChatNode;
-  onToggleShowMore: (id: string, options?: { toggleAll?: boolean }) => void;
+  onAbort: (id: string) => void;
+  onCodeBlockChange: (id: string, current: string, index: number) => void;
   onDelete: (id: string) => void;
   onDeleteBelow: (id: string) => void;
-  onToggleViewFormat: (id: string) => void;
-  onTextChange: (id: string, value: string) => void;
-  onRunNode: (id: string) => void;
   onKeydown: (id: string, e: React.KeyboardEvent<HTMLElement>) => void;
   onPaste: (id: string, e: React.ClipboardEvent<HTMLTextAreaElement>) => void;
-  onUploadFiles: (id: string) => void;
+  onPreviewDoubleClick: (id: string, e: React.MouseEvent) => void;
   onRemoveAttachment: (id: string, name: string, url: string) => void;
   onRemoveFile: (id: string, name: string) => void;
-  onCodeBlockChange: (id: string, current: string, index: number) => void;
-  onAbort: (id: string) => void;
-  onPreviewDoubleClick: (id: string, e: React.MouseEvent) => void;
+  onRunNode: (id: string) => void;
+  onTextChange: (id: string, value: string) => void;
+  onToggleShowMore: (id: string, options?: { toggleAll?: boolean }) => void;
+  onToggleViewFormat: (id: string) => void;
+  onUploadFiles: (id: string) => void;
 }
 
 export const ChatNodeMemo = memo(ChatNodeInternal);
@@ -36,20 +36,20 @@ export const ChatNodeMemo = memo(ChatNodeInternal);
 export function ChatNodeInternal(props: ChatNodeProps) {
   const {
     node,
-    onToggleShowMore,
+    onAbort,
+    onCodeBlockChange,
     onDelete,
     onDeleteBelow,
-    onToggleViewFormat,
-    onTextChange,
-    onRunNode,
     onKeydown,
     onPaste,
-    onUploadFiles,
-    onRemoveAttachment,
-    onCodeBlockChange,
-    onAbort,
     onPreviewDoubleClick,
+    onRemoveAttachment,
     onRemoveFile,
+    onRunNode,
+    onTextChange,
+    onToggleShowMore,
+    onToggleViewFormat,
+    onUploadFiles,
   } = props;
 
   return (
