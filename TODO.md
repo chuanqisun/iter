@@ -18,6 +18,7 @@
 - Offload highlighting to worker
 - Migrate to google genai sdk, pending https://github.com/googleapis/js-genai/issues/402
 - Auto scroll to bottom
+- Handle markdown table horizontal overflow
 
 # DONE
 
