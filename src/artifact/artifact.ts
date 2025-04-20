@@ -1,8 +1,4 @@
-import DOMPurity from "dompurify";
-import { Marked } from "marked";
-import markedShiki from "marked-shiki";
 import { useEffect } from "react";
-import { bundledLanguages, createHighlighter } from "shiki/bundle/web";
 import { GenericArtifact } from "./languages/generic";
 import { MermaidArtifact } from "./languages/mermaid";
 import { ScriptArtifact } from "./languages/script";
@@ -12,70 +8,12 @@ import { XmlArtifact } from "./languages/xml";
 import type { CodeEditorElement } from "../code-editor/code-editor-element";
 import "./artifact.css";
 
-export const supportedLanguages = Object.keys(bundledLanguages);
-
 const supportedArtifacts: ArtifactSupport[] = [
   new ScriptArtifact(),
   new XmlArtifact(),
   new MermaidArtifact(),
   new GenericArtifact(),
 ];
-
-async function initializeMarked() {
-  const highlighter = await createHighlighter({
-    langs: supportedLanguages,
-    themes: ["dark-plus"],
-  });
-
-  const marked = await new Marked().use(
-    markedShiki({
-      highlight(code, lang, _props) {
-        const resolvedLang = supportedLanguages.includes(lang) ? lang : "text";
-
-        const highlightedHtml = highlighter.codeToHtml(code, {
-          lang: resolvedLang,
-          theme: "dark-plus",
-        });
-
-        const matchingArtifact = supportedArtifacts.find((art) => art.onResolveLanguage(lang));
-
-        return `
-        <artifact-element lang="${resolvedLang}" data-is-runnable="${!!matchingArtifact?.onRun}">
-          <artifact-source>${highlightedHtml}</artifact-source>  
-          <artifact-focus-trap-element disabled>
-            <div  class="split-layout">
-              <artifact-edit></artifact-edit>
-              <artifact-preview></artifact-preview>
-            </div>
-            <artifact-action>
-              <button data-action="edit">Edit</button>
-              <button class="copy" data-action="copy">
-                <span class="ready">Copy</span>
-                <span class="success">✅ Copied</span>
-              </button>
-              <button data-action="save">Download</button>
-            </artifact-action>
-          </artifact-focus-trap-element>
-        </artifact-element>`;
-      },
-    }),
-  );
-
-  return marked;
-}
-
-const markedAsync = initializeMarked();
-
-export async function markdownToHtml(markdown: string): Promise<string> {
-  const marked = await markedAsync;
-  const dirtyHtml = (await marked.parse(markdown)) as string;
-  const cleanHtml = DOMPurity.sanitize(dirtyHtml, {
-    CUSTOM_ELEMENT_HANDLING: {
-      tagNameCheck: /^artifact-.*/,
-    },
-  });
-  return cleanHtml;
-}
 
 export function useArtifactActions() {
   useEffect(() => {

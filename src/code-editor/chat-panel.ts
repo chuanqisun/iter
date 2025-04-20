@@ -95,7 +95,7 @@ export function chatPanel(): Extension[] {
     const chatView = new EditorView({
       state: EditorState.create({ doc: view.state.doc }), // share doc and nothing else
       parent: chatViewContainer,
-      dispatch: (tr) => syncDispatch(tr, chatView, view),
+      dispatch: (tr) => syncDispatch(tr, chatView, [view]),
     });
 
     const chat = getChatInstance();
