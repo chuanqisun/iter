@@ -3,30 +3,32 @@ import PreviewWorker from "./worker?worker";
 const worker = new PreviewWorker();
 
 /**
- * emit the stream when isBusy is false, skip the value when isBusy is true
- * however, when the stream completes, make sure to emit the last value
+ * doWork is an expensive function. When it is running, skip the stream. But make sure doWork is called with the last value
  */
-export function skipWhenBusy<T>(stream: Observable<T>, isBusy: () => boolean): Observable<T> {
-  return new Observable<T>((subscriber) => {
+export function skipWhenBusy<T, K>(stream: Observable<T>, doWork: (data: T) => Promise<K>): Observable<K> {
+  return new Observable<K>((subscriber) => {
+    let isBusy = false;
     let lastSkippedValue: T | undefined;
     const subscription = stream.subscribe({
-      next: (value) => {
-        if (isBusy()) {
+      next: async (value) => {
+        if (isBusy) {
           lastSkippedValue = value;
         } else {
-          subscriber.next(value);
+          isBusy = true;
           lastSkippedValue = undefined;
+          doWork(value)
+            .then(subscriber.next)
+            .finally(() => (isBusy = false));
         }
       },
       error: (err) => subscriber.error(err),
       complete: () => {
         if (lastSkippedValue !== undefined) {
-          subscriber.next(lastSkippedValue);
+          doWork(lastSkippedValue).then((result) => subscriber.next(result));
         }
         subscriber.complete();
       },
     });
-
     return () => {
       subscription.unsubscribe();
     };

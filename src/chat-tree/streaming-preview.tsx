@@ -1,6 +1,5 @@
 import type { KeyboardEvent, MouseEvent } from "react";
 import { useEffect, useState } from "react";
-import { tap } from "rxjs";
 import { MarkdownPreview } from "./markdown-preview";
 import { markdownToHtml, skipWhenBusy } from "./markdown-preview/worker-proxy";
 import type { ChatNode } from "./tree-store";
@@ -22,21 +21,9 @@ export function StreamingPreivew(props: StreamingPreviewProps) {
       return;
     }
 
-    let isBusy = false;
-    const bufferedContent$ = skipWhenBusy(props.node.content$, () => isBusy);
-
-    const subscription = bufferedContent$
-      .pipe(
-        tap({
-          next: async (content) => {
-            isBusy = true;
-            markdownToHtml(content.snapshot)
-              .then(setHtml)
-              .finally(() => (isBusy = false));
-          },
-        }),
-      )
-      .subscribe();
+    const subscription = skipWhenBusy(props.node.content$, (content) =>
+      markdownToHtml(content.snapshot).then(setHtml),
+    ).subscribe();
 
     return () => {
       subscription.unsubscribe();
