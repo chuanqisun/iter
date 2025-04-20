@@ -6,8 +6,6 @@ import { bundledLanguages, createHighlighter } from "shiki/bundle/web";
 import xss, { escapeAttrValue, whiteList } from "xss";
 import { mermaidLanguages, scriptingLanguages, xmlLanguages } from "../../artifact/languages/runnable-languages";
 
-console.log(whiteList);
-
 const supportedLanguages = Object.keys(bundledLanguages);
 const runnableArtifactLanguages = [...scriptingLanguages, ...mermaidLanguages, ...xmlLanguages];
 
