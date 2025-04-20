@@ -30,15 +30,17 @@ async function initializeMarked() {
   const marked = await new Marked().use(
     markedShiki({
       highlight(code, lang, _props) {
+        const resolvedLang = supportedLanguages.includes(lang) ? lang : "text";
+
         const highlightedHtml = highlighter.codeToHtml(code, {
-          lang: supportedLanguages.includes(lang) ? lang : "text",
+          lang: resolvedLang,
           theme: "dark-plus",
         });
 
         const matchingArtifact = supportedArtifacts.find((art) => art.onResolveLanguage(lang));
 
         return `
-        <artifact-element lang="${lang}" data-is-runnable="${!!matchingArtifact?.onRun}">
+        <artifact-element lang="${resolvedLang}" data-is-runnable="${!!matchingArtifact?.onRun}">
           <artifact-source>${highlightedHtml}</artifact-source>  
           <artifact-focus-trap-element disabled>
             <div  class="split-layout">

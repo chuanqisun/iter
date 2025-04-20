@@ -1,26 +1,27 @@
 # TODO
 
 - Use rxjs to handle streaming
-- Avoid re-rendering using rxjs
-- Allow dynamic role toggle
-- Pin nodes from trim
-- Manually append nodes
-- CPU throttling for markdown rendering
 - Use spawn cursor to allow selection during generation
+- Bug: trim during generation caused unwanted new nodes
+- Allow dynamic role toggle
+- Manually append nodes
+- Pin nodes from trim
+- Code editor in any role
+- CPU throttling for markdown rendering
+- Support model specific options, e.g. thinking budget
 - Busy indicator
 - Token usage indicator
 - Language override for editor
 - Manual code interpreter (with shebang line)
 - Reference pinned code blocks
 - Migrate from styled components to CSS
-- Bug: trim during generation caused unwanted new nodes
 - Investigate initial script loading size
 - Offload highlighting to worker
 - Migrate to google genai sdk, pending https://github.com/googleapis/js-genai/issues/402
-- Support thinking budget
-- Bug: cannot open artifact when it lacks a lang attribute
 
 # DONE
 
+- Bug: cannot open artifact when it lacks a lang attribute
+- Avoid re-rendering using rxjs
 - Refactor tree to be flat array
 - Refactor tree nodes into a reducer or rxjs store
