@@ -5,6 +5,9 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [react()],
   base: "/iter/",
+  worker: {
+    format: "es",
+  },
   build: {
     sourcemap: true,
   },

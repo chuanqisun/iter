@@ -1,8 +1,8 @@
 import type { KeyboardEvent, MouseEvent } from "react";
 import { useEffect, useState } from "react";
-import { Observable, tap } from "rxjs";
-import { markdownToHtml } from "../artifact/artifact";
+import { tap } from "rxjs";
 import { MarkdownPreview } from "./markdown-preview";
+import { markdownToHtml, skipWhenBusy } from "./markdown-preview/worker-proxy";
 import type { ChatNode } from "./tree-store";
 
 export interface StreamingPreviewProps {
@@ -32,11 +32,7 @@ export function StreamingPreivew(props: StreamingPreviewProps) {
             isBusy = true;
             markdownToHtml(content.snapshot)
               .then(setHtml)
-              .finally(() => {
-                setTimeout(() => {
-                  isBusy = false;
-                }, 10); // HACK: give some time for async task to digest
-              });
+              .finally(() => (isBusy = false));
           },
         }),
       )
@@ -60,35 +56,4 @@ export function StreamingPreivew(props: StreamingPreviewProps) {
       }}
     />
   );
-}
-
-/**
- * emit the stream when isBusy is false, skip the value when isBusy is true
- * however, when the stream completes, make sure to emit the last value
- */
-function skipWhenBusy<T>(stream: Observable<T>, isBusy: () => boolean): Observable<T> {
-  return new Observable<T>((subscriber) => {
-    let lastSkippedValue: T | undefined;
-    const subscription = stream.subscribe({
-      next: (value) => {
-        if (isBusy()) {
-          lastSkippedValue = value;
-        } else {
-          subscriber.next(value);
-          lastSkippedValue = undefined;
-        }
-      },
-      error: (err) => subscriber.error(err),
-      complete: () => {
-        if (lastSkippedValue !== undefined) {
-          subscriber.next(lastSkippedValue);
-        }
-        subscriber.complete();
-      },
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  });
 }
