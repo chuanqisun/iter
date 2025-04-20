@@ -6,7 +6,6 @@
 - Manually append nodes
 - Pin nodes from trim
 - Code editor in any role
-- CPU throttling for markdown rendering
 - Support model specific options, e.g. thinking budget
 - Busy indicator
 - Token usage indicator
@@ -15,13 +14,15 @@
 - Reference pinned code blocks
 - Migrate from styled components to CSS
 - Investigate initial script loading size
-- Offload highlighting to worker
 - Migrate to google genai sdk, pending https://github.com/googleapis/js-genai/issues/402
 - Auto scroll to bottom
 - Handle markdown table horizontal overflow
 
 # DONE
 
+- Fixed: mermaid dialog no longer visible
+- Offload highlighting to worker
+- CPU throttling for markdown rendering
 - Use rxjs to handle streaming
 - Use spawn cursor to allow selection during generation
 - Bug: svg cannot be rendered under the xml lang name

@@ -7,7 +7,8 @@ import xss, { escapeAttrValue, whiteList } from "xss";
 import { mermaidLanguages, scriptingLanguages, xmlLanguages } from "../../artifact/languages/runnable-languages";
 
 const supportedLanguages = Object.keys(bundledLanguages);
-const runnableArtifactLanguages = [...scriptingLanguages, ...mermaidLanguages, ...xmlLanguages];
+const runnableArtifactLanguages = new Set([...scriptingLanguages, ...mermaidLanguages, ...xmlLanguages]);
+const editorLanguages = runnableArtifactLanguages.union(new Set(supportedLanguages));
 
 const markedAsync = initializeMarked();
 async function initializeMarked() {
@@ -19,14 +20,16 @@ async function initializeMarked() {
   const marked = await new Marked().use(
     markedShiki({
       highlight(code, lang, _props) {
-        const resolvedLang = supportedLanguages.includes(lang) ? lang : "text";
+        const highlightableLanguage = supportedLanguages.includes(lang) ? lang : "text";
+        const editorLanguage = editorLanguages.has(lang) ? lang : "text";
+
         const highlightedHtml = highlighter.codeToHtml(code, {
-          lang: resolvedLang,
+          lang: highlightableLanguage,
           theme: "dark-plus",
         });
 
         return `
-        <artifact-element lang="${resolvedLang}" data-is-runnable="${runnableArtifactLanguages.includes(resolvedLang)}">  
+        <artifact-element lang="${editorLanguage}" data-is-runnable="${runnableArtifactLanguages.has(lang)}">  
           <artifact-source>${highlightedHtml}</artifact-source>  
           <artifact-focus-trap-element disabled>
             <div class="split-layout">
