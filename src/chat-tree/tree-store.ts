@@ -9,6 +9,7 @@ export interface ChatNode {
   role: "system" | "user" | "assistant";
   content: string;
   content$?: BehaviorSubject<{ snapshot: string; delta: string }>;
+  cachedPreviewHtml?: { key: string; value: string };
   parts?: ChatPart[];
   files?: File[]; // Files for interpreter
   isViewSource?: boolean;

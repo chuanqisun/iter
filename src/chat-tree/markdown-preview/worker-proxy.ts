@@ -10,14 +10,14 @@ export function skipWhenBusy<T, K>(stream: Observable<T>, doWork: (data: T) => P
     let isBusy = false;
     let lastSkippedValue: T | undefined;
     const subscription = stream.subscribe({
-      next: async (value) => {
+      next: (value) => {
         if (isBusy) {
           lastSkippedValue = value;
         } else {
           isBusy = true;
           lastSkippedValue = undefined;
           doWork(value)
-            .then(subscriber.next)
+            .then((result) => subscriber.next(result))
             .finally(() => (isBusy = false));
         }
       },

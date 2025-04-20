@@ -13,16 +13,32 @@ export interface StreamingPreviewProps {
 
 export function StreamingPreivew(props: StreamingPreviewProps) {
   // stream content into markdown preview
-  const [html, setHtml] = useState<string>("");
+  const [html, setHtml] = useState<string>(props.node.cachedPreviewHtml?.value ?? "");
 
   useEffect(() => {
+    const cacheKey = props.node.cachedPreviewHtml?.key;
     if (!props.node.content$) {
-      markdownToHtml(props.node.content).then(setHtml);
+      if (cacheKey === props.node.content) return;
+      // full cache hit, no need to re-render
+
+      markdownToHtml(props.node.content).then((html) => {
+        setHtml(html);
+        props.node.cachedPreviewHtml = {
+          key: props.node.content,
+          value: html,
+        };
+      });
       return;
     }
 
     const subscription = skipWhenBusy(props.node.content$, (content) =>
-      markdownToHtml(content.snapshot).then(setHtml),
+      markdownToHtml(content.snapshot).then((html) => {
+        setHtml(html);
+        props.node.cachedPreviewHtml = {
+          key: content.snapshot,
+          value: html,
+        };
+      }),
     ).subscribe();
 
     return () => {
