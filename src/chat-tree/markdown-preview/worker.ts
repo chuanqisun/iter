@@ -64,6 +64,7 @@ export async function main() {
         div: ["class"],
         span: ["class"],
         pre: ["class", "style"],
+        ol: ["start"],
       },
       onIgnoreTag: function (tag, html, _options) {
         if (tag.startsWith("artifact-")) return html;
