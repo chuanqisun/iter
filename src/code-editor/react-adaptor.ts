@@ -12,6 +12,7 @@ declare module "react" {
         onescape?: (event: Event) => void;
         oncontentchange?: (event: CustomEvent<string>) => void;
         onrun?: (event: CustomEvent<string>) => void;
+        ref?: RefObject<CodeEditorElement | null>;
       };
       "code-block-events": CustomElement<HTMLElement> & {
         oncodeblockchange?: (

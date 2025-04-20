@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { BehaviorSubject, map, scan, Subject } from "rxjs";
+import { patchNode as patchNodeHelper } from "./tree-helper";
 
 export interface ChatNode {
   id: string;
@@ -7,6 +8,7 @@ export interface ChatNode {
   order?: number;
   role: "system" | "user" | "assistant";
   content: string;
+  content$?: BehaviorSubject<{ snapshot: string; delta: string }>;
   parts?: ChatPart[];
   files?: File[]; // Files for interpreter
   isViewSource?: boolean;
@@ -96,9 +98,34 @@ export function useTreeNodes(options?: TreeNodesOptions) {
     }
   }, []);
 
+  const patchNode = useCallback(
+    (id: string, patchValueIdOrFunc: Partial<ChatNode> | ((node: ChatNode) => Partial<ChatNode>)) =>
+      setTreeNodes((prev) => prev.map(patchNodeHelper((node) => node.id === id, patchValueIdOrFunc))),
+    [],
+  );
+
+  const createWriter = useCallback((id: string) => {
+    const node = store.treeNodes$.getValue().find((node) => node.id === id);
+    if (!node) throw new Error(`Node with id ${id} not found`);
+    if (node.content$) throw new Error(`Node with id ${id} already has a content$ stream`);
+
+    const content$ = new BehaviorSubject<{ snapshot: string; delta: string }>({ snapshot: node.content, delta: "" });
+    patchNode(id, { content$ });
+    const write = (delta: string) => content$.next({ snapshot: content$.getValue().snapshot + delta, delta });
+    const close = () => {
+      content$.complete();
+      patchNode(id, { content: content$.getValue().snapshot, content$: undefined });
+    };
+
+    node.content$ = content$;
+    return { write, close };
+  }, []);
+
   return {
     treeNodes,
     treeNodes$: store.treeNodes$,
     setTreeNodes,
+    patchNode,
+    createWriter,
   };
 }

@@ -2,12 +2,15 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirro
 import { markdown } from "@codemirror/lang-markdown";
 import { defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
-import { Compartment, EditorState, type Extension } from "@codemirror/state";
+import { Compartment, EditorSelection, EditorState, type Extension } from "@codemirror/state";
 import { drawSelection, EditorView, highlightSpecialChars, keymap } from "@codemirror/view";
 import { githubDark } from "@uiw/codemirror-theme-github/src/index.ts";
 import { chatPanel } from "./chat-panel";
 
+import { Subject, tap } from "rxjs";
+import { chatKeymap } from "./chat-keymap";
 import "./code-editor-element.css";
+import { syncDispatch } from "./sync";
 
 const dynamicLanguage = new Compartment();
 const dynamicReadonly = new Compartment();
@@ -20,6 +23,7 @@ export class CodeEditorElement extends HTMLElement {
   static observedAttributes = ["data-lang", "data-value", "data-readonly"];
 
   private editorView: EditorView | null = null;
+  private cursorViews: EditorView[] = [];
 
   private extensions: Extension[] = [
     highlightSpecialChars(),
@@ -28,43 +32,7 @@ export class CodeEditorElement extends HTMLElement {
     syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
     ...chatPanel(),
     EditorView.lineWrapping,
-    keymap.of([
-      {
-        key: "Ctrl-Enter",
-        mac: "Meta-Enter",
-        run: () => {
-          this.dispatchEvent(new CustomEvent("run", { detail: this.value }));
-          return true;
-        },
-      },
-      {
-        key: "Enter",
-        run: () => {
-          if (this.hasAttribute("data-readonly")) {
-            this.dispatchEvent(new Event("enterreadonly"));
-            return true;
-          }
-          return false;
-        },
-      },
-      {
-        key: "Escape",
-        run: (view) => {
-          // if there is selection, collapse to head
-          if (!view.state.selection.main.empty) return false;
-
-          if (this.hasAttribute("data-readonly")) {
-            this.dispatchEvent(new Event("escapereadonly"));
-          } else {
-            this.dispatchEvent(new Event("escape"));
-          }
-          return true;
-        },
-      },
-      ...defaultKeymap,
-      ...historyKeymap,
-      indentWithTab,
-    ]),
+    keymap.of([...chatKeymap(this), ...defaultKeymap, ...historyKeymap, indentWithTab]),
     githubDark,
     dynamicReadonly.of([]),
     dynamicLanguage.of([]),
@@ -78,6 +46,7 @@ export class CodeEditorElement extends HTMLElement {
   connectedCallback() {
     this.editorView = new EditorView({
       extensions: [...this.extensions],
+      dispatch: (tr) => syncDispatch(tr, this.editorView!, this.cursorViews),
       parent: this,
     });
 
@@ -154,6 +123,59 @@ export class CodeEditorElement extends HTMLElement {
         insert: text,
       },
     });
+  }
+
+  spawnCursor(options?: { selection?: EditorSelection }) {
+    if (!this.editorView) {
+      throw new Error("EditorView not initialized");
+    }
+
+    const cursorEditor = document.createElement("div");
+    const cursorView = new EditorView({
+      state: EditorState.create({ doc: this.editorView.state.doc }), // share doc and nothing else
+      parent: cursorEditor,
+      dispatch: (tr) => syncDispatch(tr, cursorView, [this.editorView!]),
+    });
+
+    this.cursorViews.push(cursorView);
+
+    const initialSelection = options?.selection ?? this.editorView.state.selection.main;
+
+    // initial selection
+    cursorView.dispatch({ selection: initialSelection });
+
+    const cursorInput$ = new Subject();
+    cursorInput$
+      .pipe(
+        tap((chunk: any) => {
+          cursorView.dispatch({
+            changes: { from: cursorView.state.selection.main.from, insert: chunk },
+            selection: {
+              anchor: cursorView.state.selection.main.from + chunk.length,
+              head: cursorView.state.selection.main.from + chunk.length,
+            },
+          });
+        }),
+        tap({
+          finalize: () => {
+            this.cursorViews = this.cursorViews.filter((view) => view !== cursorView);
+            cursorView.destroy();
+          },
+        }),
+      )
+      .subscribe();
+
+    const replaceAll = (text: string) => {
+      cursorView.dispatch({
+        changes: { from: 0, to: cursorView.state.doc.length, insert: text },
+        selection: { anchor: text.length, head: text.length },
+      });
+    };
+
+    const write = (text: string) => cursorInput$.next(text);
+    const close = () => cursorInput$.complete();
+
+    return { write, close, replaceAll };
   }
 
   appendSpeech(result: { previous: string; replace: string }) {

@@ -1,7 +1,8 @@
 import { memo } from "react";
 import styled from "styled-components";
 import { getReadableFileSize } from "./file-size";
-import { tableStyles } from "./table";
+import { StreamingEditor } from "./streaming-editor";
+import { StreamingPreivew } from "./streaming-preview";
 import type { ChatNode } from "./tree-store";
 
 const roleIcon = {
@@ -20,7 +21,7 @@ export interface ChatNodeProps {
   onToggleViewFormat: (id: string) => void;
   onTextChange: (id: string, value: string) => void;
   onRunNode: (id: string) => void;
-  onKeydown: (id: string, e: React.KeyboardEvent<HTMLTextAreaElement | HTMLDivElement>) => void;
+  onKeydown: (id: string, e: React.KeyboardEvent<HTMLElement>) => void;
   onPaste: (id: string, e: React.ClipboardEvent<HTMLTextAreaElement>) => void;
   onUploadFiles: (id: string) => void;
   onRemoveAttachment: (id: string, name: string, url: string) => void;
@@ -28,7 +29,6 @@ export interface ChatNodeProps {
   onCodeBlockChange: (id: string, current: string, index: number) => void;
   onAbort: (id: string) => void;
   onPreviewDoubleClick: (id: string, e: React.MouseEvent) => void;
-  previewHtml: string;
 }
 
 export const ChatNodeMemo = memo(ChatNodeInternal);
@@ -50,7 +50,6 @@ export function ChatNodeInternal(props: ChatNodeProps) {
     onAbort,
     onPreviewDoubleClick,
     onRemoveFile,
-    previewHtml,
   } = props;
 
   return (
@@ -175,34 +174,20 @@ export function ChatNodeInternal(props: ChatNodeProps) {
           ) : (
             <>
               {node.isViewSource ? (
-                <code-editor-element
-                  data-autofocus
-                  data-value={node.content}
-                  data-lang="md"
-                  style={
-                    {
-                      "--max-height": node.isCollapsed ? `${COLLAPSED_HEIGHT}px` : undefined,
-                    } as any
-                  }
-                  onescape={() => onToggleViewFormat(node.id)}
-                  oncontentchange={(e) => onTextChange(node.id, e.detail)}
-                ></code-editor-element>
+                <StreamingEditor
+                  node={node}
+                  collapsedHeight={COLLAPSED_HEIGHT}
+                  onTextChange={onTextChange}
+                  onToggleViewFormat={onToggleViewFormat}
+                />
               ) : (
-                <>
-                  <MarkdownPreview
-                    tabIndex={0}
-                    className="js-focusable"
-                    onKeyDown={(e) => onKeydown(node.id, e)}
-                    onDoubleClick={(e) => onPreviewDoubleClick(node.id, e)}
-                    id={node.id}
-                    $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}
-                    dangerouslySetInnerHTML={{
-                      __html: previewHtml,
-                    }}
-                  />
-                </>
+                <StreamingPreivew
+                  node={node}
+                  onKeyDown={(e) => onKeydown(node.id, e)}
+                  onDoubleClick={(e) => onPreviewDoubleClick(node.id, e)}
+                  collapsedHeight={COLLAPSED_HEIGHT}
+                />
               )}
-
               {node.errorMessage ? (
                 <ErrorMessage>
                   {node.content.length ? <br /> : null}❌ {node.errorMessage}
@@ -342,48 +327,4 @@ const AttachmentFileName = styled.div`
 const AttachmentFileSize = styled.div`
   opacity: 0.625;
   font-size: 12px;
-`;
-
-const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
-  min-height: 31px; // match that of single line textarea
-  overflow: auto;
-  ${(props) => props.$maxHeight && `max-height: ${props.$maxHeight}px;`}
-  padding: var(--input-padding-block) var(--input-padding-inline);
-  line-height: var(--text-line-height);
-  border-width: var(--input-border-width);
-  border-radius: 2px;
-  border-style: solid;
-  border-color: var(--readonly-text-border-color);
-  border-color: transparent;
-  background-color: var(--readonly-text-background);
-
-  & > * + * {
-    margin-top: 0.5rem;
-  }
-
-  hr {
-    border: none;
-    border-bottom: 1px solid GrayText;
-  }
-
-  code:not(pre > *) {
-    background-color: var(--inline-code-background);
-    font-family: var(--monospace-font);
-    font-size: 14px;
-    padding: 0 2px;
-  }
-
-  .shiki {
-    overflow-x: auto;
-    padding: 8px;
-    line-height: var(--code-line-height);
-    color-scheme: dark;
-
-    code {
-      font-size: 14px;
-      font-family: var(--monospace-font);
-    }
-  }
-
-  ${tableStyles}
 `;

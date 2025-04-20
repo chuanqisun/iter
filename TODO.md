@@ -4,6 +4,7 @@
 - Use spawn cursor to allow selection during generation
 - Bug: trim during generation caused unwanted new nodes
 - Allow dynamic role toggle
+- Sticky view/edit mode for each node
 - Manually append nodes
 - Pin nodes from trim
 - Code editor in any role
