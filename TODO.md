@@ -17,6 +17,7 @@
 - Migrate to google genai sdk, pending https://github.com/googleapis/js-genai/issues/402
 - Auto scroll to bottom
 - Handle markdown table horizontal overflow
+- Code block change tracking should use precise positions rather than regex matching
 
 # DONE
 

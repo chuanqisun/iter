@@ -26,8 +26,9 @@ export const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
   code:not(pre > *) {
     background-color: var(--inline-code-background);
     font-family: var(--monospace-font);
-    font-size: 14px;
-    padding: 0 2px;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 2px 4px;
   }
 
   .shiki {

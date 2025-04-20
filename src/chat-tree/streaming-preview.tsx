@@ -44,7 +44,7 @@ export function StreamingPreivew(props: StreamingPreviewProps) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [props.node.content$]);
+  }, [props.node.content$, props.node.content]);
 
   return (
     <MarkdownPreview
