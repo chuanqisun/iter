@@ -21,6 +21,7 @@
 
 # DONE
 
+- Bug: svg cannot be rendered under the xml lang name
 - Bug: cannot open artifact when it lacks a lang attribute
 - Avoid re-rendering using rxjs
 - Refactor tree to be flat array
