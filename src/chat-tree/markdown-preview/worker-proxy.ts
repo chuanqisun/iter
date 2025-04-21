@@ -4,6 +4,9 @@ const worker = new PreviewWorker();
 
 /**
  * doWork is an expensive function. When it is running, skip the stream. But make sure doWork is called with the last value
+ * this assumes producer is faster than consumer
+ * and the work will be completed in the order of the input stream
+ * input stream is finite, and will complete
  */
 export function skipWhenBusy<T, K>(stream: Observable<T>, doWork: (data: T) => Promise<K>): Observable<K> {
   return new Observable<K>((subscriber) => {
@@ -22,11 +25,14 @@ export function skipWhenBusy<T, K>(stream: Observable<T>, doWork: (data: T) => P
         }
       },
       error: (err) => subscriber.error(err),
-      complete: () => {
+      complete: async () => {
         if (lastSkippedValue !== undefined) {
-          doWork(lastSkippedValue).then((result) => subscriber.next(result));
+          doWork(lastSkippedValue)
+            .then((result) => subscriber.next(result))
+            .finally(() => subscriber.complete());
+        } else {
+          subscriber.complete();
         }
-        subscriber.complete();
       },
     });
     return () => {
