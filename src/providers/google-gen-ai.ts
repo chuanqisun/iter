@@ -1,4 +1,4 @@
-import type { Content, InlineDataPart, TextPart } from "@google/generative-ai";
+import type { Content, Part } from "@google/genai";
 import { dataUrlToText } from "../storage/codec";
 import type {
   BaseConnection,
@@ -84,39 +84,28 @@ export class GoogleGenAIProvider implements BaseProvider {
     const that = this;
 
     return async function* ({ messages, abortSignal, ...config }: GenericChatParams) {
-      const GoogleGenerativeAI = await import("@google/generative-ai").then((res) => res.GoogleGenerativeAI);
-      const client = new GoogleGenerativeAI(connection.apiKey);
+      const GoogleGenAI = await import("@google/genai").then((res) => res.GoogleGenAI);
+      const client = new GoogleGenAI({ apiKey: connection.apiKey });
 
       const { system, messages: googleMessages } = that.getGoogleGenAIMessages(messages);
 
-      const model = client.getGenerativeModel({ model: connection.model });
       const canDisableThinking = connection.model.startsWith("gemini-2.5-flash");
 
-      const result = await model.generateContentStream(
-        {
+      const result = await client.models.generateContentStream({
+        model: connection.model,
+        contents: googleMessages,
+        config: {
           systemInstruction: system,
-          contents: googleMessages,
-          generationConfig: {
-            temperature: config?.temperature,
-            topP: config?.topP,
-            maxOutputTokens: config?.maxTokens,
-            // @ts-ignore ref: https://github.com/googleapis/js-genai/issues/402
-            ...(canDisableThinking
-              ? {
-                  thinkingConfig: {
-                    thinkingBudget: 0,
-                  },
-                }
-              : {}),
-          },
+          abortSignal,
+          temperature: config?.temperature,
+          topP: config?.topP,
+          maxOutputTokens: config?.maxTokens,
+          thinkingConfig: canDisableThinking ? { thinkingBudget: 0 } : undefined,
         },
-        {
-          signal: abortSignal,
-        },
-      );
+      });
 
-      for await (const message of result.stream) {
-        const chunk = message.text();
+      for await (const message of result) {
+        const chunk = message.text;
         if (chunk) yield chunk;
       }
     };
@@ -158,7 +147,7 @@ export class GoogleGenAIProvider implements BaseProvider {
             case "text/plain": {
               return {
                 text: dataUrlToText(part.url),
-              } satisfies TextPart;
+              } satisfies Part;
             }
             case "image/gif":
             case "image/png":
@@ -166,7 +155,7 @@ export class GoogleGenAIProvider implements BaseProvider {
             case "application/pdf": {
               return {
                 inlineData: this.dataUrlToInlineDataPart(part.url),
-              } satisfies InlineDataPart;
+              } satisfies Part;
             }
             default: {
               console.warn(`Unsupported content type: ${part.type}`);

@@ -14,13 +14,13 @@
 - Reference pinned code blocks
 - Migrate from styled components to CSS
 - Investigate initial script loading size
-- Migrate to google genai sdk, pending https://github.com/googleapis/js-genai/issues/402
 - Auto scroll to bottom
 - Handle markdown table horizontal overflow
 - Code block change tracking should use precise positions rather than regex matching
 
 # DONE
 
+- Migrate to google genai sdk, pending https://github.com/googleapis/js-genai/issues/402
 - Fixed: mermaid dialog no longer visible
 - Offload highlighting to worker
 - CPU throttling for markdown rendering
