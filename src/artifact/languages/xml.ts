@@ -2,6 +2,7 @@ import { embedFileAccessToDocument, injectIframeFileAccessToDocument } from "../
 import { runIframe } from "../lib/run-iframe";
 import { saveTextFile } from "../lib/save-text-file";
 import { GenericArtifact } from "./generic";
+import { xmlLanguages } from "./runnable-languages";
 import type { ArtifactContext } from "./type";
 
 const extensionToMimeType: Record<string, string> = {
@@ -12,7 +13,7 @@ const extensionToMimeType: Record<string, string> = {
 
 export class XmlArtifact extends GenericArtifact {
   onResolveLanguage(lang: string) {
-    return ["html", "xml", "svg"].includes(lang) ? lang : undefined;
+    return xmlLanguages.includes(lang) ? lang : undefined;
   }
 
   onRun({ trigger, code, lang }: ArtifactContext) {

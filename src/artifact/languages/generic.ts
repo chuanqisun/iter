@@ -1,7 +1,8 @@
-import { supportedLanguages } from "../artifact";
+import { bundledLanguages } from "shiki/bundle/web";
 import { saveTextFile } from "../lib/save-text-file";
 import type { ArtifactContext, ArtifactSupport } from "./type";
 
+const supportedLanguages = Object.keys(bundledLanguages);
 const timers = new WeakMap<Element, number>();
 
 export class GenericArtifact implements ArtifactSupport {

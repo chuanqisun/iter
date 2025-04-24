@@ -3,11 +3,12 @@ import { embedFileAccessToDocument, injectIframeFileAccessToDocument } from "../
 import { runIframe } from "../lib/run-iframe";
 import { saveTextFile } from "../lib/save-text-file";
 import { GenericArtifact } from "./generic";
+import { scriptingLanguages } from "./runnable-languages";
 import type { ArtifactContext } from "./type";
 
 export class ScriptArtifact extends GenericArtifact {
   onResolveLanguage(lang: string): string | undefined {
-    return ["typescript", "javascript", "jsx", "tsx"].includes(lang) ? lang : undefined;
+    return scriptingLanguages.includes(lang) ? lang : undefined;
   }
 
   onRun({ trigger, code }: ArtifactContext) {

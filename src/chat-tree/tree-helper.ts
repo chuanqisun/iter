@@ -18,7 +18,7 @@ export function getUserNode(id: string): ChatNode {
 
 export function patchNode(
   predicate: (node: ChatNode) => boolean,
-  patch: Partial<ChatNode> | ((node: ChatNode) => Partial<ChatNode>),
+  patch: Partial<Omit<ChatNode, "id">> | ((node: ChatNode) => Partial<Omit<ChatNode, "id">>),
 ) {
   return (candidateNode: ChatNode) => {
     if (predicate(candidateNode)) {

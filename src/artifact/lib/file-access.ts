@@ -18,7 +18,7 @@ export function injectIframeFileAccessToDocument(html: string) {
   if (insertPosition === -1) insertPosition = html.indexOf("</head>");
   if (insertPosition < 0) {
     console.warn("No <script> or </head> found in the HTML code");
-    return;
+    return html;
   }
 
   const injectedCode =

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import styled from "styled-components";
-import { markdownToHtml, useArtifactActions } from "../artifact/artifact";
+import { useArtifactActions } from "../artifact/artifact";
 import { getFileAccessPostscript, respondFileAccess, respondFileList } from "../artifact/lib/file-access";
 import type { CodeEditorElement } from "../code-editor/code-editor-element";
 import { type GenericMessage } from "../providers/base";
@@ -21,10 +21,9 @@ import { autoFocusNthInput } from "./focus";
 import { getCombo } from "./keyboard";
 import { getNextId, getPrevId, getUserNode, INITIAL_NODES, patchNode } from "./tree-helper";
 import { useTreeNodes, type ChatNode } from "./tree-store";
-import { useNodeContentTransformStore } from "./use-node-content-transform-store";
 
 export function ChatTree() {
-  const { treeNodes, setTreeNodes, treeNodes$ } = useTreeNodes({ initialNodes: INITIAL_NODES });
+  const { treeNodes, setTreeNodes, treeNodes$, createWriter } = useTreeNodes({ initialNodes: INITIAL_NODES });
   const treeRootRef = useRef<HTMLDivElement>(null);
   const { connections, getChatStreamProxy } = useConnections();
   const { saveChat, exportChat, loadChat, importChat } = useFileHooks(treeNodes, setTreeNodes);
@@ -52,9 +51,6 @@ export function ChatTree() {
     encode: String,
     decode: Number,
   });
-
-  const assistantNodes = useMemo(() => treeNodes.filter((node) => node.role === "assistant"), [treeNodes]);
-  const previews = useNodeContentTransformStore(assistantNodes, markdownToHtml);
 
   useArtifactActions();
   useRouteCache({ parameters: ["connection", "temperature", "max_tokens"] });
@@ -422,15 +418,12 @@ export function ChatTree() {
 
       try {
         const stream = chat(messages, abortController.signal);
-        for await (const item of stream) {
-          setTreeNodes((nodes) =>
-            nodes.map(
-              patchNode(
-                (node) => node.id === newAssistantNode.id,
-                (node) => ({ content: node.content + item }),
-              ),
-            ),
-          );
+        const writer = createWriter(newAssistantNode.id);
+
+        try {
+          for await (const item of stream) writer.write(item);
+        } finally {
+          writer.close();
         }
 
         setTreeNodes((nodes) => {
@@ -455,7 +448,7 @@ export function ChatTree() {
   );
 
   const handleKeydown = useCallback(
-    async (nodeId: string, e: React.KeyboardEvent<HTMLTextAreaElement | HTMLDivElement>) => {
+    async (nodeId: string, e: React.KeyboardEvent<HTMLElement>) => {
       const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
       if (!targetNode) return;
 
@@ -681,7 +674,6 @@ export function ChatTree() {
             onToggleShowMore={handleToggleShowMore}
             onPreviewDoubleClick={handlePreviewDoubleClick}
             onAbort={handleAbort}
-            previewHtml={previews[node.id] ?? ""}
           />
         ))}
       </MessageList>
