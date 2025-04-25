@@ -1,6 +1,5 @@
 # TODO
 
-- Keyboard navigation for chat item menu
 - Bug: trim during generation caused unwanted new nodes
 - Allow dynamic role toggle
 - Sticky view/edit mode for each node
@@ -18,9 +17,11 @@
 - Auto scroll to bottom
 - Handle markdown table horizontal overflow
 - Code block change tracking should use precise positions rather than regex matching
+- Up/down arrow for speech chat item (including menu actions) navigation
 
 # DONE
 
+- Keyboard navigation for chat item menu
 - Migrate to google genai sdk, pending https://github.com/googleapis/js-genai/issues/402
 - Fixed: mermaid dialog no longer visible
 - Offload highlighting to worker

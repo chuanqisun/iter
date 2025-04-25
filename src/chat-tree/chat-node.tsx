@@ -1,6 +1,7 @@
-import { memo } from "react";
+import { memo, useEffect, useRef } from "react";
 import styled from "styled-components";
 import { getReadableFileSize } from "./file-size";
+import { getCombo } from "./keyboard";
 import { StreamingEditor } from "./streaming-editor";
 import { StreamingPreivew } from "./streaming-preview";
 import type { ChatNode } from "./tree-store";
@@ -52,46 +53,115 @@ export function ChatNodeInternal(props: ChatNodeProps) {
     onUploadFiles,
   } = props;
 
+  const tabCyclingContainer = useRef<HTMLDivElement>(null);
+
+  // Manage focus cycling
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    // assign tabindex -1 to all the elements
+    tabCyclingContainer.current
+      ?.querySelectorAll<HTMLElement>(`[data-managed-focus="message-action"]`)
+      .forEach((el, i) => {
+        el.setAttribute("tabindex", i === 0 ? "0" : "-1");
+      });
+
+    tabCyclingContainer.current?.addEventListener(
+      "keydown",
+      (e) => {
+        // make sure the event is triggered by some managed focus element
+        if (!e.target || !(e.target as HTMLElement).hasAttribute("data-managed-focus")) return;
+
+        const combo = getCombo(e);
+
+        // left/right arrow key only
+        if (combo === "arrowleft" || combo === "arrowright") {
+          const focusableElements = Array.from(
+            tabCyclingContainer.current?.querySelectorAll<HTMLElement>("[data-managed-focus]") ?? [],
+          );
+          const currentIndex = focusableElements.findIndex((el) => el === document.activeElement);
+          const nextIndex = (currentIndex + (combo === "arrowleft" ? -1 : 1)) % focusableElements.length;
+          if (nextIndex < 0) {
+            focusableElements[focusableElements.length - 1].focus();
+          } else {
+            focusableElements[nextIndex].focus();
+          }
+          e.preventDefault();
+        }
+      },
+      {
+        signal: abortController.signal,
+      },
+    );
+
+    return () => abortController.abort();
+  }, []);
+
   return (
     <Thread key={node.id}>
-      <MessageLayout className="js-message">
-        <Avatar onClick={(e) => onToggleShowMore(node.id, e.ctrlKey ? { toggleAll: true } : undefined)}>
+      <MessageLayout className="js-message" ref={tabCyclingContainer}>
+        <Avatar
+          data-managed-focus="message-action"
+          onClick={(e) => onToggleShowMore(node.id, e.ctrlKey ? { toggleAll: true } : undefined)}
+        >
           <AvatarIcon title={node.role}>{roleIcon[node.role]}</AvatarIcon>
         </Avatar>
         <MessageWithActions>
           {node.role === "system" ? (
             <MessageActions>
-              <button onClick={() => onDelete(node.id)}>Delete</button>
+              <button data-managed-focus="message-action" onClick={() => onDelete(node.id)}>
+                Delete
+              </button>
               <span> · </span>
-              <button onClick={() => onDeleteBelow(node.id)}>Trim</button>
+              <button data-managed-focus="message-action" onClick={() => onDeleteBelow(node.id)}>
+                Trim
+              </button>
               <span> · </span>
-              <button onClick={() => onToggleViewFormat(node.id)}>{node.isViewSource ? "Chat" : "Code"}</button>
+              <button data-managed-focus="message-action" onClick={() => onToggleViewFormat(node.id)}>
+                {node.isViewSource ? "Chat" : "Code"}
+              </button>
             </MessageActions>
           ) : null}
           {node.role === "user" ? (
             <MessageActions>
               {node.abortController ? (
                 <>
-                  <button onClick={() => onAbort(node.id)}>Stop</button>
+                  <button data-managed-focus="message-action" onClick={() => onAbort(node.id)}>
+                    Stop
+                  </button>
                   <span> · </span>
                 </>
               ) : null}
-              <button onClick={() => onDelete(node.id)}>Delete</button>
+              <button data-managed-focus="message-action" onClick={() => onDelete(node.id)}>
+                Delete
+              </button>
               <span> · </span>
-              <button onClick={() => onDeleteBelow(node.id)}>Trim</button>
+              <button data-managed-focus="message-action" onClick={() => onDeleteBelow(node.id)}>
+                Trim
+              </button>
               <span> · </span>
-              <button onClick={() => onUploadFiles(node.id)}>Upload</button>
+              <button data-managed-focus="message-action" onClick={() => onUploadFiles(node.id)}>
+                Upload
+              </button>
               <span> · </span>
-              <button onClick={() => onToggleViewFormat(node.id)}>{node.isViewSource ? "Chat" : "Code"}</button>
+              <button data-managed-focus="message-action" onClick={() => onToggleViewFormat(node.id)}>
+                {node.isViewSource ? "Chat" : "Code"}
+              </button>
             </MessageActions>
           ) : null}
           {node.role === "assistant" ? (
             <MessageActions>
-              <button onClick={() => onDelete(node.id)}>Delete</button>
+              <button data-managed-focus="message-action" onClick={() => onDelete(node.id)}>
+                Delete
+              </button>
               <span> · </span>
-              <button onClick={() => onDeleteBelow(node.id)}>Trim</button>
+              <button data-managed-focus="message-action" onClick={() => onDeleteBelow(node.id)}>
+                Trim
+              </button>
               <span> · </span>
-              <button onClick={() => onToggleViewFormat(node.id)}>{node.isViewSource ? "View" : "Edit"}</button>
+              <button data-managed-focus="message-action" onClick={() => onToggleViewFormat(node.id)}>
+                {node.isViewSource ? "View" : "Edit"}
+              </button>
             </MessageActions>
           ) : null}
           <code-block-events
