@@ -3,7 +3,8 @@ import { tableStyles } from "./table";
 
 export const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
   min-height: 31px; // match that of single line textarea
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: ${(props) => (props.$maxHeight ? "scroll" : "auto")};
   ${(props) => props.$maxHeight && `max-height: ${props.$maxHeight}px;`}
   padding: var(--input-padding-block) var(--input-padding-inline);
   line-height: var(--text-line-height);
