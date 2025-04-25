@@ -12,6 +12,15 @@ const roleIcon = {
   assistant: "🤖",
 };
 
+const roleDislayName: Record<string, string> = {
+  system: "System",
+  developer: "Developer",
+  model: "Model",
+  assistant: "Assistant",
+  user: "User",
+  tool: "Tool",
+};
+
 const COLLAPSED_HEIGHT = 72;
 
 export interface ChatNodeProps {
@@ -56,15 +65,6 @@ export function ChatNodeInternal(props: ChatNodeProps) {
   } = props;
 
   const tabCyclingContainer = useRef<HTMLDivElement>(null);
-
-  const displayRoleName: Record<string, string> = {
-    system: "System",
-    developer: "Developer",
-    model: "Model",
-    assistant: "Model",
-    user: "User",
-    tool: "Tool",
-  };
 
   // Manage focus cycling
   useEffect(() => {
@@ -115,12 +115,14 @@ export function ChatNodeInternal(props: ChatNodeProps) {
           data-managed-focus="message-action"
           onClick={(e) => onToggleShowMore(node.id, e.ctrlKey ? { toggleAll: true } : undefined)}
         >
-          <AvatarIcon title={node.role}>{roleIcon[node.role]}</AvatarIcon>
+          <AvatarIcon title={`${node.isCollapsed ? "Expand" : "Collapse"} ${roleDislayName[node.role]} message`}>
+            {roleIcon[node.role]}
+          </AvatarIcon>
         </Avatar>
         <MessageWithActions>
           {node.role === "system" ? (
             <MessageActions>
-              <button data-managed-focus="message-action">{displayRoleName[node.role]}</button>
+              <button data-managed-focus="message-action">{roleDislayName[node.role]}</button>
               <span> · </span>
               <button data-managed-focus="message-action" onClick={() => onDelete(node.id)}>
                 Delete
@@ -138,7 +140,7 @@ export function ChatNodeInternal(props: ChatNodeProps) {
           {node.role === "user" || node.role === "assistant" ? (
             <MessageActions>
               <button data-managed-focus="message-action" onClick={() => onToggleRole(node.id)}>
-                {displayRoleName[node.role]}
+                {roleDislayName[node.role]}
               </button>
               <span> · </span>
               <button data-managed-focus="message-action" onClick={() => onDelete(node.id)}>
