@@ -1,5 +1,6 @@
 # TODO
 
+- Keyboard navigation for chat item menu
 - Bug: trim during generation caused unwanted new nodes
 - Allow dynamic role toggle
 - Sticky view/edit mode for each node
