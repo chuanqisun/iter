@@ -565,16 +565,13 @@ export function ChatTree() {
   }, []);
 
   const handleUploadFiles = useCallback(async (nodeId: string) => {
-    const activeUserNodeId = getActiveUserNodeId(treeNodes$.value.find((node) => node.id === nodeId));
-    if (!activeUserNodeId) return;
-
     const files = await uploadFiles({ multiple: true });
 
     if (!files.length) return;
     setTreeNodes((nodes) =>
       nodes.map(
         patchNode(
-          (node) => node.id === activeUserNodeId,
+          (node) => node.id === nodeId,
           (node) => {
             const existingFileMap = new Map(node.files?.map((file) => [file.name, file]));
             files.forEach((file) => {

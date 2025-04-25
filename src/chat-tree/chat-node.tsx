@@ -172,9 +172,9 @@ export function ChatNodeInternal(props: ChatNodeProps) {
           <code-block-events
             oncodeblockchange={(e) => onCodeBlockChange(node.id, e.detail.current, e.detail.index)}
           ></code-block-events>
-          {node.role === "user" || node.role === "system" ? (
-            <>
-              {node.isViewSource ? (
+          <>
+            {node.role === "user" || node.role === "system" ? (
+              node.isViewSource ? (
                 <code-editor-element
                   data-autofocus
                   data-value={node.content}
@@ -207,69 +207,60 @@ export function ChatNodeInternal(props: ChatNodeProps) {
                       : "System message"
                   }
                 />
-              )}
-              {node.files?.length || node.parts?.length ? (
-                <AttachmentList>
-                  {node.parts
-                    ?.filter((part) => part.type.startsWith("image/"))
-                    ?.map((part) => (
-                      <AttachmentPreview
-                        key={part.url}
-                        onClick={(_) => onRemoveAttachment(node.id, part.name, part.url)}
-                      >
-                        <img key={part.url} src={part.url} alt="attachment" />
-                      </AttachmentPreview>
-                    ))}
+              )
+            ) : node.isViewSource ? (
+              <StreamingEditor
+                node={node}
+                collapsedHeight={COLLAPSED_HEIGHT}
+                onTextChange={onTextChange}
+                onToggleViewFormat={onToggleViewFormat}
+              />
+            ) : (
+              <StreamingPreivew
+                node={node}
+                onKeyDown={(e) => onKeydown(node.id, e)}
+                onDoubleClick={(e) => onPreviewDoubleClick(node.id, e)}
+                collapsedHeight={COLLAPSED_HEIGHT}
+              />
+            )}
 
-                  {node.parts
-                    ?.filter((part) => !part.type.startsWith("image/"))
-                    ?.map((part) => (
-                      <AttachmentPreview
-                        key={part.url}
-                        onClick={(_) => onRemoveAttachment(node.id, part.name, part.url)}
-                      >
-                        <AttachmentFileName title={`${part.name}${part.type ? ` (${part.type})` : ""}`}>
-                          {part.name}
-                        </AttachmentFileName>
-                        <AttachmentFileSize>{getReadableFileSize(part.size)} inlined</AttachmentFileSize>
-                      </AttachmentPreview>
-                    ))}
-
-                  {node.files?.map((file) => (
-                    <AttachmentPreview key={file.name} onClick={(_) => onRemoveFile(node.id, file.name)}>
-                      <AttachmentFileName title={`${file.name}${file.type ? ` (${file.type})` : ""}`}>
-                        {file.name}
-                      </AttachmentFileName>
-                      <AttachmentFileSize>{getReadableFileSize(file.size)} uploaded</AttachmentFileSize>
+            {node.files?.length || node.parts?.length ? (
+              <AttachmentList>
+                {node.parts
+                  ?.filter((part) => part.type.startsWith("image/"))
+                  ?.map((part) => (
+                    <AttachmentPreview key={part.url} onClick={(_) => onRemoveAttachment(node.id, part.name, part.url)}>
+                      <img key={part.url} src={part.url} alt="attachment" />
                     </AttachmentPreview>
                   ))}
-                </AttachmentList>
-              ) : null}
-            </>
-          ) : (
-            <>
-              {node.isViewSource ? (
-                <StreamingEditor
-                  node={node}
-                  collapsedHeight={COLLAPSED_HEIGHT}
-                  onTextChange={onTextChange}
-                  onToggleViewFormat={onToggleViewFormat}
-                />
-              ) : (
-                <StreamingPreivew
-                  node={node}
-                  onKeyDown={(e) => onKeydown(node.id, e)}
-                  onDoubleClick={(e) => onPreviewDoubleClick(node.id, e)}
-                  collapsedHeight={COLLAPSED_HEIGHT}
-                />
-              )}
-              {node.errorMessage ? (
-                <ErrorMessage>
-                  {node.content.length ? <br /> : null}❌ {node.errorMessage}
-                </ErrorMessage>
-              ) : null}
-            </>
-          )}
+
+                {node.parts
+                  ?.filter((part) => !part.type.startsWith("image/"))
+                  ?.map((part) => (
+                    <AttachmentPreview key={part.url} onClick={(_) => onRemoveAttachment(node.id, part.name, part.url)}>
+                      <AttachmentFileName title={`${part.name}${part.type ? ` (${part.type})` : ""}`}>
+                        {part.name}
+                      </AttachmentFileName>
+                      <AttachmentFileSize>{getReadableFileSize(part.size)} inlined</AttachmentFileSize>
+                    </AttachmentPreview>
+                  ))}
+
+                {node.files?.map((file) => (
+                  <AttachmentPreview key={file.name} onClick={(_) => onRemoveFile(node.id, file.name)}>
+                    <AttachmentFileName title={`${file.name}${file.type ? ` (${file.type})` : ""}`}>
+                      {file.name}
+                    </AttachmentFileName>
+                    <AttachmentFileSize>{getReadableFileSize(file.size)} uploaded</AttachmentFileSize>
+                  </AttachmentPreview>
+                ))}
+              </AttachmentList>
+            ) : null}
+            {node.errorMessage ? (
+              <ErrorMessage>
+                {node.content.length ? <br /> : null}❌ {node.errorMessage}
+              </ErrorMessage>
+            ) : null}
+          </>
         </MessageWithActions>
       </MessageLayout>
     </Thread>
