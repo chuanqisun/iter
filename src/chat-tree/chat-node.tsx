@@ -27,6 +27,7 @@ export interface ChatNodeProps {
   onRemoveFile: (id: string, name: string) => void;
   onRunNode: (id: string) => void;
   onTextChange: (id: string, value: string) => void;
+  onToggleRole: (id: string) => void;
   onToggleShowMore: (id: string, options?: { toggleAll?: boolean }) => void;
   onToggleViewFormat: (id: string) => void;
   onUploadFiles: (id: string) => void;
@@ -48,12 +49,22 @@ export function ChatNodeInternal(props: ChatNodeProps) {
     onRemoveFile,
     onRunNode,
     onTextChange,
+    onToggleRole,
     onToggleShowMore,
     onToggleViewFormat,
     onUploadFiles,
   } = props;
 
   const tabCyclingContainer = useRef<HTMLDivElement>(null);
+
+  const displayRoleName: Record<string, string> = {
+    system: "System",
+    developer: "Developer",
+    model: "Model",
+    assistant: "Model",
+    user: "User",
+    tool: "Tool",
+  };
 
   // Manage focus cycling
   useEffect(() => {
@@ -109,6 +120,8 @@ export function ChatNodeInternal(props: ChatNodeProps) {
         <MessageWithActions>
           {node.role === "system" ? (
             <MessageActions>
+              <button data-managed-focus="message-action">{displayRoleName[node.role]}</button>
+              <span> · </span>
               <button data-managed-focus="message-action" onClick={() => onDelete(node.id)}>
                 Delete
               </button>
@@ -122,16 +135,12 @@ export function ChatNodeInternal(props: ChatNodeProps) {
               </button>
             </MessageActions>
           ) : null}
-          {node.role === "user" ? (
+          {node.role === "user" || node.role === "assistant" ? (
             <MessageActions>
-              {node.abortController ? (
-                <>
-                  <button data-managed-focus="message-action" onClick={() => onAbort(node.id)}>
-                    Stop
-                  </button>
-                  <span> · </span>
-                </>
-              ) : null}
+              <button data-managed-focus="message-action" onClick={() => onToggleRole(node.id)}>
+                {displayRoleName[node.role]}
+              </button>
+              <span> · </span>
               <button data-managed-focus="message-action" onClick={() => onDelete(node.id)}>
                 Delete
               </button>
@@ -145,25 +154,19 @@ export function ChatNodeInternal(props: ChatNodeProps) {
               </button>
               <span> · </span>
               <button data-managed-focus="message-action" onClick={() => onToggleViewFormat(node.id)}>
-                {node.isViewSource ? "Chat" : "Code"}
+                {node.role === "user" ? (node.isViewSource ? "Chat" : "Code") : node.isViewSource ? "View" : "Edit"}
               </button>
+              {node.abortController ? (
+                <>
+                  <span> · </span>
+                  <button data-managed-focus="message-action" onClick={() => onAbort(node.id)}>
+                    Stop
+                  </button>
+                </>
+              ) : null}
             </MessageActions>
           ) : null}
-          {node.role === "assistant" ? (
-            <MessageActions>
-              <button data-managed-focus="message-action" onClick={() => onDelete(node.id)}>
-                Delete
-              </button>
-              <span> · </span>
-              <button data-managed-focus="message-action" onClick={() => onDeleteBelow(node.id)}>
-                Trim
-              </button>
-              <span> · </span>
-              <button data-managed-focus="message-action" onClick={() => onToggleViewFormat(node.id)}>
-                {node.isViewSource ? "View" : "Edit"}
-              </button>
-            </MessageActions>
-          ) : null}
+
           <code-block-events
             oncodeblockchange={(e) => onCodeBlockChange(node.id, e.detail.current, e.detail.index)}
           ></code-block-events>

@@ -1,11 +1,10 @@
 # TODO
 
+- Show the abort control on the target node, not source node
 - Bug: trim during generation caused unwanted new nodes
-- Allow dynamic role toggle
 - Sticky view/edit mode for each node
 - Manually append nodes
 - Pin nodes from trim
-- Code editor in any role
 - Support model specific options, e.g. thinking budget
 - Busy indicator
 - Token usage indicator
@@ -17,10 +16,12 @@
 - Auto scroll to bottom
 - Handle markdown table horizontal overflow
 - Code block change tracking should use precise positions rather than regex matching
-- Up/down arrow for speech chat item (including menu actions) navigation
+- Up/down arrow for chat item (including menu actions) navigation
 
 # DONE
 
+- Code editor in any role
+- Allow dynamic role toggle
 - Keyboard navigation for chat item menu
 - Migrate to google genai sdk, pending https://github.com/googleapis/js-genai/issues/402
 - Fixed: mermaid dialog no longer visible

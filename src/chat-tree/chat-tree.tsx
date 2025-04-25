@@ -622,6 +622,29 @@ export function ChatTree() {
     });
   }, []);
 
+  const handleToggleRole = useCallback((nodeId: string) => {
+    handleAbort(nodeId);
+
+    // only toggle between user and assistant. Ignore toggling from system
+    // ensure last node is a user node. If not, append one
+    setTreeNodes((nodes) => {
+      const targetIndex = nodes.findIndex((n) => n.id === nodeId);
+      if (targetIndex === -1) return nodes;
+      const newNodes = nodes.flatMap((node, i, arr) => {
+        if (i === targetIndex && node.role !== "system") {
+          const newRole = node.role === "user" ? "assistant" : "user";
+          if (i === arr.length - 1) {
+            return [{ ...node, role: newRole } satisfies ChatNode, getUserNode(crypto.randomUUID())];
+          } else {
+            return { ...node, role: newRole } satisfies ChatNode;
+          }
+        }
+        return node;
+      });
+      return newNodes;
+    });
+  }, []);
+
   const handleToggleShowMore = useCallback((nodeId: string, options?: { toggleAll?: boolean }) => {
     setTreeNodes((nodes) => {
       const currentNode = nodes.find((node) => node.id === nodeId);
@@ -670,6 +693,7 @@ export function ChatTree() {
             onUploadFiles={handleUploadFiles}
             onRemoveAttachment={handleRemoveAttachment}
             onRemoveFile={hanldeRemoveFile}
+            onToggleRole={handleToggleRole}
             onToggleViewFormat={handleToggleViewFormat}
             onToggleShowMore={handleToggleShowMore}
             onPreviewDoubleClick={handlePreviewDoubleClick}
