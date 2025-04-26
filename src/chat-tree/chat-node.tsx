@@ -1,5 +1,6 @@
 import { memo, useEffect, useRef } from "react";
 import styled from "styled-components";
+import "./chat-node.css";
 import { getReadableFileSize } from "./file-size";
 import { getCombo } from "./keyboard";
 import { StreamingEditor } from "./streaming-editor";
@@ -161,7 +162,11 @@ export function ChatNodeInternal(props: ChatNodeProps) {
               {node.abortController ? (
                 <>
                   <span> · </span>
-                  <button data-managed-focus="message-action" onClick={() => onAbort(node.id)}>
+                  <button
+                    className="c-spinner c-stop-button"
+                    data-managed-focus="message-action"
+                    onClick={() => onAbort(node.id)}
+                  >
                     Stop
                   </button>
                 </>
@@ -255,11 +260,7 @@ export function ChatNodeInternal(props: ChatNodeProps) {
                 ))}
               </AttachmentList>
             ) : null}
-            {node.errorMessage ? (
-              <ErrorMessage>
-                {node.content.length ? <br /> : null}❌ {node.errorMessage}
-              </ErrorMessage>
-            ) : null}
+            {node.errorMessage ? <ErrorMessage>❌ {node.errorMessage}</ErrorMessage> : null}
           </>
         </MessageWithActions>
       </MessageLayout>

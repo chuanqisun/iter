@@ -1,12 +1,10 @@
 # TODO
 
-- Show the abort control on the target node, not source node
 - Bug: trim during generation caused unwanted new nodes
 - Sticky view/edit mode for each node
 - Manually append nodes
 - Pin nodes from trim
 - Support model specific options, e.g. thinking budget
-- Busy indicator
 - Token usage indicator
 - Language override for editor
 - Manual code interpreter (with shebang line)
@@ -17,9 +15,12 @@
 - Handle markdown table horizontal overflow
 - Code block change tracking should use precise positions rather than regex matching
 - Up/down arrow for chat item (including menu actions) navigation
+- Multi-headed concurrent chat
 
 # DONE
 
+- Busy indicator
+- Show the abort control on the target node, not source node
 - Abort from any node
 - Code editor in any role
 - Allow dynamic role toggle

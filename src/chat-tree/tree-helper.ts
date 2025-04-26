@@ -8,19 +8,21 @@ export const INITIAL_SYSTEM_NODE: ChatNode = {
 };
 export const INITIAL_NODES = [INITIAL_SYSTEM_NODE, INITIAL_USER_NODE];
 
-export function getAssistantNode(id: string): ChatNode {
+export function getAssistantNode(id: string, patch?: Partial<Omit<ChatNode, "id">>): ChatNode {
   return {
     id,
     role: "assistant",
     content: "",
+    ...patch,
   };
 }
 
-export function getUserNode(id: string): ChatNode {
+export function getUserNode(id: string, patch?: Partial<Omit<ChatNode, "id">>): ChatNode {
   return {
     id,
     role: "user",
     content: "",
+    ...patch,
   };
 }
 

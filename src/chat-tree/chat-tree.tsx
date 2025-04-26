@@ -417,9 +417,9 @@ export function ChatTree() {
 
       const abortController = new AbortController();
 
-      handleAbort(activeUserNodeId);
+      handleAbortAll();
 
-      const newAssistantNode = getAssistantNode(crypto.randomUUID());
+      const newAssistantNode = getAssistantNode(crypto.randomUUID(), { abortController });
       const newUserNode = getUserNode(crypto.randomUUID());
 
       setTreeNodes((nodes) => {
@@ -428,11 +428,7 @@ export function ChatTree() {
 
         // Remove all nodes after activeUserNodeId
         const base = nodes.slice(0, activeUserNodeIndex + 1);
-        return [
-          ...base.map((n, i) => (i === activeUserNodeIndex ? { ...n, abortController } : n)),
-          newAssistantNode,
-          newUserNode,
-        ];
+        return [...base, newAssistantNode, newUserNode];
       });
 
       try {
@@ -447,16 +443,14 @@ export function ChatTree() {
 
         // mark as done
         setTreeNodes((nodes) =>
-          nodes.map((n) => (n.id === activeUserNodeId ? { ...n, abortController: undefined } : n)),
+          nodes.map((n) => (n.id === newAssistantNode.id ? { ...n, abortController: undefined } : n)),
         );
       } catch (e: any) {
         setTreeNodes((nodes) =>
           nodes.map((node) =>
-            node.id === activeUserNodeId
-              ? { ...node, abortController: undefined } // Mark user node as done
-              : node.id === newAssistantNode.id
-                ? { ...node, errorMessage: `${e?.name} ${(e as any).message}` } // Mark assistant node as error
-                : node,
+            node.id === newAssistantNode.id
+              ? { ...node, abortController: undefined, errorMessage: `${e?.name} ${(e as any).message}` } // Mark assistant node as error
+              : node,
           ),
         );
       }
