@@ -93,6 +93,7 @@ export class AnthropicProvider implements BaseProvider {
 
       const { system, messages: anthropicMessages } = that.getAnthropicMessages(messages);
 
+      const start = performance.now();
       const stream = client.messages.stream(
         {
           max_tokens: config?.maxTokens ?? 200,
@@ -108,7 +109,10 @@ export class AnthropicProvider implements BaseProvider {
 
       for await (const message of stream) {
         if (stream.currentMessage?.usage) {
-          config?.onMetadata?.({ totalOutputTokens: stream.currentMessage.usage.output_tokens });
+          config?.onMetadata?.({
+            totalOutputTokens: stream.currentMessage.usage.output_tokens,
+            durationMs: performance.now() - start,
+          });
         }
 
         if (message.type === "content_block_delta" && message.delta.type === "text_delta" && message.delta.text) {

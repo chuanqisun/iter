@@ -105,6 +105,7 @@ export class AzureOpenAIProvider implements BaseProvider {
       const isTemperatureSupported = !connection.deployment.startsWith("o");
       const isSystemMessageSupported = !connection.deployment.startsWith("o1-mini");
 
+      const start = performance.now();
       const stream = await client.chat.completions.create(
         {
           stream: true,
@@ -125,14 +126,17 @@ export class AzureOpenAIProvider implements BaseProvider {
         },
       );
 
-      let usage;
       for await (const message of stream) {
         const deltaText = message.choices?.at(0)?.delta?.content;
         if (deltaText) yield deltaText;
 
-        usage = message?.usage ?? usage;
+        if (message.usage) {
+          config?.onMetadata?.({
+            totalOutputTokens: message.usage.completion_tokens,
+            durationMs: performance.now() - start,
+          });
+        }
       }
-      console.log("Usage", usage);
     };
   }
 

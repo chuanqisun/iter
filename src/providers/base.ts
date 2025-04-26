@@ -42,11 +42,12 @@ export interface GenericChatParams {
   temperature?: number;
   maxTokens?: number;
   topP?: number;
-  onMetadata?: (data: GenericMetadata) => void;
+  onMetadata?: (metadata: GenericMetadata) => void;
 }
 
 export interface GenericMetadata {
   totalOutputTokens?: number;
+  durationMs?: number;
 }
 
 export type ChatStreamProxy = (params: GenericChatParams) => AsyncGenerator<string>;

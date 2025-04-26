@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { useArtifactActions } from "../artifact/artifact";
 import { getFileAccessPostscript, respondFileAccess, respondFileList } from "../artifact/lib/file-access";
 import type { CodeEditorElement } from "../code-editor/code-editor-element";
-import { type GenericMessage } from "../providers/base";
+import { type GenericMessage, type GenericMetadata } from "../providers/base";
 import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
 import { useConnections } from "../settings/use-connections";
@@ -56,7 +56,7 @@ export function ChatTree() {
   useRouteCache({ parameters: ["connection", "temperature", "max_tokens"] });
 
   const chat = useCallback(
-    (messages: GenericMessage[], abortSignal?: AbortSignal) => {
+    (messages: GenericMessage[], abortSignal?: AbortSignal, onMetadata?: (metadata: GenericMetadata) => void) => {
       const chatStreamProxy = getChatStreamProxy?.(connectionKey.value ?? "");
       if (!chatStreamProxy) throw new Error(`API connection is not set up`);
 
@@ -65,6 +65,7 @@ export function ChatTree() {
         maxTokens: maxTokens.value,
         messages,
         abortSignal,
+        onMetadata,
       });
     },
     [connectionKey.value, getChatStreamProxy, temperature.value, maxTokens.value],
@@ -452,7 +453,9 @@ export function ChatTree() {
       });
 
       try {
-        const stream = chat(messages, abortController.signal);
+        const stream = chat(messages, abortController.signal, (metadata) => {
+          console.log("Metadata", metadata);
+        });
         const writer = createWriter(newAssistantNode.id);
 
         try {

@@ -103,6 +103,7 @@ export class OpenAIProvider implements BaseProvider {
         !connection.model.startsWith("o1") && !connection.model.startsWith("o3") && !connection.model.startsWith("o4");
       const isSystemMessageSupported = !connection.model.startsWith("o1-mini");
 
+      const start = performance.now();
       const stream = client.responses.stream(
         {
           input: that.getOpenAIMessages(messages, { isSystemMessageSupported }),
@@ -126,6 +127,7 @@ export class OpenAIProvider implements BaseProvider {
       if (finalUsage) {
         config?.onMetadata?.({
           totalOutputTokens: finalUsage.output_tokens,
+          durationMs: performance.now() - start,
         });
       }
     };
