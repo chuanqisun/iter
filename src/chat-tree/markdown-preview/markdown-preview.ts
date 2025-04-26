@@ -1,8 +1,8 @@
 import styled from "styled-components";
-import { tableStyles } from "./table";
+import { tableStyles } from "../table";
 
 export const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
-  min-height: 31px; // match that of single line textarea
+  min-height: 34px; // match that of single line textarea
   overflow-x: auto;
   overflow-y: ${(props) => (props.$maxHeight ? "scroll" : "auto")};
   ${(props) => props.$maxHeight && `max-height: ${props.$maxHeight}px;`}

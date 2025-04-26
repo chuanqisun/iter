@@ -1,6 +1,6 @@
 import type { KeyboardEvent, MouseEvent } from "react";
 import { useEffect, useState } from "react";
-import { MarkdownPreview } from "./markdown-preview";
+import { MarkdownPreview } from "./markdown-preview/markdown-preview";
 import { markdownToHtml, skipWhenBusy } from "./markdown-preview/worker-proxy";
 import type { ChatNode } from "./tree-store";
 

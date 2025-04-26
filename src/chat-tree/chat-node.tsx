@@ -296,8 +296,9 @@ const MessageActions = styled.span`
   min-height: 30px;
   line-height: 30px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: 0 4px;
   position: sticky;
   top: 0;
   background-color: var(--body-background);

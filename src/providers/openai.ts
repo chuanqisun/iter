@@ -4,6 +4,7 @@ import type {
   ResponseInputImage,
   ResponseInputItem,
   ResponseInputText,
+  ResponseOutputText,
 } from "openai/resources/responses/responses.mjs";
 import { dataUrlToText } from "../storage/codec";
 import type {
@@ -132,8 +133,7 @@ export class OpenAIProvider implements BaseProvider {
   ): ResponseInputItem[] {
     const convertedMessage = messages.map((message) => {
       switch (message.role) {
-        case "user":
-        case "assistant": {
+        case "user": {
           if (typeof message.content === "string") return { role: message.role, content: message.content };
 
           return {
@@ -161,6 +161,27 @@ export class OpenAIProvider implements BaseProvider {
               })
               .filter((part) => part !== null),
           } satisfies EasyInputMessage;
+        }
+        case "assistant": {
+          if (typeof message.content === "string") return { role: message.role, content: message.content };
+
+          return {
+            role: message.role,
+            content: message.content
+              .map((part) => {
+                if (part.type === "text/plain") {
+                  return {
+                    type: "output_text",
+                    text: dataUrlToText(part.url),
+                    annotations: [],
+                  } satisfies ResponseOutputText;
+                } else {
+                  console.warn("Unsupported message part", part);
+                  return null;
+                }
+              })
+              .filter((part) => part !== null),
+          };
         }
         case "system":
           let finalRole: "developer" | "system" | "user" = "developer";

@@ -1,6 +1,7 @@
 # TODO
 
 - Show the abort control on the target node, not source node
+- Abort from any node
 - Bug: trim during generation caused unwanted new nodes
 - Sticky view/edit mode for each node
 - Manually append nodes

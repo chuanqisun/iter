@@ -8,6 +8,14 @@ export const INITIAL_SYSTEM_NODE: ChatNode = {
 };
 export const INITIAL_NODES = [INITIAL_SYSTEM_NODE, INITIAL_USER_NODE];
 
+export function getAssistantNode(id: string): ChatNode {
+  return {
+    id,
+    role: "assistant",
+    content: "",
+  };
+}
+
 export function getUserNode(id: string): ChatNode {
   return {
     id,

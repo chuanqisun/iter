@@ -19,7 +19,7 @@ import { dictateToTextarea } from "./dictation";
 import { getReadableFileSize } from "./file-size";
 import { autoFocusNthInput } from "./focus";
 import { getCombo } from "./keyboard";
-import { getNextId, getPrevId, getUserNode, INITIAL_NODES, patchNode } from "./tree-helper";
+import { getAssistantNode, getNextId, getPrevId, getUserNode, INITIAL_NODES, patchNode } from "./tree-helper";
 import { useTreeNodes, type ChatNode } from "./tree-store";
 
 export function ChatTree() {
@@ -401,11 +401,8 @@ export function ChatTree() {
 
       handleAbort(activeUserNodeId);
 
-      const newAssistantNode: ChatNode = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: "",
-      };
+      const newAssistantNode = getAssistantNode(crypto.randomUUID());
+      const newUserNode = getUserNode(crypto.randomUUID());
 
       setTreeNodes((nodes) => {
         const activeUserNodeIndex = nodes.findIndex((n) => n.id === activeUserNodeId);
@@ -413,7 +410,11 @@ export function ChatTree() {
 
         // Remove all nodes after activeUserNodeId
         const base = nodes.slice(0, activeUserNodeIndex + 1);
-        return [...base.map((n, i) => (i === activeUserNodeIndex ? { ...n, abortController } : n)), newAssistantNode];
+        return [
+          ...base.map((n, i) => (i === activeUserNodeIndex ? { ...n, abortController } : n)),
+          newAssistantNode,
+          newUserNode,
+        ];
       });
 
       try {
@@ -426,12 +427,10 @@ export function ChatTree() {
           writer.close();
         }
 
-        setTreeNodes((nodes) => {
-          const newUserNode = getUserNode(crypto.randomUUID());
-          return nodes
-            .map((n) => (n.id === activeUserNodeId ? { ...n, abortController: undefined } : n))
-            .concat(newUserNode);
-        });
+        // mark as done
+        setTreeNodes((nodes) =>
+          nodes.map((n) => (n.id === activeUserNodeId ? { ...n, abortController: undefined } : n)),
+        );
       } catch (e: any) {
         setTreeNodes((nodes) =>
           nodes.map((node) =>
