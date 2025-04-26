@@ -360,6 +360,24 @@ export function ChatTree() {
       .filter((message) => message.content.length);
   }, []);
 
+  const handleAbortSensible = useCallback((nodeId: string) => {
+    const isTargetNodeAbortable = treeNodes$.value.find((node) => node.id === nodeId)?.abortController;
+    if (!isTargetNodeAbortable) handleAbortAll();
+    else handleAbort(nodeId);
+  }, []);
+
+  const handleAbortAll = useCallback(() => {
+    setTreeNodes((nodes) =>
+      nodes.map((node) => {
+        if (node?.abortController) {
+          node.abortController.abort();
+          return { ...node, abortController: undefined };
+        }
+        return node;
+      }),
+    );
+  }, []);
+
   const handleAbort = useCallback((nodeId: string) => {
     setTreeNodes((nodes) =>
       nodes.map(
@@ -458,7 +476,7 @@ export function ChatTree() {
       if (combo === "escape") {
         if (!activeUserNodeId) return;
         e.preventDefault();
-        handleAbort(activeUserNodeId);
+        handleAbortSensible(activeUserNodeId);
       }
 
       // Enter to activate edit mode

@@ -1,7 +1,6 @@
 # TODO
 
 - Show the abort control on the target node, not source node
-- Abort from any node
 - Bug: trim during generation caused unwanted new nodes
 - Sticky view/edit mode for each node
 - Manually append nodes
@@ -21,6 +20,7 @@
 
 # DONE
 
+- Abort from any node
 - Code editor in any role
 - Allow dynamic role toggle
 - Keyboard navigation for chat item menu
