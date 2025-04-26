@@ -1,8 +1,6 @@
 # TODO
 
-- Bug: trim during generation caused unwanted new nodes
-- Sticky view/edit mode for each node
-- Manually append nodes
+- Escape from code editor loses focus
 - Pin nodes from trim
 - Support model specific options, e.g. thinking budget
 - Token usage indicator
@@ -16,9 +14,12 @@
 - Code block change tracking should use precise positions rather than regex matching
 - Up/down arrow for chat item (including menu actions) navigation
 - Multi-headed concurrent chat
+- Sticky view/edit mode for each node
+- Manually append nodes
 
 # DONE
 
+- Bug: trim during generation caused unwanted new nodes
 - Busy indicator
 - Show the abort control on the target node, not source node
 - Abort from any node

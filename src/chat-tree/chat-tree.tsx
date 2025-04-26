@@ -320,9 +320,12 @@ export function ChatTree() {
   }, []);
 
   const handleDeleteBelow = useCallback((nodeId: string) => {
+    handleAbortBelow(nodeId);
+
     setTreeNodes((nodes) => {
       const targetIndex = nodes.findIndex((n) => n.id === nodeId);
       if (targetIndex === -1) return nodes;
+
       const newNodes = nodes.slice(0, targetIndex + 1);
 
       // Ensure last node is user
@@ -364,6 +367,23 @@ export function ChatTree() {
     const isTargetNodeAbortable = treeNodes$.value.find((node) => node.id === nodeId)?.abortController;
     if (!isTargetNodeAbortable) handleAbortAll();
     else handleAbort(nodeId);
+  }, []);
+
+  const handleAbortBelow = useCallback((nodeId: string) => {
+    const targetIndex = treeNodes$.value.findIndex((node) => node.id === nodeId);
+    if (targetIndex === -1) return;
+    setTreeNodes((nodes) =>
+      nodes.map(
+        patchNode(
+          (_node, index) => index > targetIndex,
+          (node) => {
+            if (!node?.abortController) return {};
+            node.abortController.abort();
+            return { abortController: undefined };
+          },
+        ),
+      ),
+    );
   }, []);
 
   const handleAbortAll = useCallback(() => {
