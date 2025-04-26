@@ -108,6 +108,9 @@ export class AzureOpenAIProvider implements BaseProvider {
       const stream = await client.chat.completions.create(
         {
           stream: true,
+          stream_options: {
+            include_usage: true,
+          },
           messages: that.getOpenAIMessages(messages, {
             systemRoleName,
             isSystemMessageSupported,
@@ -122,10 +125,14 @@ export class AzureOpenAIProvider implements BaseProvider {
         },
       );
 
+      let usage;
       for await (const message of stream) {
         const deltaText = message.choices?.at(0)?.delta?.content;
         if (deltaText) yield deltaText;
+
+        usage = message?.usage ?? usage;
       }
+      console.log("Usage", usage);
     };
   }
 

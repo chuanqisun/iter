@@ -93,14 +93,13 @@ export class AnthropicProvider implements BaseProvider {
 
       const { system, messages: anthropicMessages } = that.getAnthropicMessages(messages);
 
-      const stream = await client.messages.create(
+      const stream = client.messages.stream(
         {
           max_tokens: config?.maxTokens ?? 200,
           temperature: Math.min(config?.temperature ?? 0.7, 1), // anthropic only supports 0-1
           system,
           messages: anthropicMessages,
           model: connection.model,
-          stream: true,
         },
         {
           signal: abortSignal,
@@ -108,6 +107,10 @@ export class AnthropicProvider implements BaseProvider {
       );
 
       for await (const message of stream) {
+        if (stream.currentMessage?.usage) {
+          config?.onMetadata?.({ totalOutputTokens: stream.currentMessage.usage.output_tokens });
+        }
+
         if (message.type === "content_block_delta" && message.delta.type === "text_delta" && message.delta.text) {
           yield message.delta.text;
         }

@@ -106,6 +106,7 @@ export class GoogleGenAIProvider implements BaseProvider {
 
       for await (const message of result) {
         const chunk = message.text;
+        if (message.usageMetadata) config.onMetadata?.({ totalOutputTokens: message.usageMetadata.totalTokenCount });
         if (chunk) yield chunk;
       }
     };

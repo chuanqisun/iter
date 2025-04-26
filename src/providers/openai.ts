@@ -121,6 +121,13 @@ export class OpenAIProvider implements BaseProvider {
           yield message.delta;
         }
       }
+
+      const finalUsage = (await stream.finalResponse()).usage;
+      if (finalUsage) {
+        config?.onMetadata?.({
+          totalOutputTokens: finalUsage.output_tokens,
+        });
+      }
     };
   }
 
