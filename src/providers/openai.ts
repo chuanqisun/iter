@@ -1,9 +1,10 @@
 import type {
-  ChatCompletionContentPart,
-  ChatCompletionContentPartImage,
-  ChatCompletionContentPartText,
-  ChatCompletionMessageParam,
-} from "openai/resources/index.mjs";
+  EasyInputMessage,
+  ResponseInputFile,
+  ResponseInputImage,
+  ResponseInputItem,
+  ResponseInputText,
+} from "openai/resources/responses/responses.mjs";
 import { dataUrlToText } from "../storage/codec";
 import type {
   BaseConnection,
@@ -102,13 +103,12 @@ export class OpenAIProvider implements BaseProvider {
         !connection.model.startsWith("o1") && !connection.model.startsWith("o3") && !connection.model.startsWith("o4");
       const isSystemMessageSupported = !connection.model.startsWith("o1-mini");
 
-      const stream = await client.chat.completions.create(
+      const stream = client.responses.stream(
         {
-          stream: true,
-          messages: that.getOpenAIMessages(messages, { isSystemMessageSupported: isSystemMessageSupported }),
+          input: that.getOpenAIMessages(messages, { isSystemMessageSupported }),
           model: connection.model,
           temperature: isTemperatureSupported ? config?.temperature : undefined,
-          max_completion_tokens: config?.maxTokens,
+          max_output_tokens: config?.maxTokens,
           top_p: config?.topP,
         },
         {
@@ -117,8 +117,9 @@ export class OpenAIProvider implements BaseProvider {
       );
 
       for await (const message of stream) {
-        const deltaText = message.choices?.at(0)?.delta?.content;
-        if (deltaText) yield deltaText;
+        if (message.type === "response.output_text.delta" && message.delta) {
+          yield message.delta;
+        }
       }
     };
   }
@@ -128,7 +129,7 @@ export class OpenAIProvider implements BaseProvider {
     options?: {
       isSystemMessageSupported?: boolean;
     },
-  ): ChatCompletionMessageParam[] {
+  ): ResponseInputItem[] {
     const convertedMessage = messages.map((message) => {
       switch (message.role) {
         case "user":
@@ -140,38 +141,35 @@ export class OpenAIProvider implements BaseProvider {
             content: message.content
               .map((part) => {
                 if (part.type === "text/plain") {
-                  return { type: "text", text: dataUrlToText(part.url) } satisfies ChatCompletionContentPartText;
+                  return { type: "input_text", text: dataUrlToText(part.url) } satisfies ResponseInputText;
                 } else if (part.type.startsWith("image/")) {
                   return {
-                    type: "image_url",
-                    image_url: {
-                      url: part.url,
-                    },
-                  } satisfies ChatCompletionContentPartImage;
+                    type: "input_image",
+                    detail: "auto",
+                    image_url: part.url,
+                  } satisfies ResponseInputImage;
                 } else if (part.type === "application/pdf") {
                   return {
-                    type: "file",
-                    file: {
-                      file_data: part.url,
-                      filename: part.name,
-                    },
-                  } satisfies ChatCompletionContentPart.File;
+                    type: "input_file",
+                    file_data: part.url,
+                    filename: part.name,
+                  } satisfies ResponseInputFile;
                 } else {
                   console.warn("Unsupported message part", part);
                   return null;
                 }
               })
               .filter((part) => part !== null),
-          };
+          } satisfies EasyInputMessage;
         }
         case "system":
-          let finalRole = "developer";
+          let finalRole: "developer" | "system" | "user" = "developer";
           if (!options?.isSystemMessageSupported) {
             console.error("System message is not supported for this model, converted to user message");
             finalRole = "user";
           }
           if (typeof message.content === "string") {
-            return { role: finalRole, content: message.content };
+            return { role: finalRole, content: message.content } satisfies EasyInputMessage;
           } else {
             return {
               role: finalRole,
@@ -179,7 +177,7 @@ export class OpenAIProvider implements BaseProvider {
                 .filter((part) => part.type === "text/plain")
                 .map((part) => dataUrlToText(part.url))
                 .join("\n"),
-            };
+            } satisfies EasyInputMessage;
           }
         default: {
           console.warn("Unknown message type", message);
@@ -188,7 +186,7 @@ export class OpenAIProvider implements BaseProvider {
       }
     });
 
-    return convertedMessage.filter((m) => m !== null) as ChatCompletionMessageParam[];
+    return convertedMessage.filter((m) => m !== null);
   }
 
   private isOpenAICredential(credential: BaseCredential): credential is OpenAICredential {
