@@ -4,7 +4,6 @@ import type {
   ResponseInputImage,
   ResponseInputItem,
   ResponseInputText,
-  ResponseOutputText,
 } from "openai/resources/responses/responses.mjs";
 import { dataUrlToText } from "../storage/codec";
 import type {
@@ -164,24 +163,12 @@ export class OpenAIProvider implements BaseProvider {
         }
         case "assistant": {
           if (typeof message.content === "string") return { role: message.role, content: message.content };
-
-          return {
-            role: message.role,
-            content: message.content
-              .map((part) => {
-                if (part.type === "text/plain") {
-                  return {
-                    type: "output_text",
-                    text: dataUrlToText(part.url),
-                    annotations: [],
-                  } satisfies ResponseOutputText;
-                } else {
-                  console.warn("Unsupported message part", part);
-                  return null;
-                }
-              })
-              .filter((part) => part !== null),
-          };
+          if (message.content.length === 0) return { role: message.role, content: "" };
+          if (message.content.length === 1 && message.content[0].type === "text/plain") {
+            return { role: message.role, content: dataUrlToText(message.content[0].url) };
+          }
+          console.warn("Unsupported assistant message", message.content);
+          return null;
         }
         case "system":
           let finalRole: "developer" | "system" | "user" = "developer";
