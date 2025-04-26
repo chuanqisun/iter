@@ -1,6 +1,5 @@
 # TODO
 
-- Pin nodes from trim
 - Support model specific options, e.g. thinking budget
 - Token usage indicator
 - Language override for editor
@@ -16,6 +15,7 @@
 - Sticky view/edit mode for each node
 - Manually append nodes
 - Preserve cursor position when switching between edit and view mode
+- Pin nodes from trim
 
 # DONE
 
