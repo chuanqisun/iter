@@ -1,6 +1,5 @@
 # TODO
 
-- Escape from code editor loses focus
 - Pin nodes from trim
 - Support model specific options, e.g. thinking budget
 - Token usage indicator
@@ -16,9 +15,11 @@
 - Multi-headed concurrent chat
 - Sticky view/edit mode for each node
 - Manually append nodes
+- Preserve cursor position when switching between edit and view mode
 
 # DONE
 
+- Bug: escape from code editor loses focus
 - Bug: trim during generation caused unwanted new nodes
 - Busy indicator
 - Show the abort control on the target node, not source node

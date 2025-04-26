@@ -631,16 +631,11 @@ export function ChatTree() {
   }, []);
 
   const handleToggleViewFormat = useCallback((nodeId: string) => {
+    const isExitEditing =
+      treeNodes$.value.find((node) => node.id === nodeId)?.isViewSource &&
+      document.activeElement?.closest("code-editor-element");
+
     setTreeNodes((nodes) => {
-      const isExitEditing = nodes.find((node) => node.id === nodeId)?.isViewSource;
-      if (isExitEditing) {
-        if (document.activeElement?.closest("code-editor-element")) {
-          setTimeout(() => {
-            // programmatically focus the textarea if transitioning from text editor
-            document.getElementById(nodeId)?.focus();
-          }, 0);
-        }
-      }
       return nodes.map(
         patchNode(
           (node) => node.id === nodeId,
@@ -648,6 +643,14 @@ export function ChatTree() {
         ),
       );
     });
+
+    if (isExitEditing) {
+      // HACK it is unclear how much timeout is needed for react to re-render
+      setTimeout(() => {
+        // programmatically focus the textarea if transitioning from text editor
+        document.getElementById(nodeId)?.focus();
+      }, 1);
+    }
   }, []);
 
   const handleToggleRole = useCallback((nodeId: string) => {
