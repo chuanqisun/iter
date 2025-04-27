@@ -6,6 +6,7 @@ import { getCombo } from "./keyboard";
 import { StreamingEditor } from "./streaming-editor";
 import { StreamingPreivew } from "./streaming-preview";
 import type { ChatNode } from "./tree-store";
+import { UsageMetadata } from "./usage-metadata";
 
 const roleIcon = {
   system: "⚙️",
@@ -163,7 +164,7 @@ export function ChatNodeInternal(props: ChatNodeProps) {
                 <>
                   <span> · </span>
                   <button
-                    className="c-spinner c-stop-button"
+                    className="c-stop-button"
                     data-managed-focus="message-action"
                     onClick={() => onAbort(node.id)}
                   >
@@ -171,6 +172,10 @@ export function ChatNodeInternal(props: ChatNodeProps) {
                   </button>
                 </>
               ) : null}
+              <span className="c-far-group">
+                {node.role === "assistant" && node.metadata$ ? <UsageMetadata metadata$={node.metadata$} /> : null}
+                {node.abortController ? <span className="c-spinner" /> : null}
+              </span>
             </MessageActions>
           ) : null}
 
@@ -306,7 +311,7 @@ const MessageActions = styled.span`
   z-index: var(--action-bar-z-index);
 
   > * {
-    opacity: 0.5;
+    color: var(--action-button-rest-color);
   }
   button {
     cursor: pointer;
@@ -314,7 +319,7 @@ const MessageActions = styled.span`
     border: none;
     padding: 0;
     &:hover {
-      opacity: 1;
+      color: var(--action-button-hover-color);
       text-decoration: underline;
     }
   }

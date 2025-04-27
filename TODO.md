@@ -1,7 +1,6 @@
 # TODO
 
 - Support model specific options, e.g. thinking budget
-- Token usage indicator
 - Language override for editor
 - Manual code interpreter (with shebang line)
 - Reference pinned code blocks
@@ -19,6 +18,7 @@
 
 # DONE
 
+- Token usage indicator
 - Bug: escape from code editor loses focus
 - Bug: trim during generation caused unwanted new nodes
 - Busy indicator

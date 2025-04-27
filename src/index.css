@@ -19,6 +19,8 @@
   --ghost-button-hover-background: #eeeeee;
   --table-border-color: #cccccc;
   --table-hover-color: #eeeeee;
+  --action-button-rest-color: #646464;
+  --action-button-hover-color: #000;
 
   --action-bar-z-index: 1;
   --artifact-editor-z-index: 2;
@@ -35,6 +37,8 @@
     --ghost-button-hover-background: #2a2a2a;
     --table-border-color: #555555;
     --table-hover-color: #444444;
+    --action-button-rest-color: #8b8b8b;
+    --action-button-hover-color: #fff;
   }
 }
 

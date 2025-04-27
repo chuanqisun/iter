@@ -17,6 +17,12 @@ export interface ChatNode {
   isCollapsed?: boolean;
   abortController?: AbortController;
   errorMessage?: string;
+  metadata$?: BehaviorSubject<ChatNodeMetadata>;
+}
+
+export interface ChatNodeMetadata {
+  totalOutputTokens?: number;
+  tokensPerSecond?: number;
 }
 
 export interface ChatPart {

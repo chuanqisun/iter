@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import { BehaviorSubject } from "rxjs";
 import styled from "styled-components";
 import { useArtifactActions } from "../artifact/artifact";
 import { getFileAccessPostscript, respondFileAccess, respondFileList } from "../artifact/lib/file-access";
@@ -440,7 +441,10 @@ export function ChatTree() {
 
       handleAbortAll();
 
-      const newAssistantNode = getAssistantNode(crypto.randomUUID(), { abortController });
+      const newAssistantNode = getAssistantNode(crypto.randomUUID(), {
+        abortController,
+        metadata$: new BehaviorSubject({}),
+      });
       const newUserNode = getUserNode(crypto.randomUUID());
 
       setTreeNodes((nodes) => {
@@ -452,10 +456,19 @@ export function ChatTree() {
         return [...base, newAssistantNode, newUserNode];
       });
 
-      try {
-        const stream = chat(messages, abortController.signal, (metadata) => {
-          console.log("Metadata", metadata);
+      const patchMetadata = (metadata: GenericMetadata) => {
+        // we know metadata$ is always defined because we create assistant node with it
+        const metadata$ = newAssistantNode.metadata$!;
+
+        metadata$.next({
+          ...metadata$.value,
+          totalOutputTokens: metadata.totalOutputTokens,
+          tokensPerSecond: (1000 * (metadata.totalOutputTokens ?? 0)) / (metadata.durationMs ?? 1),
         });
+      };
+
+      try {
+        const stream = chat(messages, abortController.signal, patchMetadata);
         const writer = createWriter(newAssistantNode.id);
 
         try {

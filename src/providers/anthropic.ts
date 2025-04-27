@@ -108,17 +108,16 @@ export class AnthropicProvider implements BaseProvider {
       );
 
       for await (const message of stream) {
-        if (stream.currentMessage?.usage) {
-          config?.onMetadata?.({
-            totalOutputTokens: stream.currentMessage.usage.output_tokens,
-            durationMs: performance.now() - start,
-          });
-        }
-
         if (message.type === "content_block_delta" && message.delta.type === "text_delta" && message.delta.text) {
           yield message.delta.text;
         }
       }
+
+      const finalUsage = (await stream.finalMessage()).usage;
+      config?.onMetadata?.({
+        totalOutputTokens: finalUsage.output_tokens,
+        durationMs: performance.now() - start,
+      });
     };
   }
 
