@@ -1,3 +1,4 @@
+import { BehaviorSubject } from "rxjs";
 import type { ChatNode } from "../chat-tree/tree-store";
 
 export async function stringifyChat(nodes: ChatNode[]) {
@@ -83,7 +84,7 @@ export async function parseChat(raw: string, preserveIds?: string[]): Promise<Ch
 function parseSystemOrAssistantMessage(node: HTMLElement): ChatNode {
   const content = [...node.querySelectorAll("p")].map((p) => p.textContent).join("\n\n");
   const role = node.dataset.role as "system" | "assistant";
-  return { id: crypto.randomUUID(), role, content };
+  return { id: crypto.randomUUID(), role, content, metadata$: new BehaviorSubject({}) };
 }
 
 async function parseUserMessage(node: HTMLElement): Promise<ChatNode> {
@@ -115,5 +116,6 @@ async function parseUserMessage(node: HTMLElement): Promise<ChatNode> {
     parts,
     files,
     content,
+    metadata$: new BehaviorSubject({}),
   };
 }
