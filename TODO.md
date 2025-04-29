@@ -1,5 +1,6 @@
 # TODO
 
+- Bug: abort error lingers after role switch
 - Support model specific options, e.g. thinking budget
 - Language override for editor
 - Manual code interpreter (with shebang line)
