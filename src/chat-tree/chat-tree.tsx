@@ -441,6 +441,8 @@ export function ChatTree() {
 
       handleAbortAll();
 
+      handleClearAllErrors();
+
       const newAssistantNode = getAssistantNode(crypto.randomUUID(), {
         abortController,
       });
@@ -688,6 +690,17 @@ export function ChatTree() {
       });
       return newNodes;
     });
+  }, []);
+
+  const handleClearAllErrors = useCallback(() => {
+    setTreeNodes((nodes) =>
+      nodes.map((node) => {
+        if (node.errorMessage) {
+          return { ...node, errorMessage: undefined };
+        }
+        return node;
+      }),
+    );
   }, []);
 
   const handleToggleShowMore = useCallback((nodeId: string, options?: { toggleAll?: boolean }) => {
