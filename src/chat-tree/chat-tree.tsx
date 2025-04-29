@@ -1,5 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef } from "react";
-import { BehaviorSubject } from "rxjs";
+import React, { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 import styled from "styled-components";
 import { useArtifactActions } from "../artifact/artifact";
 import { getFileAccessPostscript, respondFileAccess, respondFileList } from "../artifact/lib/file-access";
@@ -19,6 +18,7 @@ import { getParts } from "./clipboard";
 import { dictateToTextarea } from "./dictation";
 import { getReadableFileSize } from "./file-size";
 import { autoFocusNthInput } from "./focus";
+import { InputTokenizer } from "./input-tokenizer";
 import { getCombo } from "./keyboard";
 import { getAssistantNode, getNextId, getPrevId, getUserNode, INITIAL_NODES, patchNode } from "./tree-helper";
 import { useTreeNodes, type ChatNode } from "./tree-store";
@@ -443,7 +443,6 @@ export function ChatTree() {
 
       const newAssistantNode = getAssistantNode(crypto.randomUUID(), {
         abortController,
-        metadata$: new BehaviorSubject({}),
       });
       const newUserNode = getUserNode(crypto.randomUUID());
 
@@ -457,8 +456,7 @@ export function ChatTree() {
       });
 
       const patchMetadata = (metadata: GenericMetadata) => {
-        // we know metadata$ is always defined because we create assistant node with it
-        const metadata$ = newAssistantNode.metadata$!;
+        const metadata$ = newAssistantNode.metadata$;
 
         metadata$.next({
           ...metadata$.value,
@@ -727,25 +725,27 @@ export function ChatTree() {
       />
       <MessageList ref={treeRootRef}>
         {treeNodes.map((node) => (
-          <ChatNodeMemo
-            key={node.id}
-            node={node}
-            onTextChange={handleTextChange}
-            onCodeBlockChange={handleCodeBlockChange}
-            onDelete={handleDelete}
-            onDeleteBelow={handleDeleteBelow}
-            onRunNode={handleRunNode}
-            onKeydown={handleKeydown}
-            onPaste={handlePaste}
-            onUploadFiles={handleUploadFiles}
-            onRemoveAttachment={handleRemoveAttachment}
-            onRemoveFile={hanldeRemoveFile}
-            onToggleRole={handleToggleRole}
-            onToggleViewFormat={handleToggleViewFormat}
-            onToggleShowMore={handleToggleShowMore}
-            onPreviewDoubleClick={handlePreviewDoubleClick}
-            onAbort={handleAbort}
-          />
+          <Fragment key={node.id}>
+            <InputTokenizer node={node} />
+            <ChatNodeMemo
+              node={node}
+              onTextChange={handleTextChange}
+              onCodeBlockChange={handleCodeBlockChange}
+              onDelete={handleDelete}
+              onDeleteBelow={handleDeleteBelow}
+              onRunNode={handleRunNode}
+              onKeydown={handleKeydown}
+              onPaste={handlePaste}
+              onUploadFiles={handleUploadFiles}
+              onRemoveAttachment={handleRemoveAttachment}
+              onRemoveFile={hanldeRemoveFile}
+              onToggleRole={handleToggleRole}
+              onToggleViewFormat={handleToggleViewFormat}
+              onToggleShowMore={handleToggleShowMore}
+              onPreviewDoubleClick={handlePreviewDoubleClick}
+              onAbort={handleAbort}
+            />
+          </Fragment>
         ))}
       </MessageList>
     </ChatAppLayout>

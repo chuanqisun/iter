@@ -1,7 +1,8 @@
 import type { KeyboardEvent, MouseEvent } from "react";
 import { useEffect, useState } from "react";
-import { MarkdownPreview } from "./markdown-preview/markdown-preview";
-import { markdownToHtml, skipWhenBusy } from "./markdown-preview/worker-proxy";
+import { markdownToHtml, preloadPreviewWorker } from "../workers/worker-proxy";
+import { MarkdownPreview } from "./markdown-preview";
+import { skipWhenBusy } from "./skip-when-busy";
 import type { ChatNode } from "./tree-store";
 
 export interface StreamingPreviewProps {
@@ -14,6 +15,8 @@ export interface StreamingPreviewProps {
 export function StreamingPreivew(props: StreamingPreviewProps) {
   // stream content into markdown preview
   const [html, setHtml] = useState<string>(props.node.cachedPreviewHtml?.value ?? "");
+
+  useEffect(() => void preloadPreviewWorker(), []);
 
   useEffect(() => {
     const cacheKey = props.node.cachedPreviewHtml?.key;

@@ -17,10 +17,11 @@ export interface ChatNode {
   isCollapsed?: boolean;
   abortController?: AbortController;
   errorMessage?: string;
-  metadata$?: BehaviorSubject<ChatNodeMetadata>;
+  metadata$: BehaviorSubject<ChatNodeMetadata>;
 }
 
 export interface ChatNodeMetadata {
+  totalInputTokens?: number;
   totalOutputTokens?: number;
   tokensPerSecond?: number;
 }

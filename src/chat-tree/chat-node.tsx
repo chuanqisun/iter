@@ -2,11 +2,12 @@ import { memo, useEffect, useRef } from "react";
 import styled from "styled-components";
 import "./chat-node.css";
 import { getReadableFileSize } from "./file-size";
+import { InputMetadata } from "./input-metadata";
 import { getCombo } from "./keyboard";
+import { OutputMetadata } from "./output-metadata";
 import { StreamingEditor } from "./streaming-editor";
 import { StreamingPreivew } from "./streaming-preview";
 import type { ChatNode } from "./tree-store";
-import { UsageMetadata } from "./usage-metadata";
 
 const roleIcon = {
   system: "⚙️",
@@ -137,6 +138,9 @@ export function ChatNodeInternal(props: ChatNodeProps) {
               <button data-managed-focus="message-action" onClick={() => onToggleViewFormat(node.id)}>
                 {node.isViewSource ? "Chat" : "Code"}
               </button>
+              <span className="c-far-group">
+                <InputMetadata metadata$={node.metadata$} />
+              </span>
             </MessageActions>
           ) : null}
           {node.role === "user" || node.role === "assistant" ? (
@@ -173,7 +177,8 @@ export function ChatNodeInternal(props: ChatNodeProps) {
                 </>
               ) : null}
               <span className="c-far-group">
-                {node.role === "assistant" && node.metadata$ ? <UsageMetadata metadata$={node.metadata$} /> : null}
+                {node.role === "user" ? <InputMetadata metadata$={node.metadata$} /> : null}
+                {node.role === "assistant" ? <OutputMetadata metadata$={node.metadata$} /> : null}
                 {node.abortController ? <span className="c-spinner" /> : null}
               </span>
             </MessageActions>

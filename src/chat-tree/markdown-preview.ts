@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { tableStyles } from "../table";
+import { tableStyles } from "./table";
 
 export const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
   min-height: 34px; // match that of single line textarea

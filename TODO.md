@@ -1,6 +1,5 @@
 # TODO
 
-- Input token counter
 - Support model specific options, e.g. thinking budget
 - Language override for editor
 - Manual code interpreter (with shebang line)
@@ -19,6 +18,8 @@
 
 # DONE
 
+- Input token counter
+- Lazy init web worker
 - Token usage indicator
 - Bug: escape from code editor loses focus
 - Bug: trim during generation caused unwanted new nodes

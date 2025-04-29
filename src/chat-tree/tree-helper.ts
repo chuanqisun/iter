@@ -1,3 +1,4 @@
+import { BehaviorSubject } from "rxjs";
 import type { ChatNode } from "./tree-store";
 
 export const INITIAL_USER_NODE = getUserNode(crypto.randomUUID());
@@ -5,6 +6,7 @@ export const INITIAL_SYSTEM_NODE: ChatNode = {
   id: crypto.randomUUID(),
   role: "system",
   content: "",
+  metadata$: new BehaviorSubject({}),
 };
 export const INITIAL_NODES = [INITIAL_SYSTEM_NODE, INITIAL_USER_NODE];
 
@@ -13,6 +15,7 @@ export function getAssistantNode(id: string, patch?: Partial<Omit<ChatNode, "id"
     id,
     role: "assistant",
     content: "",
+    metadata$: new BehaviorSubject({}),
     ...patch,
   };
 }
@@ -22,6 +25,7 @@ export function getUserNode(id: string, patch?: Partial<Omit<ChatNode, "id">>): 
     id,
     role: "user",
     content: "",
+    metadata$: new BehaviorSubject({}),
     ...patch,
   };
 }

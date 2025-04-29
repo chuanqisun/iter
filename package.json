@@ -41,6 +41,7 @@
     "@codemirror/view": "^6.36.2",
     "@google/genai": "^0.10.0",
     "@uiw/codemirror-theme-github": "^4.23.8",
+    "gpt-tokenizer": "^2.9.0",
     "idb-keyval": "^6.2.1",
     "marked": "^15.0.8",
     "marked-shiki": "^1.2.0",
