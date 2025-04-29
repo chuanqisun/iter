@@ -1,5 +1,6 @@
 # TODO
 
+- Input token counter
 - Support model specific options, e.g. thinking budget
 - Language override for editor
 - Manual code interpreter (with shebang line)
