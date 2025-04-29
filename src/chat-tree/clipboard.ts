@@ -23,5 +23,5 @@ export async function getParts(data?: DataTransfer): Promise<ChatPart[]> {
     }),
   );
 
-  return parts.filter((part) => !!part);
+  return parts.filter((part) => part !== null);
 }
