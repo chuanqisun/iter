@@ -40,7 +40,7 @@ function ChatConfig(props: ChatConfigProps) {
         ) : null}
         <label>
           Temperature
-          <FixedWidthInput
+          <AutoWidthInput
             type="number"
             min={0}
             max={2}
@@ -51,7 +51,7 @@ function ChatConfig(props: ChatConfigProps) {
         </label>
         <label>
           Max tokens
-          <FixedWidthInput
+          <AutoWidthInput
             type="number"
             min={0}
             max={32000}
@@ -83,6 +83,7 @@ const ConfigMenu = styled.menu`
     gap: 4px;
   }
 `;
-const FixedWidthInput = styled(BasicFormInput)`
-  width: 72px;
+const AutoWidthInput = styled(BasicFormInput)`
+  min-width: 72px;
+  field-sizing: content;
 `;
