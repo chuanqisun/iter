@@ -39,7 +39,7 @@
     "@codemirror/language-data": "^6.5.1",
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.36.2",
-    "@google/genai": "^0.10.0",
+    "@google/genai": "^0.13.0",
     "@uiw/codemirror-theme-github": "^4.23.8",
     "gpt-tokenizer": "^2.9.0",
     "idb-keyval": "^6.2.1",
