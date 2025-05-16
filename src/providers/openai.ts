@@ -34,10 +34,10 @@ export interface OpenAIConnection extends BaseConnection {
 export class OpenAIProvider implements BaseProvider {
   static type = "openai";
   static defaultModels = [
+    "codex-mini-latest",
     "o4-mini",
     "o3",
     "o3-mini",
-    "o1-mini",
     "gpt-4.5-preview",
     "gpt-4.1",
     "gpt-4.1-mini",
@@ -100,7 +100,11 @@ export class OpenAIProvider implements BaseProvider {
       });
 
       const isTemperatureSupported =
-        !connection.model.startsWith("o1") && !connection.model.startsWith("o3") && !connection.model.startsWith("o4");
+        !connection.model.startsWith("o1") &&
+        !connection.model.startsWith("o3") &&
+        !connection.model.startsWith("o4") &&
+        !connection.model.startsWith("codex");
+
       const isSystemMessageSupported = !connection.model.startsWith("o1-mini");
 
       const start = performance.now();
