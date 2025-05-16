@@ -68,5 +68,5 @@ Mac users, please use <kbd>⌘</kbd> instead of <kbd>Ctrl</kbd>
 | Select up/down       | <kbd>↑</kbd> / <kbd>↓</kbd>                                     |
 | Create backup        | <kbd>Ctrl</kbd> + <kbd>S</kbd>                                  |
 | Restore backup       | <kbd>Ctrl</kbd> + <kbd>O</kbd>                                  |
-| Export               | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd>               |
+| Export               | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>E</kbd>               |
 | Import               | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>O</kbd>               |
