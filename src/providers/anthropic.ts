@@ -14,6 +14,7 @@ import type {
   ChatStreamProxy,
   GenericChatParams,
   GenericMessage,
+  GenericOptions,
 } from "./base";
 
 export interface AnthropicCredential extends BaseCredential {
@@ -77,6 +78,12 @@ export class AnthropicProvider implements BaseProvider {
       title: credential.accountName,
       tagLine: credential.type,
       features: AnthropicProvider.defaultModels.join(","),
+    };
+  }
+
+  getOptions(_connection: BaseConnection): GenericOptions {
+    return {
+      temperature: { max: 1 },
     };
   }
 

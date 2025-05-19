@@ -11,6 +11,7 @@ import type {
   ChatStreamProxy,
   GenericChatParams,
   GenericMessage,
+  GenericOptions,
 } from "./base";
 
 export interface AzureOpenAICredential extends BaseCredential {
@@ -87,6 +88,15 @@ export class AzureOpenAIProvider implements BaseProvider {
     };
   }
 
+  getOptions(connection: BaseConnection): GenericOptions {
+    if (!this.isAzureOpenAIConnection(connection)) throw new Error("Invalid connection type");
+    const isTemperatureSupported = !connection.deployment.startsWith("o");
+
+    return {
+      temperature: isTemperatureSupported ? { max: 2 } : undefined,
+    };
+  }
+
   getChatStreamProxy(connection: BaseConnection): ChatStreamProxy {
     if (!this.isAzureOpenAIConnection(connection)) throw new Error("Invalid connection type");
     const that = this;
@@ -102,8 +112,8 @@ export class AzureOpenAIProvider implements BaseProvider {
       });
 
       const systemRoleName = connection.deployment.startsWith("o") ? "developer" : "system";
-      const isTemperatureSupported = !connection.deployment.startsWith("o");
       const isSystemMessageSupported = !connection.deployment.startsWith("o1-mini");
+      const isTemperatureSupported = that.getOptions(connection).temperature !== undefined;
 
       const start = performance.now();
       const stream = await client.chat.completions.create(

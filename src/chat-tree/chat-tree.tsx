@@ -52,6 +52,12 @@ export function ChatTree() {
     encode: String,
     decode: Number,
   });
+  const reasoningEffort = useRouteParameter({
+    name: "reasoning_effort",
+    initial: "medium" as string,
+    encode: String,
+    decode: String,
+  });
 
   useArtifactActions();
   useRouteCache({ parameters: ["connection", "temperature", "max_tokens"] });
@@ -64,12 +70,13 @@ export function ChatTree() {
       return chatStreamProxy({
         temperature: temperature.value,
         maxTokens: maxTokens.value,
+        reasoningEffort: reasoningEffort.value,
         messages,
         abortSignal,
         onMetadata,
       });
     },
-    [connectionKey.value, getChatStreamProxy, temperature.value, maxTokens.value],
+    [connectionKey.value, getChatStreamProxy, temperature.value, maxTokens.value, reasoningEffort.value],
   );
 
   const groupedConnections = useMemo(() => {
@@ -734,6 +741,7 @@ export function ChatTree() {
         groupedConnections={groupedConnections}
         connectionKey={connectionKey}
         temperature={temperature}
+        reasoningEffort={reasoningEffort}
         maxTokens={maxTokens}
       />
       <MessageList ref={treeRootRef}>

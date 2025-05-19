@@ -5,6 +5,7 @@ import type {
   ResponseInputItem,
   ResponseInputText,
 } from "openai/resources/responses/responses.mjs";
+import type { ReasoningEffort } from "openai/resources/shared.mjs";
 import { dataUrlToText } from "../storage/codec";
 import type {
   BaseConnection,
@@ -13,6 +14,7 @@ import type {
   ChatStreamProxy,
   GenericChatParams,
   GenericMessage,
+  GenericOptions,
 } from "./base";
 
 export interface OpenAICredential extends BaseCredential {
@@ -88,6 +90,19 @@ export class OpenAIProvider implements BaseProvider {
     };
   }
 
+  getOptions(connection: BaseConnection): GenericOptions {
+    if (!this.isOpenAIConnection(connection)) throw new Error("Invalid connection type");
+    const model = connection.model;
+
+    const isTemperatureSupported = model.startsWith("gpt");
+    const isThinkingEffortSupported = model.startsWith("o") || model.startsWith("codex");
+
+    return {
+      temperature: isTemperatureSupported ? { max: 2 } : undefined,
+      reasoningEffort: isThinkingEffortSupported ? ["low", "medium", "high"] : undefined,
+    };
+  }
+
   getChatStreamProxy(connection: BaseConnection): ChatStreamProxy {
     if (!this.isOpenAIConnection(connection)) throw new Error("Invalid connection type");
     const that = this;
@@ -99,11 +114,7 @@ export class OpenAIProvider implements BaseProvider {
         dangerouslyAllowBrowser: true,
       });
 
-      const isTemperatureSupported =
-        !connection.model.startsWith("o1") &&
-        !connection.model.startsWith("o3") &&
-        !connection.model.startsWith("o4") &&
-        !connection.model.startsWith("codex");
+      const options = that.getOptions(connection);
 
       const isSystemMessageSupported = !connection.model.startsWith("o1-mini");
 
@@ -112,7 +123,10 @@ export class OpenAIProvider implements BaseProvider {
         {
           input: that.getOpenAIMessages(messages, { isSystemMessageSupported }),
           model: connection.model,
-          temperature: isTemperatureSupported ? config?.temperature : undefined,
+          temperature: options.temperature !== undefined ? config?.temperature : undefined,
+          ...(options.reasoningEffort
+            ? { reasoning: { effort: (config.reasoningEffort ?? "medium") as ReasoningEffort } }
+            : {}),
           max_output_tokens: config?.maxTokens,
           top_p: config?.topP,
         },

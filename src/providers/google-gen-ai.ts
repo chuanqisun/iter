@@ -7,6 +7,7 @@ import type {
   ChatStreamProxy,
   GenericChatParams,
   GenericMessage,
+  GenericOptions,
 } from "./base";
 
 export interface GoogleGenAICredential extends BaseCredential {
@@ -77,6 +78,12 @@ export class GoogleGenAIProvider implements BaseProvider {
       title: credential.accountName,
       tagLine: credential.type,
       features: GoogleGenAIProvider.defaultModels.join(","),
+    };
+  }
+
+  getOptions(_connection: BaseConnection): GenericOptions {
+    return {
+      temperature: { max: 2 },
     };
   }
 

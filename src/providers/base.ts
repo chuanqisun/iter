@@ -21,6 +21,15 @@ export interface BaseProvider {
   credentialToConnections(credential: BaseCredential): BaseConnection[];
   getCredentialSummary(credential: BaseCredential): SummarizedCredential;
   getChatStreamProxy(connection: BaseConnection): ChatStreamProxy;
+  getOptions(connection: BaseConnection): GenericOptions;
+}
+
+export interface GenericOptions {
+  topP?: { min: number; max: number; step: number };
+  topK?: { min: number; max: number; step: number };
+  temperature?: { min?: number; max: number; step?: number };
+  reasoningEffort?: string[];
+  thinkingBudget?: { min: number; max: number; step: number };
 }
 
 export interface GenericMessage {
@@ -42,6 +51,9 @@ export interface GenericChatParams {
   temperature?: number;
   maxTokens?: number;
   topP?: number;
+  topK?: number;
+  reasoningEffort?: string;
+  thinkingBudget?: number;
   onMetadata?: (metadata: GenericMetadata) => void;
 }
 
