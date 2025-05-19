@@ -81,9 +81,13 @@ export class AnthropicProvider implements BaseProvider {
     };
   }
 
-  getOptions(_connection: BaseConnection): GenericOptions {
+  getOptions(connection: BaseConnection): GenericOptions {
+    if (!this.isAnthropicConnection(connection)) throw new Error("Invalid connection type");
+    const isThinkingBudgetAdjustable = connection.model.startsWith("claude-3-7");
+
     return {
       temperature: { max: 1 },
+      thinkingBudget: isThinkingBudgetAdjustable ? { max: 32000 } : undefined,
     };
   }
 
@@ -98,14 +102,26 @@ export class AnthropicProvider implements BaseProvider {
         dangerouslyAllowBrowser: true,
       });
 
+      const options = that.getOptions(connection);
+
       const { system, messages: anthropicMessages } = that.getAnthropicMessages(messages);
+
+      // ref:   https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking#important-considerations-when-using-extended-thinking
+      const resolvedThinkingBudget = options.thinkingBudget
+        ? (config?.thinkingBudget ?? 0) >= 1024
+          ? config.thinkingBudget
+          : undefined
+        : undefined;
+
+      const resolvedTemperature = resolvedThinkingBudget === undefined ? Math.min(config?.temperature ?? 0.7, 1) : 1;
 
       const start = performance.now();
       const stream = client.messages.stream(
         {
           max_tokens: config?.maxTokens ?? 200,
-          temperature: Math.min(config?.temperature ?? 0.7, 1), // anthropic only supports 0-1
+          temperature: resolvedTemperature,
           system,
+          thinking: resolvedThinkingBudget ? { type: "enabled", budget_tokens: resolvedThinkingBudget } : undefined,
           messages: anthropicMessages,
           model: connection.model,
         },

@@ -58,9 +58,15 @@ export function ChatTree() {
     encode: String,
     decode: String,
   });
+  const thinkingBudget = useRouteParameter({
+    name: "thinking_budget",
+    initial: 0,
+    encode: String,
+    decode: Number,
+  });
 
   useArtifactActions();
-  useRouteCache({ parameters: ["connection", "temperature", "max_tokens"] });
+  useRouteCache({ parameters: ["connection", "temperature", "max_tokens", "reasoning_effort", "thinking_budget"] });
 
   const chat = useCallback(
     (messages: GenericMessage[], abortSignal?: AbortSignal, onMetadata?: (metadata: GenericMetadata) => void) => {
@@ -71,12 +77,20 @@ export function ChatTree() {
         temperature: temperature.value,
         maxTokens: maxTokens.value,
         reasoningEffort: reasoningEffort.value,
+        thinkingBudget: thinkingBudget.value,
         messages,
         abortSignal,
         onMetadata,
       });
     },
-    [connectionKey.value, getChatStreamProxy, temperature.value, maxTokens.value, reasoningEffort.value],
+    [
+      connectionKey.value,
+      getChatStreamProxy,
+      temperature.value,
+      maxTokens.value,
+      reasoningEffort.value,
+      thinkingBudget.value,
+    ],
   );
 
   const groupedConnections = useMemo(() => {
@@ -742,6 +756,7 @@ export function ChatTree() {
         connectionKey={connectionKey}
         temperature={temperature}
         reasoningEffort={reasoningEffort}
+        thinkingBudget={thinkingBudget}
         maxTokens={maxTokens}
       />
       <MessageList ref={treeRootRef}>

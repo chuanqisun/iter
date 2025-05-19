@@ -11,6 +11,7 @@ export interface ChatConfigProps {
   connectionKey: RouteParameter<string | null>;
   temperature: RouteParameter<number>;
   reasoningEffort: RouteParameter<string>;
+  thinkingBudget: RouteParameter<number>;
   maxTokens: RouteParameter<number>;
 }
 
@@ -47,10 +48,10 @@ function ChatConfig(props: ChatConfigProps) {
             Temperature
             <AutoWidthInput
               type="number"
-              min={options.temperature.min ?? 0}
+              min={0}
               max={options.temperature.max}
               value={props.temperature.value}
-              step={options.temperature.step ?? 0.05}
+              step={0.05}
               onChange={(e) => props.temperature.replace((e.target as HTMLInputElement).valueAsNumber)}
             />
           </label>
@@ -71,8 +72,21 @@ function ChatConfig(props: ChatConfigProps) {
           </label>
         ) : null}
 
+        {options?.thinkingBudget ? (
+          <label>
+            Thinking
+            <AutoWidthInput
+              type="number"
+              min={0}
+              max={options.thinkingBudget.max}
+              value={props.thinkingBudget.value}
+              step={100}
+              onChange={(e) => props.thinkingBudget.replace((e.target as HTMLInputElement).valueAsNumber)}
+            />
+          </label>
+        ) : null}
         <label>
-          Max tokens
+          Max
           <AutoWidthInput
             type="number"
             min={0}

@@ -27,9 +27,9 @@ export interface BaseProvider {
 export interface GenericOptions {
   topP?: { min: number; max: number; step: number };
   topK?: { min: number; max: number; step: number };
-  temperature?: { min?: number; max: number; step?: number };
+  temperature?: { max: number };
   reasoningEffort?: string[];
-  thinkingBudget?: { min: number; max: number; step: number };
+  thinkingBudget?: { max: number };
 }
 
 export interface GenericMessage {
