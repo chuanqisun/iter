@@ -81,8 +81,14 @@ export class GoogleGenAIProvider implements BaseProvider {
     };
   }
 
-  getOptions(_connection: BaseConnection): GenericOptions {
+  getOptions(connection: BaseConnection): GenericOptions {
+    if (!this.isAnthropicConnection(connection)) throw new Error("Invalid connection type");
+
+    const isThinkingModel = connection.model.startsWith("gemini-2.5-flash");
+
+    // ref: https://ai.google.dev/gemini-api/docs/thinking
     return {
+      thinkingBudget: isThinkingModel ? { max: 24576 } : undefined,
       temperature: { max: 2 },
     };
   }
@@ -97,7 +103,8 @@ export class GoogleGenAIProvider implements BaseProvider {
 
       const { system, messages: googleMessages } = that.getGoogleGenAIMessages(messages);
 
-      const canDisableThinking = connection.model.startsWith("gemini-2.5-flash");
+      const options = that.getOptions(connection);
+      const thinkingBudget = options.thinkingBudget ? (config.thinkingBudget ?? 0) : undefined;
 
       const start = performance.now();
       const result = await client.models.generateContentStream({
@@ -109,7 +116,7 @@ export class GoogleGenAIProvider implements BaseProvider {
           temperature: config?.temperature,
           topP: config?.topP,
           maxOutputTokens: config?.maxTokens,
-          thinkingConfig: canDisableThinking ? { thinkingBudget: 0 } : undefined,
+          thinkingConfig: thinkingBudget !== undefined ? { thinkingBudget } : undefined,
         },
       });
 
