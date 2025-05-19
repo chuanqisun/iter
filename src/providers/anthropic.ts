@@ -106,7 +106,7 @@ export class AnthropicProvider implements BaseProvider {
 
       const { system, messages: anthropicMessages } = that.getAnthropicMessages(messages);
 
-      // ref:   https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking#important-considerations-when-using-extended-thinking
+      // ref: https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking#important-considerations-when-using-extended-thinking
       const resolvedThinkingBudget = options.thinkingBudget
         ? (config?.thinkingBudget ?? 0) > 0
           ? Math.max(1024, config.thinkingBudget ?? 0)
