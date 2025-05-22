@@ -36,7 +36,7 @@ export interface AnthropicConnection extends BaseConnection {
 
 export class AnthropicProvider implements BaseProvider {
   static type = "anthropic";
-  static defaultModels = ["claude-3-7-sonnet-latest", "claude-3-5-sonnet-latest", "claude-3-5-haiku-latest"];
+  static defaultModels = [ "claude-opus-4-0", "claude-sonnet-4-0", "claude-3-7-sonnet-latest", "claude-3-5-sonnet-latest", "claude-3-5-haiku-latest"];
 
   parseNewCredentialForm(formData: FormData): AnthropicCredential[] {
     const accountName = formData.get("newAccountName") as string;
@@ -83,7 +83,7 @@ export class AnthropicProvider implements BaseProvider {
 
   getOptions(connection: BaseConnection): GenericOptions {
     if (!this.isAnthropicConnection(connection)) throw new Error("Invalid connection type");
-    const isThinkingBudgetAdjustable = connection.model.startsWith("claude-3-7");
+    const isThinkingBudgetAdjustable = connection.model.startsWith("claude-3-7") || connection.model.startsWith("claude-opus") || connection.model.startsWith("claude-sonnet");
 
     return {
       temperature: { max: 1 },
