@@ -1,5 +1,5 @@
 import type { KeyboardEvent, MouseEvent } from "react";
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { markdownToHtml, preloadPreviewWorker } from "../workers/worker-proxy";
 import { MarkdownPreview } from "./markdown-preview";
 import { skipWhenBusy } from "./skip-when-busy";
@@ -12,7 +12,18 @@ export interface StreamingPreviewProps {
   collapsedHeight?: number;
 }
 
-export function StreamingPreivew(props: StreamingPreviewProps) {
+// memoize based on the relevant properties of the node
+export const StreamingPreview = memo(StreamingPreviewInternal, (prevProps, nextProps) => {
+  return (
+    prevProps.node.id === nextProps.node.id &&
+    prevProps.node.content === nextProps.node.content &&
+    prevProps.node.content$ === nextProps.node.content$ &&
+    prevProps.node.cachedPreviewHtml?.key === nextProps.node.cachedPreviewHtml?.key &&
+    prevProps.collapsedHeight === nextProps.collapsedHeight
+  );
+});
+
+export function StreamingPreviewInternal(props: StreamingPreviewProps) {
   // stream content into markdown preview
   const [html, setHtml] = useState<string>(props.node.cachedPreviewHtml?.value ?? "");
 

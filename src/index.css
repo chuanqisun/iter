@@ -10,6 +10,7 @@
   --input-border-width: 1px;
   --text-line-height: 1.5;
   --code-line-height: 1.2;
+  --button-border-radius: 2px;
 
   --body-background: #e1e1e1;
   --input-background: transparent;
@@ -19,8 +20,12 @@
   --ghost-button-hover-background: #eeeeee;
   --table-border-color: #cccccc;
   --table-hover-color: #eeeeee;
-  --action-button-rest-color: #646464;
+  --action-button-rest-color: #222;
   --action-button-hover-color: #000;
+  --button-background-rest-color: #f1f1f1;
+  --button-background-hover-color: #dfdfdf;
+  --button-border-rest-color: #cccccc;
+  --button-border-hover-color: #000;
 
   --action-bar-z-index: 1;
   --artifact-editor-z-index: 2;
@@ -39,6 +44,10 @@
     --table-hover-color: #444444;
     --action-button-rest-color: #8b8b8b;
     --action-button-hover-color: #fff;
+    --button-background-rest-color: #242424;
+    --button-background-hover-color: #444;
+    --button-border-rest-color: #555555;
+    --button-border-hover-color: #fff;
   }
 }
 

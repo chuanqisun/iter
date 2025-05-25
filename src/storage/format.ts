@@ -1,5 +1,6 @@
 import { BehaviorSubject } from "rxjs";
 import type { ChatNode } from "../chat-tree/tree-store";
+import { fileToDataUrl } from "./codec";
 
 export async function stringifyChat(nodes: ChatNode[]) {
   return `
@@ -48,7 +49,7 @@ async function stringifyUserMessage(node: ChatNode) {
       object.setAttribute("data-for", "interpreter");
       object.type = file.type;
       object.name = file.name;
-      object.data = await fileToBase64DataUrl(file);
+      object.data = await fileToDataUrl(file);
       return object;
     }),
   );
@@ -56,15 +57,6 @@ async function stringifyUserMessage(node: ChatNode) {
   section.append(...parts, ...objectNodes);
 
   return section.outerHTML;
-}
-
-async function fileToBase64DataUrl(file: File) {
-  const reader = new FileReader();
-  return new Promise<string>((resolve, reject) => {
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 }
 
 export async function parseChat(raw: string, preserveIds?: string[]): Promise<ChatNode[]> {
