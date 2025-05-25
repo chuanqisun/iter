@@ -5,10 +5,9 @@ import { languages } from "@codemirror/language-data";
 import { Compartment, EditorSelection, EditorState, type Extension } from "@codemirror/state";
 import { drawSelection, EditorView, highlightSpecialChars, keymap } from "@codemirror/view";
 import { githubDark } from "@uiw/codemirror-theme-github/src/index.ts";
-import { chatPanel } from "./chat-panel";
-
 import { Subject, tap } from "rxjs";
 import { chatKeymap } from "./chat-keymap";
+import { chatPanel } from "./chat-panel";
 import "./code-editor-element.css";
 import { syncDispatch } from "./sync";
 
