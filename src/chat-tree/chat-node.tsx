@@ -357,7 +357,7 @@ const MessageActions = styled.span`
     background: none;
     border: none;
     padding: 0;
-    &:focus,
+    &:focus-visible,
     &:hover {
       color: var(--action-button-hover-color);
       text-decoration: underline;
@@ -476,7 +476,7 @@ const AttachmentFileName = styled.button`
   max-width: 120px;
   cursor: pointer;
 
-  &:focus,
+  &:focus-visible,
   &:hover {
     text-decoration: underline;
   }
@@ -495,7 +495,7 @@ const AttachmentAction = styled.button`
   cursor: pointer;
   color: var(--action-button-rest-color);
 
-  &:focus,
+  &:focus-visible,
   &:hover {
     text-decoration: underline;
     color: var(--action-button-hover-color);

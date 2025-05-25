@@ -285,7 +285,6 @@ export function ChatTree() {
 
       // when writing a file, we treat it as uploading a file to the chat message as attachment
       respondWriteFile((name, data) => {
-        console.log("wrote file", { name, data });
         const fileExension = name.split(".").pop()?.toLowerCase() ?? "txt";
         const mimeType = fileExtensionMimeTypes[fileExension] ?? "text/plain";
         const file = new File([data], name, { type: mimeType });
@@ -311,6 +310,8 @@ export function ChatTree() {
             ),
           ),
         );
+
+        showToast(`✅ Created file ${name} (${getReadableFileSize(file.size)})`);
       }, event);
     };
 
