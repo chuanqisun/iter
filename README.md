@@ -71,3 +71,13 @@ Mac users, please use <kbd>⌘</kbd> instead of <kbd>Ctrl</kbd>
 | Restore backup       | <kbd>Ctrl</kbd> + <kbd>O</kbd>                                  |
 | Export               | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>E</kbd>               |
 | Import               | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>O</kbd>               |
+
+## Code interpreter
+
+Include a `run` block in the user message to force the LLM to generate code and output files.
+
+````
+```run
+<describe what the code should do in natural language, you can also include what types of files to output>
+```
+````
