@@ -1,14 +1,20 @@
 import React, { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 import styled from "styled-components";
 import { useArtifactActions } from "../artifact/artifact";
-import { getFileAccessPostscript, respondFileAccess, respondFileList } from "../artifact/lib/file-access";
+import {
+  getCodeInterpreterPrompt,
+  getReadonlyFileAccessPostscript,
+  respondListFiles,
+  respondReadFile,
+  respondWriteFile,
+} from "../artifact/lib/file-access";
 import type { CodeEditorElement } from "../code-editor/code-editor-element";
 import { type GenericMessage, type GenericMetadata } from "../providers/base";
 import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
 import { useConnections } from "../settings/use-connections";
 import { showToast } from "../shell/toast";
-import { textToDataUrl } from "../storage/codec";
+import { dataUrlToFile, fileExtensionMimeTypes, fileToDataUrl, textToDataUrl } from "../storage/codec";
 import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import { ChatConfigMemo } from "./chat-config";
@@ -21,7 +27,7 @@ import { autoFocusNthInput } from "./focus";
 import { InputTokenizer } from "./input-tokenizer";
 import { getCombo } from "./keyboard";
 import { getAssistantNode, getNextId, getPrevId, getUserNode, INITIAL_NODES, patchNode } from "./tree-helper";
-import { useTreeNodes, type ChatNode } from "./tree-store";
+import { useTreeNodes, type ChatNode, type ChatPart } from "./tree-store";
 
 export function ChatTree() {
   const { treeNodes, setTreeNodes, treeNodes$, createWriter } = useTreeNodes({ initialNodes: INITIAL_NODES });
@@ -274,8 +280,38 @@ export function ChatTree() {
           .map((file) => [file.name, file]),
       );
 
-      respondFileAccess((filename) => latestFileMap.get(filename), event);
-      respondFileList(() => [...latestFileMap.values()], event);
+      respondReadFile((filename) => latestFileMap.get(filename), event);
+      respondListFiles(() => [...latestFileMap.values()], event);
+
+      // when writing a file, we treat it as uploading a file to the chat message as attachment
+      respondWriteFile((name, data) => {
+        console.log("wrote file", { name, data });
+        const fileExension = name.split(".").pop()?.toLowerCase() ?? "txt";
+        const mimeType = fileExtensionMimeTypes[fileExension] ?? "text/plain";
+        const file = new File([data], name, { type: mimeType });
+        const sourceIframe = [...document.querySelectorAll("iframe")].find(
+          (iframe) => iframe.contentWindow === event.source,
+        );
+        const sourceNodeId = sourceIframe?.closest(`[data-node-id]`)?.getAttribute("data-node-id");
+        if (!sourceNodeId) {
+          console.error("Cannot locate source message for file write");
+          return;
+        }
+
+        setTreeNodes((nodes) =>
+          nodes.map(
+            patchNode(
+              (node) => node.id === sourceNodeId,
+              (node) => {
+                const existingFileMap = new Map(node.files?.map((file) => [file.name, file]));
+                existingFileMap.set(file.name, file);
+                const newFiles = [...existingFileMap.values()];
+                return { files: newFiles };
+              },
+            ),
+          ),
+        );
+      }, event);
     };
 
     window.addEventListener("message", handleIframeFileAccessRequest);
@@ -366,8 +402,9 @@ export function ChatTree() {
     return treeNodes$.value
       .slice(0, targetIndex + 1)
       .map((node) => {
-        const filePostScript = getFileAccessPostscript(node.files ?? []);
-        const rawContentDataUrl = textToDataUrl(`${node.content}${filePostScript}`);
+        const filePostScript = getReadonlyFileAccessPostscript(node.files ?? []);
+        const codeInterpreterPostScript = node.content.includes("```run") ? getCodeInterpreterPrompt() : "";
+        const rawContentDataUrl = textToDataUrl(`${node.content}${filePostScript}${codeInterpreterPostScript}`);
 
         const message: GenericMessage = {
           role: node.role,
@@ -619,7 +656,7 @@ export function ChatTree() {
     );
   }, []);
 
-  const handleRemoveAttachment = useCallback((nodeId: string, name: string, url: string) => {
+  const handleRemovePart = useCallback((nodeId: string, name: string, url: string) => {
     setTreeNodes((nodes) =>
       nodes.map(
         patchNode(
@@ -654,7 +691,7 @@ export function ChatTree() {
     );
   }, []);
 
-  const hanldeRemoveFile = useCallback((nodeId: string, fileName: string) => {
+  const handleRemoveFile = useCallback((nodeId: string, fileName: string) => {
     setTreeNodes((nodes) =>
       nodes.map(
         patchNode(
@@ -666,6 +703,118 @@ export function ChatTree() {
       ),
     );
   }, []);
+
+  const handleDownloadFile = useCallback((nodeId: string, fileName: string) => {
+    const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
+    if (!targetNode) return;
+    const file = targetNode.files?.find((file) => file.name === fileName);
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const handleDownloadPart = useCallback((nodeId: string, partName: string) => {
+    const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
+    if (!targetNode) return;
+
+    const part = targetNode.parts?.find((part) => part.name === partName);
+    if (!part) return;
+
+    const url = part.url;
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = part.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const handleToggleAttachmentMode = useCallback(
+    async (nodeId: string, name: string, newType: "inline" | "external") => {
+      const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
+      if (newType === "inline") {
+        const matchingFile = targetNode?.files?.find((file) => file.name === name);
+        if (!matchingFile) {
+          showToast(`❌ File ${name} not found`);
+          return;
+        }
+
+        const base64DataUrl = await fileToDataUrl(matchingFile);
+
+        setTreeNodes((nodes) =>
+          nodes.map(
+            patchNode(
+              (node) => node.id === nodeId,
+              (node) => {
+                const existingParts = node.parts ?? [];
+                const existingFiles = node.files ?? [];
+                const existingFileIndex = existingFiles.findIndex((file) => file.name === name);
+
+                // Move from file to part
+                if (existingFileIndex !== -1) {
+                  const file = existingFiles[existingFileIndex];
+
+                  const createdPart: ChatPart = {
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    url: base64DataUrl,
+                  };
+
+                  return {
+                    parts: [...existingParts, createdPart],
+                    files: existingFiles.filter((_, i) => i !== existingFileIndex),
+                  };
+                }
+
+                return node;
+              },
+            ),
+          ),
+        );
+      } else {
+        const matchingPart = targetNode?.parts?.find((part) => part.name === name);
+        if (!matchingPart) {
+          showToast(`❌ Part ${name} not found`);
+          return;
+        }
+
+        const createdFile = await dataUrlToFile(matchingPart.url, matchingPart.name);
+
+        setTreeNodes((nodes) =>
+          nodes.map(
+            patchNode(
+              (node) => node.id === nodeId,
+              (node) => {
+                const existingParts = node.parts ?? [];
+                const existingFiles = node.files ?? [];
+                const existingPartIndex = existingParts.findIndex((part) => part.name === name);
+
+                // Move from part to file
+                if (existingPartIndex !== -1) {
+                  return {
+                    files: [...existingFiles, createdFile],
+                    parts: existingParts.filter((_, i) => i !== existingPartIndex),
+                  };
+                }
+
+                return node;
+              },
+            ),
+          ),
+        );
+      }
+    },
+    [],
+  );
 
   const handleToggleViewFormat = useCallback((nodeId: string) => {
     const isExitEditing =
@@ -765,21 +914,24 @@ export function ChatTree() {
             <InputTokenizer node={node} />
             <ChatNodeMemo
               node={node}
-              onTextChange={handleTextChange}
+              onAbort={handleAbort}
               onCodeBlockChange={handleCodeBlockChange}
               onDelete={handleDelete}
               onDeleteBelow={handleDeleteBelow}
-              onRunNode={handleRunNode}
+              onDownloadFile={handleDownloadFile}
+              onDownloadPart={handleDownloadPart}
               onKeydown={handleKeydown}
               onPaste={handlePaste}
-              onUploadFiles={handleUploadFiles}
-              onRemoveAttachment={handleRemoveAttachment}
-              onRemoveFile={hanldeRemoveFile}
-              onToggleRole={handleToggleRole}
-              onToggleViewFormat={handleToggleViewFormat}
-              onToggleShowMore={handleToggleShowMore}
               onPreviewDoubleClick={handlePreviewDoubleClick}
-              onAbort={handleAbort}
+              onRemoveAttachment={handleRemovePart}
+              onRemoveFile={handleRemoveFile}
+              onRunNode={handleRunNode}
+              onTextChange={handleTextChange}
+              onToggleAttachmentMode={handleToggleAttachmentMode}
+              onToggleRole={handleToggleRole}
+              onToggleShowMore={handleToggleShowMore}
+              onToggleViewFormat={handleToggleViewFormat}
+              onUploadFiles={handleUploadFiles}
             />
           </Fragment>
         ))}

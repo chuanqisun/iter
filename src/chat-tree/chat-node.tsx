@@ -6,7 +6,7 @@ import { InputMetadata } from "./input-metadata";
 import { getCombo } from "./keyboard";
 import { OutputMetadata } from "./output-metadata";
 import { StreamingEditor } from "./streaming-editor";
-import { StreamingPreivew } from "./streaming-preview";
+import { StreamingPreview } from "./streaming-preview";
 import type { ChatNode } from "./tree-store";
 
 const roleIcon = {
@@ -32,6 +32,8 @@ export interface ChatNodeProps {
   onCodeBlockChange: (id: string, current: string, index: number) => void;
   onDelete: (id: string) => void;
   onDeleteBelow: (id: string) => void;
+  onDownloadFile: (id: string, name: string) => void;
+  onDownloadPart: (id: string, name: string) => void;
   onKeydown: (id: string, e: React.KeyboardEvent<HTMLElement>) => void;
   onPaste: (id: string, e: React.ClipboardEvent<HTMLTextAreaElement>) => void;
   onPreviewDoubleClick: (id: string, e: React.MouseEvent) => void;
@@ -39,6 +41,7 @@ export interface ChatNodeProps {
   onRemoveFile: (id: string, name: string) => void;
   onRunNode: (id: string) => void;
   onTextChange: (id: string, value: string) => void;
+  onToggleAttachmentMode: (id: string, name: string, mode: "external" | "inline") => void;
   onToggleRole: (id: string) => void;
   onToggleShowMore: (id: string, options?: { toggleAll?: boolean }) => void;
   onToggleViewFormat: (id: string) => void;
@@ -54,6 +57,8 @@ export function ChatNodeInternal(props: ChatNodeProps) {
     onCodeBlockChange,
     onDelete,
     onDeleteBelow,
+    onDownloadFile,
+    onDownloadPart,
     onKeydown,
     onPaste,
     onPreviewDoubleClick,
@@ -61,6 +66,7 @@ export function ChatNodeInternal(props: ChatNodeProps) {
     onRemoveFile,
     onRunNode,
     onTextChange,
+    onToggleAttachmentMode,
     onToggleRole,
     onToggleShowMore,
     onToggleViewFormat,
@@ -112,7 +118,7 @@ export function ChatNodeInternal(props: ChatNodeProps) {
   }, []);
 
   return (
-    <Thread key={node.id}>
+    <Thread key={node.id} data-node-id={node.id}>
       <MessageLayout className="js-message" ref={tabCyclingContainer}>
         <Avatar
           data-managed-focus="message-action"
@@ -231,7 +237,7 @@ export function ChatNodeInternal(props: ChatNodeProps) {
                 onToggleViewFormat={onToggleViewFormat}
               />
             ) : (
-              <StreamingPreivew
+              <StreamingPreview
                 node={node}
                 onKeyDown={(e) => onKeydown(node.id, e)}
                 onDoubleClick={(e) => onPreviewDoubleClick(node.id, e)}
@@ -241,31 +247,59 @@ export function ChatNodeInternal(props: ChatNodeProps) {
 
             {node.files?.length || node.parts?.length ? (
               <AttachmentList>
-                {node.parts
-                  ?.filter((part) => part.type.startsWith("image/"))
-                  ?.map((part) => (
-                    <AttachmentPreview key={part.url} onClick={(_) => onRemoveAttachment(node.id, part.name, part.url)}>
-                      <img key={part.url} src={part.url} alt="attachment" />
-                    </AttachmentPreview>
-                  ))}
-
-                {node.parts
-                  ?.filter((part) => !part.type.startsWith("image/"))
-                  ?.map((part) => (
-                    <AttachmentPreview key={part.url} onClick={(_) => onRemoveAttachment(node.id, part.name, part.url)}>
-                      <AttachmentFileName title={`${part.name}${part.type ? ` (${part.type})` : ""}`}>
+                {node.parts?.map((part) => (
+                  <AttachmentPreview key={part.url}>
+                    {part.type?.startsWith("image/") ? <AttachmentMedia src={part.url} /> : null}
+                    <AttachmentHeading>
+                      <AttachmentFileName
+                        title={`Download ${part.name}${part.type ? ` (${part.type})` : ""}`}
+                        onClick={() => onDownloadPart(node.id, part.name)}
+                      >
                         {part.name}
                       </AttachmentFileName>
-                      <AttachmentFileSize>{getReadableFileSize(part.size)} inlined</AttachmentFileSize>
-                    </AttachmentPreview>
-                  ))}
+                      <AttachmentFileSize>{getReadableFileSize(part.size)}</AttachmentFileSize>
+                    </AttachmentHeading>
+                    <AttachmentFooter>
+                      <AttachmentAction
+                        title="Toggle file mode"
+                        onClick={() => onToggleAttachmentMode(node.id, part.name, "external")}
+                      >
+                        Inline
+                      </AttachmentAction>
+                      <span> · </span>
+                      <AttachmentAction
+                        title="Delete file"
+                        onClick={() => onRemoveAttachment(node.id, part.name, part.url)}
+                      >
+                        Delete
+                      </AttachmentAction>
+                    </AttachmentFooter>
+                  </AttachmentPreview>
+                ))}
 
                 {node.files?.map((file) => (
-                  <AttachmentPreview key={file.name} onClick={(_) => onRemoveFile(node.id, file.name)}>
-                    <AttachmentFileName title={`${file.name}${file.type ? ` (${file.type})` : ""}`}>
-                      {file.name}
-                    </AttachmentFileName>
-                    <AttachmentFileSize>{getReadableFileSize(file.size)} uploaded</AttachmentFileSize>
+                  <AttachmentPreview key={file.name}>
+                    <AttachmentHeading>
+                      <AttachmentFileName
+                        title={`Download ${file.name}${file.type ? ` (${file.type})` : ""}`}
+                        onClick={() => onDownloadFile(node.id, file.name)}
+                      >
+                        {file.name}
+                      </AttachmentFileName>
+                      <AttachmentFileSize>{getReadableFileSize(file.size)}</AttachmentFileSize>
+                    </AttachmentHeading>
+                    <AttachmentFooter>
+                      <AttachmentAction
+                        title="Toggle file mode"
+                        onClick={() => onToggleAttachmentMode(node.id, file.name, "inline")}
+                      >
+                        External
+                      </AttachmentAction>
+                      <span> · </span>
+                      <AttachmentAction title="Delete file" onClick={() => onRemoveFile(node.id, file.name)}>
+                        Delete
+                      </AttachmentAction>
+                    </AttachmentFooter>
                   </AttachmentPreview>
                 ))}
               </AttachmentList>
@@ -323,6 +357,7 @@ const MessageActions = styled.span`
     background: none;
     border: none;
     padding: 0;
+    &:focus,
     &:hover {
       color: var(--action-button-hover-color);
       text-decoration: underline;
@@ -377,32 +412,92 @@ const AttachmentList = styled.div`
   flex-wrap: wrap;
   gap: 8px;
 `;
-const AttachmentPreview = styled.button`
+const AttachmentPreview = styled.div`
   display: grid;
+  grid-template:
+    "media heading" auto
+    "media footer" auto / auto 1fr;
   text-align: start;
   align-content: center;
   height: 48px;
+  padding: 0px 8px;
+  border: 1px solid var(--button-border-rest-color);
+  background-color: var(--button-background-rest-color);
+  border-radius: var(--button-border-radius);
+
+  &:hover {
+    border: 1px solid var(--button-border-hover-color);
+    background-color: var(--button-background-hover-color);
+  }
 
   img {
-    min-width: 40px;
-    max-width: 60px;
+    width: 40px;
     height: 40px;
-
     object-fit: contain;
+    margin-right: 8px;
   }
 `;
 
-const AttachmentFileName = styled.div`
+const AttachmentHeading = styled.div`
+  display: grid;
+  grid-area: heading;
+  gap: 4px;
+  grid-auto-flow: column;
+  grid-auto-columns: auto;
+  align-items: baseline;
+`;
+
+const AttachmentFooter = styled.div`
+  display: grid;
+  grid-area: footer;
+  gap: 0px;
+  justify-content: start;
+  white-space: pre-wrap;
+  grid-auto-flow: column;
+  grid-auto-columns: auto;
+  color: var(--action-button-rest-color);
   font-size: 14px;
+`;
+
+const AttachmentMedia = styled.img`
+  grid-area: media;
+`;
+
+const AttachmentFileName = styled.button`
+  font-size: 14px;
+  border: none;
+  background: none;
+  padding: 0;
 
   // text longer than 100px will show ...
-  // no wrap
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 120px;
+  cursor: pointer;
+
+  &:focus,
+  &:hover {
+    text-decoration: underline;
+  }
 `;
+
 const AttachmentFileSize = styled.div`
   opacity: 0.625;
   font-size: 12px;
+`;
+
+const AttachmentAction = styled.button`
+  border: none;
+  background: none;
+  padding: 0;
+  display: inline;
+  cursor: pointer;
+  color: var(--action-button-rest-color);
+
+  &:focus,
+  &:hover {
+    text-decoration: underline;
+    color: var(--action-button-hover-color);
+  }
 `;

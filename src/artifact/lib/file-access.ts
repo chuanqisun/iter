@@ -1,6 +1,6 @@
 import { getReadableFileSize } from "../../chat-tree/file-size";
 
-export function getFileAccessPostscript(files: File[]) {
+export function getReadonlyFileAccessPostscript(files: File[]) {
   const filePostScript = files?.length
     ? `Files uploaded:
 ${files.map((file) => `- Filename: ${file.name} | Size: ${getReadableFileSize(file.size)}${file.type ? ` | Type: ${file.type})` : ""}`).join("\n")}
@@ -10,6 +10,19 @@ Uploaded files can only be accessed in browser via global javascript API  \`wind
     : "";
 
   return filePostScript;
+}
+
+export function getCodeInterpreterPrompt(): string {
+  return `
+Write a JavaScript program based on user's goal or instruction.
+
+To output data, you must use the global javascript API  \`window.writeonlyFS.writeFile(filename: string, data: string): Promise<void>\`
+
+Respond in a markdown code block like this:
+
+\`\`\`javascript 
+// ...
+\`\`\``;
 }
 
 export function injectIframeFileAccessToDocument(html: string) {
@@ -35,6 +48,19 @@ globalThis.readonlyFS = {
       window.addEventListener("message", (event) => {
         if (event.data.type === "readFile" && event.data.filename === filename) {
           resolve(event.data.file);
+        }
+      });
+    });
+  }
+}
+
+globalThis.writeonlyFS = {
+  async writeFile(filename, text) {
+    return new Promise((resolve, reject) => {
+      window.parent.postMessage({ type: "writeFile", filename, text }, "*");
+      window.addEventListener("message", (event) => {
+        if (event.data.type === "writeFile" && event.data.filename === filename) {
+          resolve();
         }
       });
     });
@@ -86,6 +112,7 @@ function fileToUrl(file: File) {
   });
 }
 
+/** Get readonly files from the script tags, and handle write files by downloading them with a temporary <a> tag */
 function embedFileAccessAPISource() {
   const scriptContent = `
 globalThis.readonlyFS = {
@@ -101,12 +128,26 @@ globalThis.readonlyFS = {
     return file;
   }
 }
+
+globalThis.writeonlyFS = {
+  async writeFile(filename, text) {
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+}
 `.trim();
 
   return scriptContent;
 }
 
-export function respondFileAccess(getFile: (name: string) => File | undefined | null, event: MessageEvent) {
+export function respondReadFile(getFile: (name: string) => File | undefined | null, event: MessageEvent) {
   if (event.data.type === "readFile") {
     const file = getFile(event.data.filename);
     if (!file) {
@@ -117,9 +158,20 @@ export function respondFileAccess(getFile: (name: string) => File | undefined | 
   }
 }
 
-export function respondFileList(getFiles: () => File[], event: MessageEvent) {
+export function respondListFiles(getFiles: () => File[], event: MessageEvent) {
   if (event.data.type === "listFiles") {
     const files = getFiles();
     event.source?.postMessage({ type: "listFiles", files });
+  }
+}
+
+export function respondWriteFile(writeFile: (name: string, text: string) => void, event: MessageEvent) {
+  if (event.data.type === "writeFile") {
+    try {
+      writeFile(event.data.filename, event.data.text);
+      event.source?.postMessage({ type: "writeFile" });
+    } catch (error) {
+      console.error(`Error writing file ${event.data.filename}:`, error);
+    }
   }
 }
