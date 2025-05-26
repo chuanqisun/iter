@@ -4,9 +4,10 @@ import type {
   ResponseInputImage,
   ResponseInputItem,
   ResponseInputText,
+  ResponseOutputText,
 } from "openai/resources/responses/responses.mjs";
 import type { ReasoningEffort } from "openai/resources/shared.mjs";
-import { dataUrlToText } from "../storage/codec";
+import { dataUrlToText, tryDecodeDataUrlAsText } from "../storage/codec";
 import type {
   BaseConnection,
   BaseCredential,
@@ -166,7 +167,8 @@ export class OpenAIProvider implements BaseProvider {
             role: message.role,
             content: message.content
               .map((part) => {
-                if (part.type === "text/plain") {
+                if (part.type === "text/plain" && !part.name) {
+                  // unnamed message is the main body text
                   return { type: "input_text", text: dataUrlToText(part.url) } satisfies ResponseInputText;
                 } else if (part.type.startsWith("image/")) {
                   return {
@@ -181,8 +183,18 @@ export class OpenAIProvider implements BaseProvider {
                     filename: part.name,
                   } satisfies ResponseInputFile;
                 } else {
-                  console.warn("Unsupported message part", part);
-                  return null;
+                  const maybeTextFile = tryDecodeDataUrlAsText(part.url);
+                  if (maybeTextFile) {
+                    return {
+                      type: "input_text",
+                      text: `
+\`\`\`${part.name ?? "unnamed"} type=${maybeTextFile.mediaType}
+${maybeTextFile.text}
+\`\`\`
+                      `.trim(),
+                    } satisfies ResponseInputText;
+                  }
+                  throw new Error(`Unsupported inline message attachment: ${part.name ?? "unnamed"} ${part.type}`);
                 }
               })
               .filter((part) => part !== null),
@@ -194,8 +206,39 @@ export class OpenAIProvider implements BaseProvider {
           if (message.content.length === 1 && message.content[0].type === "text/plain") {
             return { role: message.role, content: dataUrlToText(message.content[0].url) };
           }
-          console.warn("Unsupported assistant message", message.content);
-          return null;
+
+          const corcedOutputTexts = message.content.map((part) => {
+            if (part.type === "text/plain") {
+              return {
+                type: "output_text",
+                text: dataUrlToText(part.url),
+              } as ResponseOutputText;
+            } else {
+              const maybeTextFile = tryDecodeDataUrlAsText(part.url);
+              if (maybeTextFile) {
+                const filePrefix = message.role === "user" ? "input" : "output";
+                return {
+                  type: "output_text",
+                  text: `
+\`\`\`${part.name ?? "unnamed"} ${filePrefix} type=${maybeTextFile.mediaType}
+${maybeTextFile.text}
+\`\`\`
+                  `.trim(),
+                } as ResponseOutputText;
+              }
+              throw new Error(`Unsupported inline message attachment: ${part.name ?? "unnamed"} ${part.type}`);
+            }
+          });
+
+          if (!corcedOutputTexts.length) {
+            console.warn(`Unable to format assistant message content`, message.content);
+            return null;
+          }
+
+          return {
+            role: message.role,
+            content: corcedOutputTexts as any[],
+          } satisfies EasyInputMessage;
         }
         case "system":
           let finalRole: "developer" | "system" | "user" = "developer";

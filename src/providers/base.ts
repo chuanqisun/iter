@@ -41,7 +41,7 @@ export type GenericMessageRole = "system" | "user" | "assistant";
 
 export interface CustomContentPart {
   name?: string;
-  type: "text/plain" | "application/pdf" | "image/png" | "image/jpeg" | "image/webp" | "image/gif";
+  type: "text/plain" | "application/pdf" | "image/png" | "image/jpeg" | "image/webp" | "image/gif" | (string & {});
   url: string;
 }
 

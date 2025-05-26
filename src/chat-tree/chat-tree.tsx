@@ -409,15 +409,20 @@ export function ChatTree() {
         const codeInterpreterPostScript = node.content.includes("```run") ? getCodeInterpreterPrompt() : "";
         const rawContentDataUrl = textToDataUrl(`${node.content}${filePostScript}${codeInterpreterPostScript}`);
 
+        // in user node, we attachments are input, insert before prompts
+        // in assistant node, attachments are output, append after prompts
+        const attachments = getAttachmentInlineParts(node).map((part) => ({
+          name: part.name,
+          type: part.type as any,
+          url: part.url,
+        }));
+
         const message: GenericMessage = {
           role: node.role,
           content: [
-            ...getAttachmentInlineParts(node).map((part) => ({
-              name: part.name,
-              type: part.type as any,
-              url: part.url,
-            })),
+            ...(node.role === "user" ? attachments : []),
             ...(node.content ? ([{ type: "text/plain", url: rawContentDataUrl }] as const) : []),
+            ...(node.role === "assistant" ? attachments : []),
           ],
         };
 

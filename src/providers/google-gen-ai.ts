@@ -1,5 +1,5 @@
 import type { Content, Part } from "@google/genai";
-import { dataUrlToText } from "../storage/codec";
+import { dataUrlToText, tryDecodeDataUrlAsText } from "../storage/codec";
 import type {
   BaseConnection,
   BaseCredential,
@@ -165,11 +165,6 @@ export class GoogleGenAIProvider implements BaseProvider {
       } else {
         const convertedMessageParts = message.content.map((part) => {
           switch (part.type) {
-            case "text/plain": {
-              return {
-                text: dataUrlToText(part.url),
-              } satisfies Part;
-            }
             case "image/gif":
             case "image/png":
             case "image/webp":
@@ -179,8 +174,24 @@ export class GoogleGenAIProvider implements BaseProvider {
               } satisfies Part;
             }
             default: {
-              console.warn(`Unsupported content type: ${part.type}`);
-              return null;
+              if (part.type === "text/plain" && !part.name) {
+                // unnamed message is the main body text
+                return {
+                  text: dataUrlToText(part.url),
+                } satisfies Part;
+              }
+              const maybeTextFile = tryDecodeDataUrlAsText(part.url);
+              if (maybeTextFile) {
+                const filePrefix = message.role === "user" ? "input" : "output";
+                return {
+                  text: `
+\`\`\`${part.name ?? "unnamed"} ${filePrefix} type=${maybeTextFile.mediaType}
+${maybeTextFile.text}
+\`\`\`
+                      `.trim(),
+                } satisfies Part;
+              }
+              throw new Error(`Unsupported inline message attachment: ${part.name ?? "unnamed"} ${part.type}`);
             }
           }
         });

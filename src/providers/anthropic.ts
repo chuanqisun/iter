@@ -6,7 +6,7 @@ import type {
   MessageParam,
   TextBlockParam,
 } from "@anthropic-ai/sdk/resources/index.mjs";
-import { dataUrlToText } from "../storage/codec";
+import { dataUrlToText, tryDecodeDataUrlAsText } from "../storage/codec";
 import type {
   BaseConnection,
   BaseCredential,
@@ -36,7 +36,13 @@ export interface AnthropicConnection extends BaseConnection {
 
 export class AnthropicProvider implements BaseProvider {
   static type = "anthropic";
-  static defaultModels = [ "claude-opus-4-0", "claude-sonnet-4-0", "claude-3-7-sonnet-latest", "claude-3-5-sonnet-latest", "claude-3-5-haiku-latest"];
+  static defaultModels = [
+    "claude-opus-4-0",
+    "claude-sonnet-4-0",
+    "claude-3-7-sonnet-latest",
+    "claude-3-5-sonnet-latest",
+    "claude-3-5-haiku-latest",
+  ];
 
   parseNewCredentialForm(formData: FormData): AnthropicCredential[] {
     const accountName = formData.get("newAccountName") as string;
@@ -83,7 +89,10 @@ export class AnthropicProvider implements BaseProvider {
 
   getOptions(connection: BaseConnection): GenericOptions {
     if (!this.isAnthropicConnection(connection)) throw new Error("Invalid connection type");
-    const isThinkingBudgetAdjustable = connection.model.startsWith("claude-3-7") || connection.model.startsWith("claude-opus") || connection.model.startsWith("claude-sonnet");
+    const isThinkingBudgetAdjustable =
+      connection.model.startsWith("claude-3-7") ||
+      connection.model.startsWith("claude-opus") ||
+      connection.model.startsWith("claude-sonnet");
 
     return {
       temperature: { max: 1 },
@@ -177,12 +186,6 @@ export class AnthropicProvider implements BaseProvider {
       } else {
         const convertedMessageParts = message.content.map((part) => {
           switch (part.type) {
-            case "text/plain": {
-              return {
-                type: "text",
-                text: dataUrlToText(part.url),
-              } satisfies TextBlockParam;
-            }
             case "application/pdf": {
               return {
                 type: "document",
@@ -206,8 +209,26 @@ export class AnthropicProvider implements BaseProvider {
               } satisfies ImageBlockParam;
             }
             default: {
-              console.warn(`Unsupported content type: ${part.type}`);
-              return null;
+              if (part.type === "text/plain" && !part.name) {
+                // unnamed messsage is main body text
+                return {
+                  type: "text",
+                  text: dataUrlToText(part.url),
+                } satisfies TextBlockParam;
+              }
+              const maybeTextFile = tryDecodeDataUrlAsText(part.url);
+              if (maybeTextFile) {
+                const filePrefix = message.role === "user" ? "input" : "output";
+                return {
+                  type: "text",
+                  text: `
+<${filePrefix}-file name="${part.name ?? "unnamed"}" type="${maybeTextFile.mediaType}">
+${maybeTextFile.text}
+</${filePrefix}-file>
+                      `.trim(),
+                } satisfies TextBlockParam;
+              }
+              throw new Error(`Unsupported inline message attachment: ${part.name ?? "unnamed"} ${part.type}`);
             }
           }
         });

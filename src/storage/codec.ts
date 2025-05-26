@@ -51,3 +51,54 @@ export const fileExtensionMimeTypes: Record<string, string> = {
   svg: "image/svg+xml",
   pdf: "application/pdf",
 };
+
+export function tryDecodeDataUrlAsText(dataUrl: string): { text: string; mediaType: string } | null {
+  try {
+    const { isBase64, data, mediaType } = parseDataURL(dataUrl);
+    return isBase64 ? { text: dataUrlToText(dataUrl), mediaType } : { text: decodeURIComponent(data), mediaType };
+  } catch (e) {
+    console.warn("Failed to decode data URL as text:", e);
+  }
+  return null;
+}
+
+/**
+ * Parse a data: URL into its components.
+ *
+ * @param {string} dataUrl
+ * @returns {{ mediaType: string, isBase64: boolean, charset: string|null, data: string }}
+ * @throws {TypeError} if `dataUrl` is not a valid data‑URL
+ */
+function parseDataURL(dataUrl: string) {
+  // Split off the “data:” prefix, the metadata block, and the payload
+  // Using a single-regexp with s‑flag to allow newlines in payload if any.
+  const match = dataUrl.match(/^data:([^,]*),(.*)$/s);
+  if (!match) {
+    throw new TypeError("Invalid data URL");
+  }
+
+  // match[1] is everything between "data:" and the first comma
+  // match[2] is the rest (the payload)
+  const fullMime = match[1];
+  const rawData = match[2];
+
+  // The metadata block is semicolon‑separated, e.g.
+  //    "text/plain;charset=UTF-8;base64"
+  const parts = fullMime.split(";");
+  // The first part (possibly empty) is the media type
+  // (RFC2397 default is text/plain;charset=US‑ASCII when omitted)
+  const mediaType = parts[0].toLowerCase() || "text/plain";
+  const params = parts.slice(1);
+
+  // Detect base64 flag and optional charset parameter
+  const isBase64 = params.includes("base64");
+  const charsetParam = params.find((p) => p.toLowerCase().startsWith("charset="));
+  const charset = charsetParam ? charsetParam.slice(charsetParam.indexOf("=") + 1) : null;
+
+  return {
+    mediaType,
+    isBase64,
+    charset,
+    data: rawData,
+  };
+}
