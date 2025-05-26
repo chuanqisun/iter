@@ -4,11 +4,13 @@ export interface ArtifactSupport {
   onCopy: ArtifactHandler;
   onRun?: ArtifactHandler;
   onSave: ArtifactHandler;
+  onAttach: ArtifactHandler;
 }
 
 export type ArtifactHandler = (context: ArtifactContext) => any;
 export interface ArtifactContext {
   lang: string;
   code: string;
+  filename?: string;
   trigger: HTMLElement;
 }

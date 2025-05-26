@@ -35,6 +35,7 @@ export interface ChatNodeProps {
   onDeleteBelow: (id: string) => void;
   onDownloadAttachment: (id: string, attachmentId: string) => void;
   onKeydown: (id: string, e: React.KeyboardEvent<HTMLElement>) => void;
+  onCopyAttachment: (id: string, attachmentId: string) => void;
   onPaste: (id: string, e: React.ClipboardEvent<HTMLTextAreaElement>) => void;
   onPreviewDoubleClick: (id: string, e: React.MouseEvent) => void;
   onRemoveAttachment: (id: string, attachmentId: string) => void;
@@ -58,6 +59,7 @@ export function ChatNodeInternal(props: ChatNodeProps) {
     onDeleteBelow,
     onDownloadAttachment,
     onKeydown,
+    onCopyAttachment,
     onPaste,
     onPreviewDoubleClick,
     onRemoveAttachment,
@@ -268,6 +270,10 @@ export function ChatNodeInternal(props: ChatNodeProps) {
                           {getDisplayType(attachment)}
                         </AttachmentAction>
                         <span> · </span>
+                        <AttachmentAction title="Copy as file" onClick={() => onCopyAttachment(node.id, attachment.id)}>
+                          Copy
+                        </AttachmentAction>
+                        <span> · </span>
                         <AttachmentAction
                           title="Delete file"
                           onClick={() => onRemoveAttachment(node.id, attachment.id)}
@@ -417,6 +423,7 @@ const AttachmentPreview = styled.div`
 const AttachmentHeading = styled.div`
   display: grid;
   grid-area: heading;
+  justify-content: start;
   gap: 4px;
   grid-auto-flow: column;
   grid-auto-columns: auto;

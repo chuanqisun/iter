@@ -36,8 +36,12 @@ export function handleArtifactActions(event: MouseEvent) {
   const lang = artifactElement?.getAttribute("lang");
   if (!lang) return;
 
+  const filename = artifactElement?.getAttribute("filename") ?? undefined;
+
   const artifact = supportedArtifacts.find((art) => art.onResolveLanguage(lang));
   if (!artifact) return;
+
+  const actionContext: ArtifactContext = { lang, code, trigger, filename };
 
   switch (action) {
     case "edit": {
@@ -47,30 +51,35 @@ export function handleArtifactActions(event: MouseEvent) {
         if (!artifact.onRun) return;
         const updatedCode = (e as CustomEvent<string>).detail;
         if (updatedCode === currentCode) return;
-        artifact.onRun?.({ lang, code: updatedCode, trigger });
+        artifact.onRun?.({ ...actionContext, code: updatedCode });
         currentCode = updatedCode;
       };
 
       if (isEditing) {
         artifactElement.removeEventListener("rerun", handleRerun);
-        onRunExit?.({ lang, code, trigger });
-        onEditExit({ lang, code, trigger });
+        onRunExit?.(actionContext);
+        onEditExit(actionContext);
       } else {
         artifactElement.querySelector("dialog")?.showModal();
         artifactElement.addEventListener("rerun", handleRerun);
-        onEdit({ lang, code, trigger });
-        artifact.onRun?.({ lang, code, trigger });
+        onEdit(actionContext);
+        artifact.onRun?.(actionContext);
       }
       return;
     }
 
     case "copy": {
-      artifact.onCopy({ lang, code, trigger });
+      artifact.onCopy(actionContext);
       return;
     }
 
     case "save": {
-      artifact.onSave?.({ lang, code, trigger });
+      artifact.onSave?.(actionContext);
+      return;
+    }
+
+    case "attach": {
+      artifact.onAttach(actionContext);
       return;
     }
   }

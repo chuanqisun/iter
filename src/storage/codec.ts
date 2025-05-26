@@ -35,22 +35,70 @@ function base64ToBytes(base64: string) {
   return Uint8Array.from(binString, (m) => m.codePointAt(0)!);
 }
 
+export const codeBlockLangToFileExtension: Record<string, string> = {
+  bash: "sh",
+  javascript: "js",
+  markdown: "md",
+  plaintext: "txt",
+  text: "txt",
+  python: "py",
+  typescript: "ts",
+};
+
+export function languageToFileExtension(language: string): string {
+  const lang = language.toLocaleLowerCase();
+  return codeBlockLangToFileExtension[lang] ?? lang;
+}
+
+export const fileExtensionCodeBLockLang: Record<string, string> = {
+  sh: "bash",
+  js: "javascript",
+  md: "markdown",
+  txt: "plaintext",
+  text: "plaintext",
+  py: "python",
+  ts: "typescript",
+};
+
+export function fileExtensionToLanguage(fileExtension: string): string {
+  const ext = fileExtension.toLocaleLowerCase();
+  return fileExtensionCodeBLockLang[ext] ?? ext;
+}
+
 export const fileExtensionMimeTypes: Record<string, string> = {
-  txt: "text/plain",
+  css: "text/css",
+  csv: "text/csv",
+  gif: "image/gif",
+  html: "text/html",
+  jpeg: "image/jpeg",
+  jpg: "image/jpeg",
   js: "text/javascript",
   json: "application/json",
-  html: "text/html",
-  css: "text/css",
+  jsond: "application/x-jsond",
+  jsonl: "application/x-jsonl",
   md: "text/markdown",
-  xml: "application/xml",
-  csv: "text/csv",
-  png: "image/png",
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-  gif: "image/gif",
-  svg: "image/svg+xml",
   pdf: "application/pdf",
+  png: "image/png",
+  svg: "image/svg+xml",
+  ts: "application/typescript",
+  txt: "text/plain",
+  xml: "application/xml",
+  yaml: "application/x-yaml",
+  yml: "application/x-yaml",
 };
+
+export const mimeTypesFileExtensions: Record<string, string> = Object.fromEntries(
+  Object.entries(fileExtensionMimeTypes).map(([ext, mime]) => [mime, ext]),
+);
+
+export function filenameToMimeType(fileName: string, fallback = "text/plain"): string {
+  const ext = fileName.split(".").pop()?.toLowerCase();
+  return fileExtensionMimeTypes[ext ?? ""] ?? fallback;
+}
+
+export function mimeTypeToFileExtension(mimeType: string): string {
+  return mimeTypesFileExtensions[mimeType.toLowerCase()] ?? "txt";
+}
 
 export function tryDecodeDataUrlAsText(dataUrl: string): { text: string; mediaType: string } | null {
   try {

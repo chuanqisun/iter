@@ -1,0 +1,8 @@
+dialog:has(#filename-form) {
+  width: 400px;
+
+  form {
+    display: grid;
+    gap: 4px;
+  }
+}

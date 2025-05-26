@@ -1,4 +1,4 @@
-import { dataUrlToFile, fileToDataUrl } from "../storage/codec";
+import { dataUrlToFile, dataUrlToText, fileToDataUrl } from "../storage/codec";
 import { downloadUrl } from "./download";
 import type { Attachment, AttachmentEmbedded, AttachmentExternal, ChatNode, EmbeddedFile } from "./tree-store";
 
@@ -107,5 +107,19 @@ export function getDisplayType(attachment: Attachment): string {
       return "External";
     default:
       return "Unknown";
+  }
+}
+
+export async function getAttachmentTextContent(attachment: Attachment): Promise<string> {
+  switch (attachment.type) {
+    case "embedded": {
+      const file = attachment.file;
+      return dataUrlToText(file.url);
+    }
+
+    case "external": {
+      const file = attachment.file;
+      return file.text();
+    }
   }
 }

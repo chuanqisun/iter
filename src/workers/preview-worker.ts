@@ -19,7 +19,7 @@ async function initializeMarked() {
 
   const marked = await new Marked().use(
     markedShiki({
-      highlight(code, lang, _props) {
+      highlight(code, lang, props) {
         const highlightableLanguage = supportedLanguages.includes(lang) ? lang : "text";
         const editorLanguage = editorLanguages.has(lang) ? lang : "text";
 
@@ -28,8 +28,10 @@ async function initializeMarked() {
           theme: "dark-plus",
         });
 
+        const attrStr = props.join(" ");
+
         return `
-        <artifact-element lang="${editorLanguage}" data-is-runnable="${runnableArtifactLanguages.has(lang)}">  
+        <artifact-element lang="${editorLanguage}" data-is-runnable="${runnableArtifactLanguages.has(lang)}" ${attrStr}>  
           <artifact-source>${highlightedHtml}</artifact-source>  
           <artifact-focus-trap-element disabled>
             <div class="split-layout">
@@ -38,6 +40,7 @@ async function initializeMarked() {
             </div>
             <artifact-action>
               <button data-action="edit">Edit</button>
+              <button data-action="attach">Attach</button>
               <button class="copy" data-action="copy">
                 <span class="ready">Copy</span>
                 <span class="success">✅ Copied</span>

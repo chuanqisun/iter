@@ -1,6 +1,7 @@
 import React, { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 import styled from "styled-components";
 import { useArtifactActions } from "../artifact/artifact";
+import type { ArtifactEvents } from "../artifact/languages/generic";
 import {
   getCodeInterpreterPrompt,
   getReadonlyFileAccessPostscript,
@@ -14,7 +15,7 @@ import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
 import { useConnections } from "../settings/use-connections";
 import { showToast } from "../shell/toast";
-import { fileExtensionMimeTypes, textToDataUrl } from "../storage/codec";
+import { filenameToMimeType, languageToFileExtension, textToDataUrl } from "../storage/codec";
 import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import {
@@ -34,6 +35,7 @@ import { ChatNodeMemo } from "./chat-node";
 import { getParts } from "./clipboard";
 import { dictateToTextarea } from "./dictation";
 import { getReadableFileSize } from "./file-size";
+import { getFilename } from "./filename-dialog";
 import { autoFocusNthInput } from "./focus";
 import { InputTokenizer } from "./input-tokenizer";
 import { getCombo } from "./keyboard";
@@ -296,8 +298,7 @@ export function ChatTree() {
 
       // when writing a file, we treat it as uploading a file to the chat message as attachment
       respondWriteFile((name, data) => {
-        const fileExension = name.split(".").pop()?.toLowerCase() ?? "txt";
-        const mimeType = fileExtensionMimeTypes[fileExension] ?? "text/plain";
+        const mimeType = filenameToMimeType(name);
         const file = new File([data], name, { type: mimeType });
         const sourceIframe = [...document.querySelectorAll("iframe")].find(
           (iframe) => iframe.contentWindow === event.source,
@@ -321,6 +322,27 @@ export function ChatTree() {
 
     return () => window.removeEventListener("message", handleIframeFileAccessRequest);
   }, []);
+
+  // artifact-attachment conversion
+  useEffect(() => {
+    const ac = new AbortController();
+
+    window.addEventListener("attach", async (e) => {
+      const context = (e as CustomEvent<ArtifactEvents["attach"]>).detail;
+      console.log("Will attach code:", context);
+      const ext = languageToFileExtension(context.lang);
+      const finalFilename = await getFilename({ placeholder: `filename.${ext}`, initalValue: context.filename });
+      if (!finalFilename) return;
+
+      const mediaType = filenameToMimeType(finalFilename);
+      const attachment = createAttacchmentFromFile(new File([context.code], finalFilename, { type: mediaType }));
+      setTreeNodes((nodes) =>
+        nodes.map(patchNode((node) => node.id === context.nodeId, upsertAttachments(attachment))),
+      );
+    });
+
+    return () => ac.abort();
+  }, [chat]);
 
   // auto focus last textarea on startup
   useEffect(() => {
@@ -677,6 +699,16 @@ export function ChatTree() {
     downloadAttachment(targetNode, attachmentId);
   }, []);
 
+  const handleCopyAttachment = useCallback(async (nodeId: string, attachmentId: string) => {
+    const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
+    if (!targetNode) return;
+
+    const attachment = targetNode.attachments?.find((att) => att.id === attachmentId);
+    if (!attachment) return showToast(`❌ Attachment ${attachmentId} not found`);
+
+    // TODO implement text copy
+  }, []);
+
   const handleToggleAttachmentType = useCallback(async (nodeId: string, attachmentId: string) => {
     const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
     if (!targetNode) return;
@@ -795,6 +827,7 @@ export function ChatTree() {
               onDelete={handleDelete}
               onDeleteBelow={handleDeleteBelow}
               onDownloadAttachment={handleDownloadAttachment}
+              onCopyAttachment={handleCopyAttachment}
               onKeydown={handleKeydown}
               onPaste={handlePaste}
               onPreviewDoubleClick={handlePreviewDoubleClick}

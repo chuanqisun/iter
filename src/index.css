@@ -74,6 +74,10 @@ dialog {
   max-width: 60rem;
 }
 
+input:where([type="text"], [type="password"]) {
+  padding: 4px;
+}
+
 *,
 ::before,
 ::after {
