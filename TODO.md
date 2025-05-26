@@ -1,8 +1,10 @@
 # TODO
 
+- Support dual mode file: inline + external, or provide manual copy action
+- Drag and drop file as upload
 - Bug: abort error lingers after role switch
+- Closing artifact while it is compiling left iframe on main thread
 - Language override for editor
-- Manual code interpreter (with shebang line)
 - Reference pinned code blocks
 - Migrate from styled components to CSS
 - Investigate initial script loading size
@@ -18,6 +20,7 @@
 
 # DONE
 
+- Manual code interpreter (with shebang line)
 - Support model specific options, e.g. thinking budget
 - Input token counter
 - Lazy init web worker
