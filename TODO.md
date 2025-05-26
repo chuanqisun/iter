@@ -1,8 +1,9 @@
 # TODO
 
+- Bug: abort error lingers after role switch
+- Bug: content doesn't initially render after role swithc from user to assistant
 - Support dual mode file: inline + external, or provide manual copy action
 - Drag and drop file as upload
-- Bug: abort error lingers after role switch
 - Closing artifact while it is compiling left iframe on main thread
 - Language override for editor
 - Reference pinned code blocks
