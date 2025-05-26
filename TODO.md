@@ -1,7 +1,6 @@
 # TODO
 
 - Bug: abort error lingers after role switch
-- Bug: content doesn't initially render after role swithc from user to assistant
 - Drag and drop file as upload
 - Closing artifact while it is compiling left iframe on main thread
 - Language override for editor
@@ -20,6 +19,7 @@
 
 # DONE
 
+- Bug: content doesn't initially render after role swithc from user to assistant
 - Manual code interpreter (with shebang line)
 - Support model specific options, e.g. thinking budget
 - Input token counter
