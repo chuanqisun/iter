@@ -1,5 +1,6 @@
 import { memo, useEffect, useRef } from "react";
 import styled from "styled-components";
+import { getDisplayType } from "./attachment";
 import "./chat-node.css";
 import { getReadableFileSize } from "./file-size";
 import { InputMetadata } from "./input-metadata";
@@ -32,16 +33,14 @@ export interface ChatNodeProps {
   onCodeBlockChange: (id: string, current: string, index: number) => void;
   onDelete: (id: string) => void;
   onDeleteBelow: (id: string) => void;
-  onDownloadFile: (id: string, name: string) => void;
-  onDownloadPart: (id: string, name: string) => void;
+  onDownloadAttachment: (id: string, attachmentId: string) => void;
   onKeydown: (id: string, e: React.KeyboardEvent<HTMLElement>) => void;
   onPaste: (id: string, e: React.ClipboardEvent<HTMLTextAreaElement>) => void;
   onPreviewDoubleClick: (id: string, e: React.MouseEvent) => void;
-  onRemoveAttachment: (id: string, name: string, url: string) => void;
-  onRemoveFile: (id: string, name: string) => void;
+  onRemoveAttachment: (id: string, attachmentId: string) => void;
   onRunNode: (id: string) => void;
   onTextChange: (id: string, value: string) => void;
-  onToggleAttachmentMode: (id: string, name: string, mode: "external" | "inline") => void;
+  onToggleAttachmentType: (id: string, attachmentId: string) => void;
   onToggleRole: (id: string) => void;
   onToggleShowMore: (id: string, options?: { toggleAll?: boolean }) => void;
   onToggleViewFormat: (id: string) => void;
@@ -57,16 +56,14 @@ export function ChatNodeInternal(props: ChatNodeProps) {
     onCodeBlockChange,
     onDelete,
     onDeleteBelow,
-    onDownloadFile,
-    onDownloadPart,
+    onDownloadAttachment,
     onKeydown,
     onPaste,
     onPreviewDoubleClick,
     onRemoveAttachment,
-    onRemoveFile,
     onRunNode,
     onTextChange,
-    onToggleAttachmentMode,
+    onToggleAttachmentType,
     onToggleRole,
     onToggleShowMore,
     onToggleViewFormat,
@@ -245,63 +242,42 @@ export function ChatNodeInternal(props: ChatNodeProps) {
               />
             )}
 
-            {node.files?.length || node.parts?.length ? (
+            {node.attachments?.length ? (
               <AttachmentList>
-                {node.parts?.map((part) => (
-                  <AttachmentPreview key={part.url}>
-                    {part.type?.startsWith("image/") ? <AttachmentMedia src={part.url} /> : null}
-                    <AttachmentHeading>
-                      <AttachmentFileName
-                        title={`Download ${part.name}${part.type ? ` (${part.type})` : ""}`}
-                        onClick={() => onDownloadPart(node.id, part.name)}
-                      >
-                        {part.name}
-                      </AttachmentFileName>
-                      <AttachmentFileSize>{getReadableFileSize(part.size)}</AttachmentFileSize>
-                    </AttachmentHeading>
-                    <AttachmentFooter>
-                      <AttachmentAction
-                        title="Toggle file mode"
-                        onClick={() => onToggleAttachmentMode(node.id, part.name, "external")}
-                      >
-                        Inline
-                      </AttachmentAction>
-                      <span> · </span>
-                      <AttachmentAction
-                        title="Delete file"
-                        onClick={() => onRemoveAttachment(node.id, part.name, part.url)}
-                      >
-                        Delete
-                      </AttachmentAction>
-                    </AttachmentFooter>
-                  </AttachmentPreview>
-                ))}
-
-                {node.files?.map((file) => (
-                  <AttachmentPreview key={file.name}>
-                    <AttachmentHeading>
-                      <AttachmentFileName
-                        title={`Download ${file.name}${file.type ? ` (${file.type})` : ""}`}
-                        onClick={() => onDownloadFile(node.id, file.name)}
-                      >
-                        {file.name}
-                      </AttachmentFileName>
-                      <AttachmentFileSize>{getReadableFileSize(file.size)}</AttachmentFileSize>
-                    </AttachmentHeading>
-                    <AttachmentFooter>
-                      <AttachmentAction
-                        title="Toggle file mode"
-                        onClick={() => onToggleAttachmentMode(node.id, file.name, "inline")}
-                      >
-                        External
-                      </AttachmentAction>
-                      <span> · </span>
-                      <AttachmentAction title="Delete file" onClick={() => onRemoveFile(node.id, file.name)}>
-                        Delete
-                      </AttachmentAction>
-                    </AttachmentFooter>
-                  </AttachmentPreview>
-                ))}
+                {node.attachments.map((attachment) => {
+                  const file = attachment.file;
+                  return (
+                    <AttachmentPreview key={attachment.id}>
+                      {attachment.type === "inline" && file.type?.startsWith("image/") ? (
+                        <AttachmentMedia src={attachment.file.url} />
+                      ) : null}
+                      <AttachmentHeading>
+                        <AttachmentFileName
+                          title={`Download ${file.name}${file.type ? ` (${file.type})` : ""}`}
+                          onClick={() => onDownloadAttachment(node.id, attachment.id)}
+                        >
+                          {file.name}
+                        </AttachmentFileName>
+                        <AttachmentFileSize>{getReadableFileSize(file.size)}</AttachmentFileSize>
+                      </AttachmentHeading>
+                      <AttachmentFooter>
+                        <AttachmentAction
+                          title="Toggle file mode"
+                          onClick={() => onToggleAttachmentType(node.id, attachment.id)}
+                        >
+                          {getDisplayType(attachment)}
+                        </AttachmentAction>
+                        <span> · </span>
+                        <AttachmentAction
+                          title="Delete file"
+                          onClick={() => onRemoveAttachment(node.id, attachment.id)}
+                        >
+                          Delete
+                        </AttachmentAction>
+                      </AttachmentFooter>
+                    </AttachmentPreview>
+                  );
+                })}
               </AttachmentList>
             ) : null}
             {node.errorMessage ? <ErrorMessage>❌ {node.errorMessage}</ErrorMessage> : null}

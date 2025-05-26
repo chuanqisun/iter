@@ -10,8 +10,7 @@ export interface ChatNode {
   content: string;
   content$?: BehaviorSubject<{ snapshot: string; delta: string }>;
   cachedPreviewHtml?: { key: string; value: string };
-  parts?: ChatPart[];
-  files?: File[]; // Files for interpreter
+  attachments?: Attachment[];
   isViewSource?: boolean;
   isListening?: boolean;
   isCollapsed?: boolean;
@@ -24,6 +23,19 @@ export interface ChatNodeMetadata {
   totalInputTokens?: number;
   totalOutputTokens?: number;
   tokensPerSecond?: number;
+}
+
+export type Attachment = AttachmentInline | AttachmentExternal;
+
+export interface AttachmentInline {
+  id: string;
+  type: "inline";
+  file: ChatPart;
+}
+export interface AttachmentExternal {
+  id: string;
+  type: "external";
+  file: File;
 }
 
 export interface ChatPart {

@@ -16,7 +16,7 @@ export function getCodeInterpreterPrompt(): string {
   return `
 Write a JavaScript program based on user's goal or instruction.
 
-To output data, you must use the global javascript API  \`window.writeonlyFS.writeFile(filename: string, data: string): Promise<void>\`
+To output data, you must use the global javascript API  \`window.writeonlyFS.writeFile(filename: string, data: string | Blob): Promise<void>\`
 
 Respond in a markdown code block like this:
 
@@ -55,9 +55,12 @@ globalThis.readonlyFS = {
 }
 
 globalThis.writeonlyFS = {
-  async writeFile(filename, text) {
+  async writeFile(filename, textOrBlob) {
+
+    const writableContent = typeof textOrBlob === "string" ? textOrBlob : await textOrBlob.arrayBuffer().then(buffer => new Uint8Array(buffer));
+
     return new Promise((resolve, reject) => {
-      window.parent.postMessage({ type: "writeFile", filename, text }, "*");
+      window.parent.postMessage({ type: "writeFile", filename, data: writableContent }, "*");
       window.addEventListener("message", (event) => {
         if (event.data.type === "writeFile" && event.data.filename === filename) {
           resolve();
@@ -165,10 +168,13 @@ export function respondListFiles(getFiles: () => File[], event: MessageEvent) {
   }
 }
 
-export function respondWriteFile(writeFile: (name: string, text: string) => void, event: MessageEvent) {
+export function respondWriteFile(
+  writeFile: (name: string, writableContent: string | Uint8Array) => void,
+  event: MessageEvent,
+) {
   if (event.data.type === "writeFile") {
     try {
-      writeFile(event.data.filename, event.data.text);
+      writeFile(event.data.filename, event.data.data);
       event.source?.postMessage({ type: "writeFile" });
     } catch (error) {
       console.error(`Error writing file ${event.data.filename}:`, error);

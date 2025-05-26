@@ -14,9 +14,20 @@ import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
 import { useConnections } from "../settings/use-connections";
 import { showToast } from "../shell/toast";
-import { dataUrlToFile, fileExtensionMimeTypes, fileToDataUrl, textToDataUrl } from "../storage/codec";
+import { fileExtensionMimeTypes, textToDataUrl } from "../storage/codec";
 import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
+import {
+  createAttacchmentFromFile,
+  createAttachmentFromChatPart,
+  downloadAttachment,
+  getAttachmentExternalFiles,
+  getAttachmentInlineParts,
+  getToggledAttachment,
+  removeAttachment,
+  replaceAttachment,
+  upsertAttachments,
+} from "./attachment";
 import { ChatConfigMemo } from "./chat-config";
 import { setChatInstance } from "./chat-instance";
 import { ChatNodeMemo } from "./chat-node";
@@ -27,7 +38,7 @@ import { autoFocusNthInput } from "./focus";
 import { InputTokenizer } from "./input-tokenizer";
 import { getCombo } from "./keyboard";
 import { getAssistantNode, getNextId, getPrevId, getUserNode, INITIAL_NODES, patchNode } from "./tree-helper";
-import { useTreeNodes, type ChatNode, type ChatPart } from "./tree-store";
+import { useTreeNodes, type ChatNode } from "./tree-store";
 
 export function ChatTree() {
   const { treeNodes, setTreeNodes, treeNodes$, createWriter } = useTreeNodes({ initialNodes: INITIAL_NODES });
@@ -269,7 +280,7 @@ export function ChatTree() {
   // expose file access api
   useEffect(() => {
     const handleIframeFileAccessRequest = (event: MessageEvent<any>) => {
-      const allFiles = treeNodes$.value.flatMap((node) => node.files ?? []);
+      const allFiles = treeNodes$.value.flatMap(getAttachmentExternalFiles);
 
       // use reverse to keep the last file
       const latestFileMap = new Map(
@@ -297,20 +308,11 @@ export function ChatTree() {
           return;
         }
 
-        setTreeNodes((nodes) =>
-          nodes.map(
-            patchNode(
-              (node) => node.id === sourceNodeId,
-              (node) => {
-                const existingFileMap = new Map(node.files?.map((file) => [file.name, file]));
-                existingFileMap.set(file.name, file);
-                const newFiles = [...existingFileMap.values()];
-                return { files: newFiles };
-              },
-            ),
-          ),
-        );
+        const newAttachment = createAttacchmentFromFile(file);
 
+        setTreeNodes((nodes) =>
+          nodes.map(patchNode((node) => node.id === sourceNodeId, upsertAttachments(newAttachment))),
+        );
         showToast(`✅ Created file ${name} (${getReadableFileSize(file.size)})`);
       }, event);
     };
@@ -403,14 +405,14 @@ export function ChatTree() {
     return treeNodes$.value
       .slice(0, targetIndex + 1)
       .map((node) => {
-        const filePostScript = getReadonlyFileAccessPostscript(node.files ?? []);
+        const filePostScript = getReadonlyFileAccessPostscript(getAttachmentExternalFiles(node));
         const codeInterpreterPostScript = node.content.includes("```run") ? getCodeInterpreterPrompt() : "";
         const rawContentDataUrl = textToDataUrl(`${node.content}${filePostScript}${codeInterpreterPostScript}`);
 
         const message: GenericMessage = {
           role: node.role,
           content: [
-            ...(node.parts ?? []).map((part) => ({
+            ...getAttachmentInlineParts(node).map((part) => ({
               name: part.name,
               type: part.type as any,
               url: part.url,
@@ -642,180 +644,48 @@ export function ChatTree() {
     const parts = await getParts(e.clipboardData);
     if (!parts.length) return;
 
+    const pastedAttachments = parts.map(createAttachmentFromChatPart);
+
     setTreeNodes((nodes) =>
-      nodes.map(
-        patchNode(
-          (node) => node.id === activeUserNodeId,
-          (node) => ({
-            parts: [...(node.parts ?? []), ...parts].filter(
-              (part, index, self) =>
-                self.findIndex((existing) => existing.name === part.name && existing.url === part.url) === index,
-            ),
-          }),
-        ),
-      ),
+      nodes.map(patchNode((node) => node.id === activeUserNodeId, upsertAttachments(...pastedAttachments))),
     );
   }, []);
 
-  const handleRemovePart = useCallback((nodeId: string, name: string, url: string) => {
-    setTreeNodes((nodes) =>
-      nodes.map(
-        patchNode(
-          (node) => node.id === nodeId,
-          (node) => ({
-            parts: node.parts?.filter((existingPart) => existingPart.name !== name || existingPart.url !== url),
-          }),
-        ),
-      ),
-    );
+  const handleRemoveAttachment = useCallback((nodeId: string, attachmentId: string) => {
+    setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, removeAttachment(attachmentId))));
   }, []);
 
   const handleUploadFiles = useCallback(async (nodeId: string) => {
     const files = await uploadFiles({ multiple: true });
+    const uploadedAttachments = files.map(createAttacchmentFromFile);
 
     if (!files.length) return;
     setTreeNodes((nodes) =>
-      nodes.map(
-        patchNode(
-          (node) => node.id === nodeId,
-          (node) => {
-            const existingFileMap = new Map(node.files?.map((file) => [file.name, file]));
-            files.forEach((file) => {
-              existingFileMap.delete(file.name);
-              existingFileMap.set(file.name, file);
-            });
-            const newFiles = [...existingFileMap.values()];
-            return { files: newFiles };
-          },
-        ),
-      ),
+      nodes.map(patchNode((node) => node.id === nodeId, upsertAttachments(...uploadedAttachments))),
     );
   }, []);
 
-  const handleRemoveFile = useCallback((nodeId: string, fileName: string) => {
+  const handleDownloadAttachment = useCallback((nodeId: string, attachmentId: string) => {
+    const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
+    if (!targetNode) return;
+
+    downloadAttachment(targetNode, attachmentId);
+  }, []);
+
+  const handleToggleAttachmentMode = useCallback(async (nodeId: string, attachmentId: string) => {
+    const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
+    if (!targetNode) return;
+
+    const attachment = targetNode.attachments?.find((att) => att.id === attachmentId);
+    if (!attachment) return showToast(`❌ Attachment ${attachmentId} not found`);
+
+    const newAttachment = await getToggledAttachment(targetNode, attachmentId);
+    if (!newAttachment) return showToast(`❌ Attachment ${attachmentId} not found`);
+
     setTreeNodes((nodes) =>
-      nodes.map(
-        patchNode(
-          (node) => node.id === nodeId,
-          (node) => ({
-            files: node.files?.filter((file) => file.name !== fileName),
-          }),
-        ),
-      ),
+      nodes.map(patchNode((node) => node.id === nodeId, replaceAttachment(attachment.id, newAttachment))),
     );
   }, []);
-
-  const handleDownloadFile = useCallback((nodeId: string, fileName: string) => {
-    const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
-    if (!targetNode) return;
-    const file = targetNode.files?.find((file) => file.name === fileName);
-    if (!file) return;
-
-    const url = URL.createObjectURL(file);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = file.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, []);
-
-  const handleDownloadPart = useCallback((nodeId: string, partName: string) => {
-    const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
-    if (!targetNode) return;
-
-    const part = targetNode.parts?.find((part) => part.name === partName);
-    if (!part) return;
-
-    const url = part.url;
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = part.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, []);
-
-  const handleToggleAttachmentMode = useCallback(
-    async (nodeId: string, name: string, newType: "inline" | "external") => {
-      const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
-      if (newType === "inline") {
-        const matchingFile = targetNode?.files?.find((file) => file.name === name);
-        if (!matchingFile) {
-          showToast(`❌ File ${name} not found`);
-          return;
-        }
-
-        const base64DataUrl = await fileToDataUrl(matchingFile);
-
-        setTreeNodes((nodes) =>
-          nodes.map(
-            patchNode(
-              (node) => node.id === nodeId,
-              (node) => {
-                const existingParts = node.parts ?? [];
-                const existingFiles = node.files ?? [];
-                const existingFileIndex = existingFiles.findIndex((file) => file.name === name);
-
-                // Move from file to part
-                if (existingFileIndex !== -1) {
-                  const file = existingFiles[existingFileIndex];
-
-                  const createdPart: ChatPart = {
-                    name: file.name,
-                    type: file.type,
-                    size: file.size,
-                    url: base64DataUrl,
-                  };
-
-                  return {
-                    parts: [...existingParts, createdPart],
-                    files: existingFiles.filter((_, i) => i !== existingFileIndex),
-                  };
-                }
-
-                return node;
-              },
-            ),
-          ),
-        );
-      } else {
-        const matchingPart = targetNode?.parts?.find((part) => part.name === name);
-        if (!matchingPart) {
-          showToast(`❌ Part ${name} not found`);
-          return;
-        }
-
-        const createdFile = await dataUrlToFile(matchingPart.url, matchingPart.name);
-
-        setTreeNodes((nodes) =>
-          nodes.map(
-            patchNode(
-              (node) => node.id === nodeId,
-              (node) => {
-                const existingParts = node.parts ?? [];
-                const existingFiles = node.files ?? [];
-                const existingPartIndex = existingParts.findIndex((part) => part.name === name);
-
-                // Move from part to file
-                if (existingPartIndex !== -1) {
-                  return {
-                    files: [...existingFiles, createdFile],
-                    parts: existingParts.filter((_, i) => i !== existingPartIndex),
-                  };
-                }
-
-                return node;
-              },
-            ),
-          ),
-        );
-      }
-    },
-    [],
-  );
 
   const handleToggleViewFormat = useCallback((nodeId: string) => {
     const isExitEditing =
@@ -919,16 +789,14 @@ export function ChatTree() {
               onCodeBlockChange={handleCodeBlockChange}
               onDelete={handleDelete}
               onDeleteBelow={handleDeleteBelow}
-              onDownloadFile={handleDownloadFile}
-              onDownloadPart={handleDownloadPart}
+              onDownloadAttachment={handleDownloadAttachment}
               onKeydown={handleKeydown}
               onPaste={handlePaste}
               onPreviewDoubleClick={handlePreviewDoubleClick}
-              onRemoveAttachment={handleRemovePart}
-              onRemoveFile={handleRemoveFile}
+              onRemoveAttachment={handleRemoveAttachment}
               onRunNode={handleRunNode}
               onTextChange={handleTextChange}
-              onToggleAttachmentMode={handleToggleAttachmentMode}
+              onToggleAttachmentType={handleToggleAttachmentMode}
               onToggleRole={handleToggleRole}
               onToggleShowMore={handleToggleShowMore}
               onToggleViewFormat={handleToggleViewFormat}
