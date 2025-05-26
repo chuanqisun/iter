@@ -81,13 +81,13 @@ export async function getToggledAttachment(node: ChatNode, attachmentId: string)
   if (attachment.type === "inline") {
     const part = attachment.file;
     const createdFile = await dataUrlToFile(part.url, part.name);
-    const newAttachment: AttachmentExternal = { id: crypto.randomUUID(), type: "external", file: createdFile };
+    const newAttachment: AttachmentExternal = { id: attachmentId, type: "external", file: createdFile };
     return newAttachment;
   } else {
     const file = attachment.file;
     const base64DataUrl = await fileToDataUrl(file);
     const newAttachment: AttachmentInline = {
-      id: crypto.randomUUID(),
+      id: attachmentId,
       type: "inline",
       file: { name: file.name, type: file.type, size: file.size, url: base64DataUrl },
     };

@@ -677,7 +677,7 @@ export function ChatTree() {
     downloadAttachment(targetNode, attachmentId);
   }, []);
 
-  const handleToggleAttachmentMode = useCallback(async (nodeId: string, attachmentId: string) => {
+  const handleToggleAttachmentType = useCallback(async (nodeId: string, attachmentId: string) => {
     const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
     if (!targetNode) return;
 
@@ -801,7 +801,7 @@ export function ChatTree() {
               onRemoveAttachment={handleRemoveAttachment}
               onRunNode={handleRunNode}
               onTextChange={handleTextChange}
-              onToggleAttachmentType={handleToggleAttachmentMode}
+              onToggleAttachmentType={handleToggleAttachmentType}
               onToggleRole={handleToggleRole}
               onToggleShowMore={handleToggleShowMore}
               onToggleViewFormat={handleToggleViewFormat}
