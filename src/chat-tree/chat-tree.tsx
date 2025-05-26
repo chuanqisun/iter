@@ -25,8 +25,8 @@ import {
 import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import {
-  createAttacchmentFromFile,
   createAttachmentFromChatPart,
+  createAttacchmentFromFile as createAttachmentFromFile,
   downloadAttachment,
   getAttachmentEmbeddedFiles,
   getAttachmentExternalFiles,
@@ -317,7 +317,7 @@ export function ChatTree() {
           return;
         }
 
-        const newAttachment = createAttacchmentFromFile(file);
+        const newAttachment = createAttachmentFromFile(file);
 
         setTreeNodes((nodes) =>
           nodes.map(patchNode((node) => node.id === sourceNodeId, upsertAttachments(newAttachment))),
@@ -344,7 +344,7 @@ export function ChatTree() {
 
       const validFilename = getValidAttachmentFileName(pickedFilename);
       const mediaType = filenameToMimeType(validFilename);
-      const attachment = createAttacchmentFromFile(new File([context.code], validFilename, { type: mediaType }));
+      const attachment = createAttachmentFromFile(new File([context.code], validFilename, { type: mediaType }));
       setTreeNodes((nodes) =>
         nodes.map(patchNode((node) => node.id === context.nodeId, upsertAttachments(attachment))),
       );
@@ -693,7 +693,7 @@ export function ChatTree() {
 
   const handleUploadFiles = useCallback(async (nodeId: string) => {
     const files = await uploadFiles({ multiple: true });
-    const uploadedAttachments = files.map(createAttacchmentFromFile);
+    const uploadedAttachments = files.map(createAttachmentFromFile);
 
     if (!files.length) return;
     setTreeNodes((nodes) =>
