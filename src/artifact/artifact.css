@@ -51,6 +51,10 @@ artifact-element:has([data-action="edit"].running) {
   &[data-is-runnable="true"]:has(.cm-editor[style]) .split-layout {
     grid-template-columns: auto 1fr;
   }
+
+  [data-action="attach"] {
+    display: none;
+  }
 }
 
 artifact-action {

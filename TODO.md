@@ -1,8 +1,7 @@
 # TODO
 
-- Support dual mode file: inline + external, or provide manual copy action
-- Drag and drop file as upload
 - Bug: abort error lingers after role switch
+- Drag and drop file as upload
 - Closing artifact while it is compiling left iframe on main thread
 - Language override for editor
 - Reference pinned code blocks
@@ -20,6 +19,7 @@
 
 # DONE
 
+- Bug: content doesn't initially render after role swithc from user to assistant
 - Manual code interpreter (with shebang line)
 - Support model specific options, e.g. thinking budget
 - Input token counter

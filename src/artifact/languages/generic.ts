@@ -5,6 +5,10 @@ import type { ArtifactContext, ArtifactSupport } from "./type";
 const supportedLanguages = Object.keys(bundledLanguages);
 const timers = new WeakMap<Element, number>();
 
+export interface ArtifactEvents {
+  attach: { lang: string; code: string; nodeId: string; filename?: string };
+}
+
 export class GenericArtifact implements ArtifactSupport {
   onResolveLanguage(lang: string): string | undefined {
     return supportedLanguages.includes(lang) ? lang : "text";
@@ -24,5 +28,14 @@ export class GenericArtifact implements ArtifactSupport {
 
   onSave({ lang, code }: ArtifactContext) {
     saveTextFile(`text/plain`, lang, code);
+  }
+
+  onAttach({ lang, code, trigger, filename }: ArtifactContext) {
+    const nodeId = trigger?.closest("[data-node-id]")?.getAttribute("data-node-id");
+    if (!nodeId) throw new Error("No node ID found");
+
+    window.dispatchEvent(
+      new CustomEvent<ArtifactEvents["attach"]>("attach", { detail: { lang, code, nodeId, filename } }),
+    );
   }
 }

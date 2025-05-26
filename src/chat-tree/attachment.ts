@@ -1,5 +1,6 @@
-import { dataUrlToFile, fileToDataUrl } from "../storage/codec";
+import { dataUrlToFile, dataUrlToText, fileToDataUrl, isTextEncodable } from "../storage/codec";
 import { downloadUrl } from "./download";
+import { getReadableFileSize } from "./file-size";
 import type { Attachment, AttachmentEmbedded, AttachmentExternal, ChatNode, EmbeddedFile } from "./tree-store";
 
 export function createAttachmentFromChatPart(part: EmbeddedFile): AttachmentEmbedded {
@@ -108,4 +109,36 @@ export function getDisplayType(attachment: Attachment): string {
     default:
       return "Unknown";
   }
+}
+
+export async function getAttachmentTextContent(attachment: Attachment): Promise<string> {
+  if (!isTextEncodable(attachment.file.type)) {
+    return `(binary data ${getReadableFileSize(attachment.file.size)})`;
+  }
+
+  switch (attachment.type) {
+    case "embedded": {
+      const file = attachment.file;
+      return dataUrlToText(file.url);
+    }
+
+    case "external": {
+      const file = attachment.file;
+      return file.text();
+    }
+  }
+}
+
+export function getValidAttachmentFileName(name: string): string {
+  // Remove any characters that are not alphanumeric, underscore, or hyphen
+  const base = name.replace(/[^a-zA-Z0-9_\-\.]/g, "_");
+  const hasExt = base.lastIndexOf(".");
+  if (hasExt === -1) return `${base}.txt`;
+
+  const ext = base.slice(hasExt);
+  const baseName = base.slice(0, hasExt);
+  if (baseName.length === 0) {
+    return `file${ext}`;
+  }
+  return `${baseName}${ext}`;
 }

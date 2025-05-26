@@ -1,6 +1,7 @@
 import React, { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 import styled from "styled-components";
 import { useArtifactActions } from "../artifact/artifact";
+import type { ArtifactEvents } from "../artifact/languages/generic";
 import {
   getCodeInterpreterPrompt,
   getReadonlyFileAccessPostscript,
@@ -14,16 +15,24 @@ import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
 import { useConnections } from "../settings/use-connections";
 import { showToast } from "../shell/toast";
-import { fileExtensionMimeTypes, textToDataUrl } from "../storage/codec";
+import {
+  fileExtensionToLanguage,
+  filenameToMimeType,
+  languageToFileExtension,
+  mimeTypeToFileExtension,
+  textToDataUrl,
+} from "../storage/codec";
 import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import {
-  createAttacchmentFromFile,
   createAttachmentFromChatPart,
+  createAttacchmentFromFile as createAttachmentFromFile,
   downloadAttachment,
   getAttachmentEmbeddedFiles,
   getAttachmentExternalFiles,
+  getAttachmentTextContent,
   getToggledAttachment,
+  getValidAttachmentFileName,
   removeAttachment,
   replaceAttachment,
   upsertAttachments,
@@ -34,6 +43,7 @@ import { ChatNodeMemo } from "./chat-node";
 import { getParts } from "./clipboard";
 import { dictateToTextarea } from "./dictation";
 import { getReadableFileSize } from "./file-size";
+import { getFilename } from "./filename-dialog";
 import { autoFocusNthInput } from "./focus";
 import { InputTokenizer } from "./input-tokenizer";
 import { getCombo } from "./keyboard";
@@ -296,8 +306,7 @@ export function ChatTree() {
 
       // when writing a file, we treat it as uploading a file to the chat message as attachment
       respondWriteFile((name, data) => {
-        const fileExension = name.split(".").pop()?.toLowerCase() ?? "txt";
-        const mimeType = fileExtensionMimeTypes[fileExension] ?? "text/plain";
+        const mimeType = filenameToMimeType(name);
         const file = new File([data], name, { type: mimeType });
         const sourceIframe = [...document.querySelectorAll("iframe")].find(
           (iframe) => iframe.contentWindow === event.source,
@@ -308,7 +317,7 @@ export function ChatTree() {
           return;
         }
 
-        const newAttachment = createAttacchmentFromFile(file);
+        const newAttachment = createAttachmentFromFile(file);
 
         setTreeNodes((nodes) =>
           nodes.map(patchNode((node) => node.id === sourceNodeId, upsertAttachments(newAttachment))),
@@ -321,6 +330,28 @@ export function ChatTree() {
 
     return () => window.removeEventListener("message", handleIframeFileAccessRequest);
   }, []);
+
+  // artifact-attachment conversion
+  useEffect(() => {
+    const ac = new AbortController();
+
+    window.addEventListener("attach", async (e) => {
+      const context = (e as CustomEvent<ArtifactEvents["attach"]>).detail;
+      console.log("Will attach code:", context);
+      const ext = languageToFileExtension(context.lang);
+      const pickedFilename = await getFilename({ placeholder: `filename.${ext}`, initalValue: context.filename });
+      if (!pickedFilename) return;
+
+      const validFilename = getValidAttachmentFileName(pickedFilename);
+      const mediaType = filenameToMimeType(validFilename);
+      const attachment = createAttachmentFromFile(new File([context.code], validFilename, { type: mediaType }));
+      setTreeNodes((nodes) =>
+        nodes.map(patchNode((node) => node.id === context.nodeId, upsertAttachments(attachment))),
+      );
+    });
+
+    return () => ac.abort();
+  }, [chat]);
 
   // auto focus last textarea on startup
   useEffect(() => {
@@ -662,7 +693,7 @@ export function ChatTree() {
 
   const handleUploadFiles = useCallback(async (nodeId: string) => {
     const files = await uploadFiles({ multiple: true });
-    const uploadedAttachments = files.map(createAttacchmentFromFile);
+    const uploadedAttachments = files.map(createAttachmentFromFile);
 
     if (!files.length) return;
     setTreeNodes((nodes) =>
@@ -675,6 +706,27 @@ export function ChatTree() {
     if (!targetNode) return;
 
     downloadAttachment(targetNode, attachmentId);
+  }, []);
+
+  const handleCopyAttachment = useCallback(async (nodeId: string, attachmentId: string) => {
+    const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
+    if (!targetNode) return;
+
+    const attachment = targetNode.attachments?.find((att) => att.id === attachmentId);
+    if (!attachment) return showToast(`❌ Attachment ${attachmentId} not found`);
+
+    const namedExt = attachment.file.name.split(".").pop();
+    const finalExt = namedExt ? namedExt : mimeTypeToFileExtension(attachment.file.type);
+    const lang = fileExtensionToLanguage(finalExt);
+
+    // append the text content of the attachment into the node as a code block
+    const textContent = await getAttachmentTextContent(attachment);
+    const codeBlock = `\`\`\`${lang} filename=${getValidAttachmentFileName(attachment.file.name)}\n${textContent}\n\`\`\``;
+
+    // write to clickboard
+    await navigator.clipboard.write([
+      new ClipboardItem({ "text/plain": new Blob([codeBlock], { type: "text/plain" }) }),
+    ]);
   }, []);
 
   const handleToggleAttachmentType = useCallback(async (nodeId: string, attachmentId: string) => {
@@ -795,6 +847,7 @@ export function ChatTree() {
               onDelete={handleDelete}
               onDeleteBelow={handleDeleteBelow}
               onDownloadAttachment={handleDownloadAttachment}
+              onCopyAttachment={handleCopyAttachment}
               onKeydown={handleKeydown}
               onPaste={handlePaste}
               onPreviewDoubleClick={handlePreviewDoubleClick}
