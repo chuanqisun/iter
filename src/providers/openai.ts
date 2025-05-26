@@ -194,7 +194,7 @@ ${maybeTextFile.text}
                       `.trim(),
                     } satisfies ResponseInputText;
                   }
-                  throw new Error(`Unsupported inline message attachment: ${part.name ?? "unnamed"} ${part.type}`);
+                  throw new Error(`Unsupported embedded message attachment: ${part.name ?? "unnamed"} ${part.type}`);
                 }
               })
               .filter((part) => part !== null),
@@ -226,7 +226,7 @@ ${maybeTextFile.text}
                   `.trim(),
                 } as ResponseOutputText;
               }
-              throw new Error(`Unsupported inline message attachment: ${part.name ?? "unnamed"} ${part.type}`);
+              throw new Error(`Unsupported embedded message attachment: ${part.name ?? "unnamed"} ${part.type}`);
             }
           });
 

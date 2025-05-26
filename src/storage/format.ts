@@ -20,10 +20,10 @@ async function stringifyNode(node: ChatNode) {
   const objects = await Promise.all(
     (node.attachments ?? []).map(async (attachment) => {
       switch (attachment.type) {
-        case "inline": {
+        case "embedded": {
           const part = attachment.file;
           const object = document.createElement("object");
-          object.setAttribute("data-attachment-type", "inline");
+          object.setAttribute("data-attachment-type", "embedded");
           object.setAttribute("data-size", part.size.toString());
           object.type = part.type;
           object.name = part.name;
@@ -76,7 +76,7 @@ async function parseMessaage(node: HTMLElement): Promise<ChatNode> {
     [...node.querySelectorAll("object")].map(async (obj) => {
       const type = obj.getAttribute("data-attachment-type");
       switch (type) {
-        case "inline": {
+        case "embedded": {
           return createAttachmentFromChatPart({
             type: obj.type,
             name: obj.name,

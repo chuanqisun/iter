@@ -248,7 +248,7 @@ export function ChatNodeInternal(props: ChatNodeProps) {
                   const file = attachment.file;
                   return (
                     <AttachmentPreview key={attachment.id}>
-                      {attachment.type === "inline" && file.type?.startsWith("image/") ? (
+                      {attachment.type === "embedded" && file.type?.startsWith("image/") ? (
                         <AttachmentMedia src={attachment.file.url} />
                       ) : null}
                       <AttachmentHeading>

@@ -1,9 +1,9 @@
 import { dataUrlToFile, fileToDataUrl } from "../storage/codec";
 import { downloadUrl } from "./download";
-import type { Attachment, AttachmentExternal, AttachmentInline, ChatNode, ChatPart } from "./tree-store";
+import type { Attachment, AttachmentEmbedded, AttachmentExternal, ChatNode, EmbeddedFile } from "./tree-store";
 
-export function createAttachmentFromChatPart(part: ChatPart): AttachmentInline {
-  return { id: crypto.randomUUID(), type: "inline", file: part };
+export function createAttachmentFromChatPart(part: EmbeddedFile): AttachmentEmbedded {
+  return { id: crypto.randomUUID(), type: "embedded", file: part };
 }
 
 export function createAttacchmentFromFile(file: File): AttachmentExternal {
@@ -16,9 +16,9 @@ export function getAttachmentExternalFiles(node: ChatNode): File[] {
   );
 }
 
-export function getAttachmentInlineParts(node: ChatNode): ChatPart[] {
+export function getAttachmentEmbeddedFiles(node: ChatNode): EmbeddedFile[] {
   return (
-    node.attachments?.filter((attachment) => attachment.type === "inline").map((attachment) => attachment.file) ?? []
+    node.attachments?.filter((attachment) => attachment.type === "embedded").map((attachment) => attachment.file) ?? []
   );
 }
 
@@ -45,7 +45,7 @@ export function removeAttachment(id: string) {
 export function downloadAttachment(node: ChatNode, attachmentId: string) {
   const attachment = findAttachment(node, attachmentId);
   switch (attachment?.type) {
-    case "inline": {
+    case "embedded": {
       const file = attachment.file;
       return downloadUrl(file.url, file.name);
     }
@@ -78,7 +78,7 @@ export async function getToggledAttachment(node: ChatNode, attachmentId: string)
   const attachment = findAttachment(node, attachmentId);
   if (!attachment) return undefined;
 
-  if (attachment.type === "inline") {
+  if (attachment.type === "embedded") {
     const part = attachment.file;
     const createdFile = await dataUrlToFile(part.url, part.name);
     const newAttachment: AttachmentExternal = { id: attachmentId, type: "external", file: createdFile };
@@ -86,9 +86,9 @@ export async function getToggledAttachment(node: ChatNode, attachmentId: string)
   } else {
     const file = attachment.file;
     const base64DataUrl = await fileToDataUrl(file);
-    const newAttachment: AttachmentInline = {
+    const newAttachment: AttachmentEmbedded = {
       id: attachmentId,
-      type: "inline",
+      type: "embedded",
       file: { name: file.name, type: file.type, size: file.size, url: base64DataUrl },
     };
     return newAttachment;
@@ -101,8 +101,8 @@ export function findAttachment(node: ChatNode, attachmentId: string): Attachment
 
 export function getDisplayType(attachment: Attachment): string {
   switch (attachment.type) {
-    case "inline":
-      return "Inline";
+    case "embedded":
+      return "Embedded";
     case "external":
       return "External";
     default:

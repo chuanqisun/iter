@@ -25,12 +25,12 @@ export interface ChatNodeMetadata {
   tokensPerSecond?: number;
 }
 
-export type Attachment = AttachmentInline | AttachmentExternal;
+export type Attachment = AttachmentEmbedded | AttachmentExternal;
 
-export interface AttachmentInline {
+export interface AttachmentEmbedded {
   id: string;
-  type: "inline";
-  file: ChatPart;
+  type: "embedded";
+  file: EmbeddedFile;
 }
 export interface AttachmentExternal {
   id: string;
@@ -38,7 +38,7 @@ export interface AttachmentExternal {
   file: File;
 }
 
-export interface ChatPart {
+export interface EmbeddedFile {
   name: string;
   type: string;
   url: string;

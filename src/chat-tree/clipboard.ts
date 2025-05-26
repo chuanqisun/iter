@@ -1,6 +1,6 @@
-import type { ChatPart } from "./tree-store";
+import type { EmbeddedFile } from "./tree-store";
 
-export async function getParts(data?: DataTransfer): Promise<ChatPart[]> {
+export async function getParts(data?: DataTransfer): Promise<EmbeddedFile[]> {
   const items = data?.items;
   if (!items) return [];
 
@@ -10,7 +10,7 @@ export async function getParts(data?: DataTransfer): Promise<ChatPart[]> {
       if (!file) return null;
       const reader = new FileReader();
 
-      return new Promise<ChatPart>((resolve) => {
+      return new Promise<EmbeddedFile>((resolve) => {
         reader.onload = () =>
           resolve({
             name: file.name,

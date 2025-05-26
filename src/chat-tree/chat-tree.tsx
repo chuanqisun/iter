@@ -21,8 +21,8 @@ import {
   createAttacchmentFromFile,
   createAttachmentFromChatPart,
   downloadAttachment,
+  getAttachmentEmbeddedFiles,
   getAttachmentExternalFiles,
-  getAttachmentInlineParts,
   getToggledAttachment,
   removeAttachment,
   replaceAttachment,
@@ -411,7 +411,7 @@ export function ChatTree() {
 
         // in user node, we attachments are input, insert before prompts
         // in assistant node, attachments are output, append after prompts
-        const attachments = getAttachmentInlineParts(node).map((part) => ({
+        const attachments = getAttachmentEmbeddedFiles(node).map((part) => ({
           name: part.name,
           type: part.type as any,
           url: part.url,
