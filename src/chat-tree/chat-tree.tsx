@@ -15,7 +15,13 @@ import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
 import { useConnections } from "../settings/use-connections";
 import { showToast } from "../shell/toast";
-import { filenameToMimeType, languageToFileExtension, textToDataUrl } from "../storage/codec";
+import {
+  fileExtensionToLanguage,
+  filenameToMimeType,
+  languageToFileExtension,
+  mimeTypeToFileExtension,
+  textToDataUrl,
+} from "../storage/codec";
 import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import {
@@ -24,7 +30,9 @@ import {
   downloadAttachment,
   getAttachmentEmbeddedFiles,
   getAttachmentExternalFiles,
+  getAttachmentTextContent,
   getToggledAttachment,
+  getValidAttachmentFileName,
   removeAttachment,
   replaceAttachment,
   upsertAttachments,
@@ -331,11 +339,12 @@ export function ChatTree() {
       const context = (e as CustomEvent<ArtifactEvents["attach"]>).detail;
       console.log("Will attach code:", context);
       const ext = languageToFileExtension(context.lang);
-      const finalFilename = await getFilename({ placeholder: `filename.${ext}`, initalValue: context.filename });
-      if (!finalFilename) return;
+      const pickedFilename = await getFilename({ placeholder: `filename.${ext}`, initalValue: context.filename });
+      if (!pickedFilename) return;
 
-      const mediaType = filenameToMimeType(finalFilename);
-      const attachment = createAttacchmentFromFile(new File([context.code], finalFilename, { type: mediaType }));
+      const validFilename = getValidAttachmentFileName(pickedFilename);
+      const mediaType = filenameToMimeType(validFilename);
+      const attachment = createAttacchmentFromFile(new File([context.code], validFilename, { type: mediaType }));
       setTreeNodes((nodes) =>
         nodes.map(patchNode((node) => node.id === context.nodeId, upsertAttachments(attachment))),
       );
@@ -706,7 +715,18 @@ export function ChatTree() {
     const attachment = targetNode.attachments?.find((att) => att.id === attachmentId);
     if (!attachment) return showToast(`❌ Attachment ${attachmentId} not found`);
 
-    // TODO implement text copy
+    const namedExt = attachment.file.name.split(".").pop();
+    const finalExt = namedExt ? namedExt : mimeTypeToFileExtension(attachment.file.type);
+    const lang = fileExtensionToLanguage(finalExt);
+
+    // append the text content of the attachment into the node as a code block
+    const textContent = await getAttachmentTextContent(attachment);
+    const codeBlock = `\`\`\`${lang} filename=${getValidAttachmentFileName(attachment.file.name)}\n${textContent}\n\`\`\``;
+
+    // write to clickboard
+    await navigator.clipboard.write([
+      new ClipboardItem({ "text/plain": new Blob([codeBlock], { type: "text/plain" }) }),
+    ]);
   }, []);
 
   const handleToggleAttachmentType = useCallback(async (nodeId: string, attachmentId: string) => {

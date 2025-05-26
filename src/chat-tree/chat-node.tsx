@@ -1,8 +1,7 @@
 import { memo, useEffect, useRef } from "react";
 import styled from "styled-components";
-import { getDisplayType } from "./attachment";
+import { AttachmentPreview } from "./attachment-preview";
 import "./chat-node.css";
-import { getReadableFileSize } from "./file-size";
 import { InputMetadata } from "./input-metadata";
 import { getCombo } from "./keyboard";
 import { OutputMetadata } from "./output-metadata";
@@ -247,41 +246,16 @@ export function ChatNodeInternal(props: ChatNodeProps) {
             {node.attachments?.length ? (
               <AttachmentList>
                 {node.attachments.map((attachment) => {
-                  const file = attachment.file;
                   return (
-                    <AttachmentPreview key={attachment.id}>
-                      {attachment.type === "embedded" && file.type?.startsWith("image/") ? (
-                        <AttachmentMedia src={attachment.file.url} />
-                      ) : null}
-                      <AttachmentHeading>
-                        <AttachmentFileName
-                          title={`Download ${file.name}${file.type ? ` (${file.type})` : ""}`}
-                          onClick={() => onDownloadAttachment(node.id, attachment.id)}
-                        >
-                          {file.name}
-                        </AttachmentFileName>
-                        <AttachmentFileSize>{getReadableFileSize(file.size)}</AttachmentFileSize>
-                      </AttachmentHeading>
-                      <AttachmentFooter>
-                        <AttachmentAction
-                          title="Toggle file mode"
-                          onClick={() => onToggleAttachmentType(node.id, attachment.id)}
-                        >
-                          {getDisplayType(attachment)}
-                        </AttachmentAction>
-                        <span> · </span>
-                        <AttachmentAction title="Copy as file" onClick={() => onCopyAttachment(node.id, attachment.id)}>
-                          Copy
-                        </AttachmentAction>
-                        <span> · </span>
-                        <AttachmentAction
-                          title="Delete file"
-                          onClick={() => onRemoveAttachment(node.id, attachment.id)}
-                        >
-                          Delete
-                        </AttachmentAction>
-                      </AttachmentFooter>
-                    </AttachmentPreview>
+                    <AttachmentPreview
+                      key={attachment.id}
+                      nodeId={node.id}
+                      attachment={attachment}
+                      onDownloadAttachment={onDownloadAttachment}
+                      onToggleAttachmentType={onToggleAttachmentType}
+                      onCopyAttachment={onCopyAttachment}
+                      onRemoveAttachment={onRemoveAttachment}
+                    ></AttachmentPreview>
                   );
                 })}
               </AttachmentList>
@@ -393,94 +367,4 @@ const AttachmentList = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-`;
-const AttachmentPreview = styled.div`
-  display: grid;
-  grid-template:
-    "media heading" auto
-    "media footer" auto / auto 1fr;
-  text-align: start;
-  align-content: center;
-  height: 48px;
-  padding: 0px 8px;
-  border: 1px solid var(--button-border-rest-color);
-  background-color: var(--button-background-rest-color);
-  border-radius: var(--button-border-radius);
-
-  &:hover {
-    border: 1px solid var(--button-border-hover-color);
-    background-color: var(--button-background-hover-color);
-  }
-
-  img {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
-    margin-right: 8px;
-  }
-`;
-
-const AttachmentHeading = styled.div`
-  display: grid;
-  grid-area: heading;
-  justify-content: start;
-  gap: 4px;
-  grid-auto-flow: column;
-  grid-auto-columns: auto;
-  align-items: baseline;
-`;
-
-const AttachmentFooter = styled.div`
-  display: grid;
-  grid-area: footer;
-  gap: 0px;
-  justify-content: start;
-  white-space: pre-wrap;
-  grid-auto-flow: column;
-  grid-auto-columns: auto;
-  color: var(--action-button-rest-color);
-  font-size: 14px;
-`;
-
-const AttachmentMedia = styled.img`
-  grid-area: media;
-`;
-
-const AttachmentFileName = styled.button`
-  font-size: 14px;
-  border: none;
-  background: none;
-  padding: 0;
-
-  // text longer than 100px will show ...
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 120px;
-  cursor: pointer;
-
-  &:focus-visible,
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
-const AttachmentFileSize = styled.div`
-  opacity: 0.625;
-  font-size: 12px;
-`;
-
-const AttachmentAction = styled.button`
-  border: none;
-  background: none;
-  padding: 0;
-  display: inline;
-  cursor: pointer;
-  color: var(--action-button-rest-color);
-
-  &:focus-visible,
-  &:hover {
-    text-decoration: underline;
-    color: var(--action-button-hover-color);
-  }
 `;

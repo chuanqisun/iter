@@ -150,3 +150,20 @@ function parseDataURL(dataUrl: string) {
     data: rawData,
   };
 }
+
+export function isTextEncodable(mimeType: string): boolean {
+  // all the /text
+  // svg+xml is also text
+  // some application types: js, ts, json, xml, yaml
+  return (
+    mimeType.startsWith("text/") ||
+    mimeType === "image/svg+xml" ||
+    mimeType === "application/javascript" ||
+    mimeType === "application/typescript" ||
+    mimeType === "application/json" ||
+    mimeType === "application/xml" ||
+    mimeType === "application/x-yaml" ||
+    mimeType === "application/x-jsond" ||
+    mimeType === "application/x-jsonl"
+  );
+}
