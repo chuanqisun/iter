@@ -37,7 +37,7 @@ function renderDialog(options: GetFilenameOptions): DocumentFragment {
   const templateHtml = `
 <form id="filename-form">
   <label for="filename">Filename</label>
-  <input type="text" id="filename" name="filename" required placeholder="${options.placeholder || "filename.ext"}" value="${options.initalValue || ""}" />
+  <input type="text" id="filename" name="filename" required placeholder="${options.placeholder || "filename.ext"}" value="${options.initalValue ?? options.placeholder ?? ""}" />
 </form>
   `;
 
