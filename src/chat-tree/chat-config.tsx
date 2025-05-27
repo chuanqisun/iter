@@ -1,6 +1,6 @@
 import { memo } from "react";
 import styled from "styled-components";
-import { BasicFormButton, BasicFormInput, BasicSelect } from "../form/form";
+import { BasicFormButton, BasicFormInput, BasicSelect } from "../dom/form";
 import type { BaseConnection } from "../providers/base";
 import type { RouteParameter } from "../router/use-route-parameter";
 import { useOptions } from "../settings/use-options";

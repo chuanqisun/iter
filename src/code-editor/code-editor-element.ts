@@ -6,6 +6,7 @@ import { Compartment, EditorSelection, EditorState, type Extension } from "@code
 import { drawSelection, EditorView, highlightSpecialChars, keymap } from "@codemirror/view";
 import { githubDark } from "@uiw/codemirror-theme-github/src/index.ts";
 import { Subject, tap } from "rxjs";
+import { blockActionPlugin } from "./block-action-widget";
 import { chatKeymap } from "./chat-keymap";
 import { chatPanel } from "./chat-panel";
 import "./code-editor-element.css";
@@ -30,6 +31,7 @@ export class CodeEditorElement extends HTMLElement {
     drawSelection(),
     syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
     ...chatPanel(),
+    blockActionPlugin,
     EditorView.lineWrapping,
     keymap.of([...chatKeymap(this), ...defaultKeymap, ...historyKeymap, indentWithTab]),
     githubDark,

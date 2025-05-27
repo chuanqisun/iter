@@ -2,7 +2,7 @@ import styled from "styled-components";
 import { tableStyles } from "./table";
 
 export const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
-  min-height: 34px; // match that of single line textarea
+  min-height: 34px; // try match a single line textarea
   overflow-x: auto;
   overflow-y: ${(props) => (props.$maxHeight ? "scroll" : "auto")};
   ${(props) => props.$maxHeight && `max-height: ${props.$maxHeight}px;`}
@@ -33,6 +33,7 @@ export const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
   }
 
   .shiki {
+    min-height: 36px; // preven code from collapsing to 0px
     overflow-x: auto;
     padding: 8px;
     line-height: var(--code-line-height);

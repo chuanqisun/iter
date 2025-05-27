@@ -75,7 +75,7 @@ dialog {
 }
 
 input:where([type="text"], [type="password"]) {
-  padding: 4px;
+  padding: var(--input-padding-block) var(--input-padding-inline);
 }
 
 *,

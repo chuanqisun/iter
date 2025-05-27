@@ -1,0 +1,38 @@
+.block-actions {
+  display: inline-flex;
+  padding-inline-start: 4px;
+  gap: 4px;
+
+  button {
+    background: none;
+    border: 1px solid color-mix(in srgb, ButtonBorder 20%, transparent);
+    cursor: pointer;
+    padding: 0 0.25rem;
+    color: color-mix(in srgb, currentColor 50%, transparent);
+    font-size: 12px;
+
+    &:hover {
+      color: currentColor;
+      border-color: ButtonBorder;
+    }
+  }
+
+  button:disabled {
+    background-color: color-mix(in srgb, currentColor 25%, transparent);
+    pointer-events: none;
+  }
+
+  [data-action="copy"] {
+    &:not(.copied) {
+      .success {
+        display: none;
+      }
+    }
+    &.copied {
+      opacity: 1;
+      .ready {
+        display: none;
+      }
+    }
+  }
+}
