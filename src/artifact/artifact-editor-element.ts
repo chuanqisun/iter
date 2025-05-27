@@ -29,6 +29,7 @@ export class ArtifactEditorElement extends HTMLElement {
     const editor = this.querySelector<CodeEditorElement>("code-editor-element")!;
     editor.setAttribute("data-lang", props.lang);
     editor.setAttribute("data-value", props.code);
+    editor.removeAttribute("data-readonly");
 
     const artifact = supportedArtifacts.find((art) => art.onResolveLanguage(props.lang));
     const actionMenu = this.querySelector("#artifact-menu")!;
