@@ -62,10 +62,10 @@ export const blockActionPlugin = ViewPlugin.fromClass(
           const codeStartWithInBlock = remaintingDoc.indexOf("\n", 3) + 1;
           const maybeBacktickIndex = remaintingDoc.indexOf("```", codeStartWithInBlock);
           const codeEndWithInBlock = maybeBacktickIndex === -1 ? remaintingDoc.length : maybeBacktickIndex;
+          const blockEndWithInBlock = maybeBacktickIndex === -1 ? remaintingDoc.length : maybeBacktickIndex + 3;
           const codeStart = blockStart + codeStartWithInBlock;
           const codeEnd = blockStart + codeEndWithInBlock;
-          // const blockEndWithInBlock = maybeBacktickIndex === -1 ? remaintingDoc.length : maybeBacktickIndex + 3;
-          // const blockEnd = blockStart + blockEndWithInBlock;
+          const blockEnd = blockStart + blockEndWithInBlock;
 
           switch (action) {
             case "edit": {
@@ -96,6 +96,13 @@ export const blockActionPlugin = ViewPlugin.fromClass(
                   detail: { code, lang, nodeId, filename },
                 }),
               );
+              break;
+            }
+            case "delete": {
+              e.preventDefault();
+              view.dispatch({
+                changes: { from: blockStart, to: blockEnd, insert: "" },
+              });
               break;
             }
             case "copy": {
@@ -133,6 +140,7 @@ class BlockActionWidget extends WidgetType {
     return $new("span", { class: "block-actions", "data-from": this.from.toString(), "data-to": this.to.toString() }, [
       $new("button", { "data-action": "edit", ...(this.isClosed ? {} : { disabled: "" }) }, ["Edit"]),
       $new("button", { "data-action": "attach", ...(this.isClosed ? {} : { disabled: "" }) }, ["Attach"]),
+      $new("button", { "data-action": "delete", ...(this.isClosed ? {} : { disabled: "" }) }, ["Delete"]),
       $new("button", { "data-action": "copy", ...(this.isClosed ? {} : { disabled: "" }) }, [
         $new("span", { class: "ready" }, ["Copy"]),
         $new("span", { class: "success" }, ["✅ Copied"]),

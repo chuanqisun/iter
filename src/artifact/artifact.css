@@ -33,7 +33,6 @@ artifact-element:has([data-action="edit"].running) {
   .cm-editor {
     padding: 0;
     border: none;
-    resize: horizontal;
   }
 
   & .split-layout {
@@ -50,6 +49,12 @@ artifact-element:has([data-action="edit"].running) {
   /* once user has resized the editor, left pane should fit content */
   &[data-is-runnable="true"]:has(.cm-editor[style]) .split-layout {
     grid-template-columns: auto 1fr;
+  }
+
+  &[data-is-runnable="true"] {
+    .cm-editor {
+      resize: horizontal;
+    }
   }
 
   [data-action="attach"] {
