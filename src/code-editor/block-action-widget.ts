@@ -195,7 +195,3 @@ function parseCodeBlockProps(raw = "") {
   }
   return result;
 }
-
-// Example usage:
-console.log(parseCodeBlockProps('key1 key2=value2 key3="value 3"'));
-// Output: { key1: "", key2: "value2", key3: "value 3" }
