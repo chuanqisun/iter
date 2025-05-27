@@ -64,5 +64,10 @@ artifact-editor-element {
     padding: 0;
     border: none;
     resize: horizontal;
+
+    /* prevent nested edit */
+    [data-action="edit"] {
+      display: none;
+    }
   }
 }
