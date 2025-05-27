@@ -4,11 +4,12 @@ import { deleteCredential, listCredentials, upsertCredentials } from "./connecti
 import "./settings-element.css";
 import templateHtml from "./settings-element.html?raw";
 
-export function defineSettingsElement() {
-  customElements.define("settings-element", SettingsElement);
-}
-
 export class SettingsElement extends HTMLElement {
+  static define() {
+    if (customElements.get("settings-element")) return;
+    customElements.define("settings-element", SettingsElement);
+  }
+
   constructor() {
     super();
     this.innerHTML = templateHtml;

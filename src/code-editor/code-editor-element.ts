@@ -15,11 +15,12 @@ import { syncDispatch } from "./sync";
 const dynamicLanguage = new Compartment();
 const dynamicReadonly = new Compartment();
 
-export function defineCodeEditorElement() {
-  customElements.define("code-editor-element", CodeEditorElement);
-}
-
 export class CodeEditorElement extends HTMLElement {
+  static define() {
+    if (customElements.get("code-editor-element")) return;
+    customElements.define("code-editor-element", CodeEditorElement);
+  }
+
   static observedAttributes = ["data-lang", "data-value", "data-readonly"];
 
   private editorView: EditorView | null = null;

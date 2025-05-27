@@ -1,9 +1,9 @@
-export function defineFocusTrapElement(tagName = "focus-trap-element") {
-  if (customElements.get(tagName)) return;
-  customElements.define(tagName, FocusTrapElement);
-}
-
 export class FocusTrapElement extends HTMLElement {
+  static define(tagName = "focus-trap-element") {
+    if (customElements.get(tagName)) return;
+    customElements.define(tagName, FocusTrapElement);
+  }
+
   static observedAttributes = ["disabled"];
 
   static createSentinel(onFocus: EventListener) {
