@@ -31,8 +31,7 @@ export class GenericArtifact implements ArtifactSupport {
     saveTextFile(`text/plain`, lang, code);
   }
 
-  onAttach({ lang, code, trigger, filename }: ArtifactContext) {
-    const nodeId = trigger?.closest("[data-node-id]")?.getAttribute("data-node-id");
+  onAttach({ lang, code, nodeId, filename }: ArtifactContext) {
     if (!nodeId) throw new Error("No node ID found");
 
     window.dispatchEvent(

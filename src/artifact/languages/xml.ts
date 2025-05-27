@@ -16,8 +16,10 @@ export class XmlArtifact extends GenericArtifact {
     return xmlLanguages.includes(lang) ? lang : undefined;
   }
 
-  onRun({ trigger, code, lang }: ArtifactContext) {
-    return lang === "html" ? runIframe(trigger, injectIframeFileAccessToDocument(code)) : runIframe(trigger, code);
+  onRun({ trigger, preview, code, lang }: ArtifactContext) {
+    return lang === "html"
+      ? runIframe(trigger, preview, injectIframeFileAccessToDocument(code))
+      : runIframe(trigger, preview, code);
   }
 
   async onSave({ lang, code }: ArtifactContext) {

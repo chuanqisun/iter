@@ -41,7 +41,10 @@ export function handleArtifactActions(event: MouseEvent) {
   const artifact = supportedArtifacts.find((art) => art.onResolveLanguage(lang));
   if (!artifact) return;
 
-  const actionContext: ArtifactContext = { lang, code, trigger, filename };
+  const nodeId = trigger?.closest("[data-node-id]")?.getAttribute("data-node-id") ?? undefined;
+  const preview = trigger?.closest("artifact-element")?.querySelector<HTMLElement>("artifact-preview") ?? undefined;
+
+  const actionContext: ArtifactContext = { lang, code, trigger, filename, nodeId, preview };
 
   switch (action) {
     case "edit": {

@@ -9,12 +9,11 @@ export class MermaidArtifact extends GenericArtifact {
     return mermaidLanguages.includes(lang) ? "mermaid" : undefined;
   }
 
-  onRun({ trigger, code }: ArtifactContext) {
-    runMermaid(trigger, code);
+  onRun({ trigger, preview, code }: ArtifactContext) {
+    runMermaid(trigger, preview, code);
   }
 
-  onSave({ trigger }: ArtifactContext) {
-    const preview = trigger?.closest("artifact-element")?.querySelector("artifact-preview");
+  onSave({ preview }: ArtifactContext) {
     if (!preview) return;
     saveTextFile("image/svg+xml", "svg", preview.innerHTML);
   }

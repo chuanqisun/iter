@@ -1,17 +1,9 @@
-export function runIframe(trigger: HTMLElement, code?: string) {
+export function runIframe(trigger: HTMLElement, preview?: HTMLElement, code?: string) {
   if (!code) return;
-
-  const renderContainer = trigger.closest("artifact-element")?.querySelector<HTMLElement>("artifact-preview");
-  if (!renderContainer) return;
+  if (!preview) return;
 
   trigger.classList.add("running");
-  renderIframe(code, renderContainer);
-}
-
-export function updateIframe(trigger: HTMLElement, code: string) {
-  const renderContainer = trigger.closest("artifact-element")?.querySelector<HTMLElement>("artifact-preview");
-  if (!renderContainer) return;
-  renderIframe(code, renderContainer);
+  renderIframe(code, preview);
 }
 
 function renderIframe(code: string, renderContainer: HTMLElement) {
