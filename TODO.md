@@ -3,7 +3,6 @@
 - Bug: abort error lingers after role switch
 - Download code block should map lang to file extension
 - Drag and drop file as upload
-- When typing triple backtick in the beginning of chat box, auto switch to code mode
 - Share readable file size algorithm with token counter algorithm
 - Migrate artifact to use shared editor
 - Closing artifact while it is compiling left iframe on main thread
@@ -24,6 +23,7 @@
 
 # DONE
 
+- When typing triple backtick in the beginning of chat box, auto switch to code mode
 - Bug: content doesn't initially render after role swithc from user to assistant
 - Manual code interpreter (with shebang line)
 - Support model specific options, e.g. thinking budget
