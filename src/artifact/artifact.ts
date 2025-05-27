@@ -15,6 +15,8 @@ const supportedArtifacts: ArtifactSupport[] = [
   new GenericArtifact(),
 ];
 
+const timers = new WeakMap<Element, number>();
+
 export function useArtifactActions() {
   useEffect(() => {
     window?.addEventListener("click", handleArtifactActions);
@@ -72,7 +74,16 @@ export function handleArtifactActions(event: MouseEvent) {
     }
 
     case "copy": {
-      artifact.onCopy(actionContext);
+      navigator.clipboard.writeText(code).then(() => {
+        trigger.classList.add("copied");
+        const previousTimer = timers.get(trigger);
+        if (previousTimer) clearTimeout(previousTimer);
+
+        timers.set(
+          trigger,
+          window.setTimeout(() => trigger.classList.remove("copied"), 3000),
+        );
+      });
       return;
     }
 
