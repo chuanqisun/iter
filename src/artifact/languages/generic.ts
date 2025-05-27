@@ -15,15 +15,16 @@ export class GenericArtifact implements ArtifactSupport {
   }
 
   onCopy({ trigger, code }: ArtifactContext) {
-    navigator.clipboard.writeText(code);
-    trigger.classList.add("copied");
-    const previousTimer = timers.get(trigger);
-    if (previousTimer) clearTimeout(previousTimer);
+    navigator.clipboard.writeText(code).then(() => {
+      trigger.classList.add("copied");
+      const previousTimer = timers.get(trigger);
+      if (previousTimer) clearTimeout(previousTimer);
 
-    timers.set(
-      trigger,
-      window.setTimeout(() => trigger.classList.remove("copied"), 3000),
-    );
+      timers.set(
+        trigger,
+        window.setTimeout(() => trigger.classList.remove("copied"), 3000),
+      );
+    });
   }
 
   onSave({ lang, code }: ArtifactContext) {

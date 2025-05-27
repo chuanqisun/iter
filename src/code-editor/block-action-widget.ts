@@ -85,15 +85,16 @@ export const blockActionPlugin = ViewPlugin.fromClass(
             }
             case "copy": {
               e.preventDefault();
-              navigator.clipboard.writeText(content.trim());
-              trigger.classList.add("copied");
-              const previousTimer = timers.get(trigger);
-              if (previousTimer) clearTimeout(previousTimer);
+              navigator.clipboard.writeText(content.trim()).then(() => {
+                trigger.classList.add("copied");
+                const previousTimer = timers.get(trigger);
+                if (previousTimer) clearTimeout(previousTimer);
 
-              timers.set(
-                trigger,
-                window.setTimeout(() => trigger.classList.remove("copied"), 3000),
-              );
+                timers.set(
+                  trigger,
+                  window.setTimeout(() => trigger.classList.remove("copied"), 3000),
+                );
+              });
               break;
             }
             default:
