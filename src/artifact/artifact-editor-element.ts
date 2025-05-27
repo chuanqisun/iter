@@ -34,13 +34,18 @@ export class ArtifactEditorElement extends HTMLElement {
     const artifact = supportedArtifacts.find((art) => art.onResolveLanguage(props.lang));
     const actionMenu = this.querySelector("#artifact-menu")!;
     const preview = this.querySelector<HTMLElement>("artifact-preview") ?? undefined;
+    const nodeId = trigger?.closest("[data-node-id]")?.getAttribute("data-node-id") ?? undefined;
+
+    // TODO some code still depends on reaching data-node-id. We should remove this
+    // and use the context object instead.
+    this?.setAttribute("data-node-id", nodeId ?? "");
 
     const context: ArtifactContext = {
       lang: props.lang,
       code: props.code,
       filename: props.filename,
       trigger,
-      nodeId: trigger?.closest("[data-node-id]")?.getAttribute("data-node-id") ?? undefined,
+      nodeId,
       preview,
     };
 
