@@ -606,6 +606,32 @@ export function ChatTree() {
         handleAbortSensible(activeUserNodeId);
       }
 
+      if (combo === "`") {
+        // if textarea only has 2 backticks, toggle to code mode
+        const maybeTextarea = e.target as HTMLTextAreaElement;
+        if (maybeTextarea.value === "``" && maybeTextarea.selectionStart === 2 && maybeTextarea.selectionEnd === 2) {
+          setTimeout(
+            () =>
+              setTreeNodes((nodes) => {
+                return nodes.map(
+                  patchNode(
+                    (node) => node.id === nodeId,
+                    (_node) => ({ isViewSource: true }),
+                  ),
+                );
+              }),
+            0,
+          );
+          // HACK, wait for editor to initialize
+          setTimeout(() => {
+            const editor = document.querySelector<CodeEditorElement>(`[data-node-id="${nodeId}"] code-editor-element`);
+            editor?.moveCursorToEnd();
+            console.log("Found editor", editor);
+          }, 10);
+        }
+        return;
+      }
+
       // Enter to activate edit mode
       if (targetNode.role === "assistant" && combo === "enter") {
         // Enter the entire message

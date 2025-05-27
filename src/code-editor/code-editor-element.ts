@@ -116,6 +116,12 @@ export class CodeEditorElement extends HTMLElement {
     setTimeout(() => this.editorView?.focus());
   }
 
+  moveCursorToEnd() {
+    this.editorView?.dispatch({
+      selection: EditorSelection.single(this.editorView.state.doc.length),
+    });
+  }
+
   get value() {
     return this.editorView?.state.doc.toString() ?? "";
   }
