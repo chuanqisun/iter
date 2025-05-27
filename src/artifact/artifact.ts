@@ -1,22 +1,13 @@
 import { useEffect } from "react";
-import { GenericArtifact } from "./languages/generic";
-import { MermaidArtifact } from "./languages/mermaid";
-import { ScriptArtifact } from "./languages/script";
-import { type ArtifactContext, type ArtifactSupport } from "./languages/type";
-import { XmlArtifact } from "./languages/xml";
+import { type ArtifactContext } from "./languages/type";
 
 import type { CodeEditorElement } from "../code-editor/code-editor-element";
 import "./artifact.css";
-
-const supportedArtifacts: ArtifactSupport[] = [
-  new ScriptArtifact(),
-  new XmlArtifact(),
-  new MermaidArtifact(),
-  new GenericArtifact(),
-];
+import { supportedArtifacts } from "./languages";
 
 const timers = new WeakMap<Element, number>();
 
+/* TODO deprecate this editor in favor of singleton `artifact-editor-element` */
 export function useArtifactActions() {
   useEffect(() => {
     window?.addEventListener("click", handleArtifactActions);
@@ -62,7 +53,7 @@ export function handleArtifactActions(event: MouseEvent) {
 
       if (isEditing) {
         artifactElement.removeEventListener("rerun", handleRerun);
-        onRunExit?.(actionContext);
+        onRunExit(actionContext);
         onEditExit(actionContext);
       } else {
         artifactElement.querySelector("dialog")?.showModal();
@@ -166,10 +157,7 @@ function onEditExit({ trigger, code }: ArtifactContext) {
   focusTrapElement.toggleAttribute("disabled", true);
 }
 
-function onRunExit({ trigger }: ArtifactContext) {
-  const renderContainer = trigger.closest("artifact-element")?.querySelector<HTMLElement>("artifact-preview");
-  if (!renderContainer) return;
-
+function onRunExit({ trigger, preview }: ArtifactContext) {
   trigger.classList.remove("running");
-  renderContainer.innerHTML = "";
+  if (preview) preview.innerHTML = "";
 }
