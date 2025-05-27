@@ -1,0 +1,68 @@
+artifact-editor-element {
+  display: grid;
+  height: 100%;
+  grid-template:
+    "menu menu" auto
+    "code preview" 1fr / 1fr 1fr;
+
+  /* once user has resized the editor, left pane should fit content */
+  &:has(.cm-editor[style]) {
+    grid-template-columns: auto 1fr;
+  }
+
+  .artifact-menu {
+    grid-area: menu;
+    background-color: var(--body-background);
+    padding: 4px;
+
+    button {
+      font-size: 14px;
+      padding: 0 4px;
+
+      opacity: 0.725;
+      cursor: pointer;
+
+      &:hover,
+      &:focus-visible {
+        opacity: 1;
+      }
+    }
+
+    [data-action="copy"] {
+      &:not(.copied) {
+        .success {
+          display: none;
+        }
+      }
+      &.copied {
+        opacity: 1;
+        .ready {
+          display: none;
+        }
+      }
+    }
+  }
+
+  .artifact-code {
+    grid-area: code;
+  }
+
+  artifact-preview {
+    grid-area: preview;
+
+    border: none;
+    display: block;
+    width: 100%;
+    height: 100%;
+
+    &:empty {
+      display: none;
+    }
+  }
+
+  .cm-editor {
+    padding: 0;
+    border: none;
+    resize: horizontal;
+  }
+}

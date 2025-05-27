@@ -1,7 +1,10 @@
 # TODO
 
 - Bug: abort error lingers after role switch
+- Download code block should map lang to file extension
 - Drag and drop file as upload
+- When typing triple backtick in the beginning of chat box, auto switch to code mode
+- Migrate artifact to use shared editor
 - Closing artifact while it is compiling left iframe on main thread
 - Language override for editor
 - Reference pinned code blocks
@@ -16,6 +19,7 @@
 - Manually append nodes
 - Preserve cursor position when switching between edit and view mode
 - Pin nodes from trim
+- Refactor: replace `onCopy` hook with `onGetCopyText` so host can manage copy lifecycle
 
 # DONE
 

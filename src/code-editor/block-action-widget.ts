@@ -1,5 +1,6 @@
 import { syntaxTree } from "@codemirror/language";
 import { Decoration, EditorView, ViewPlugin, ViewUpdate, WidgetType, type DecorationSet } from "@codemirror/view";
+import type { ArtifactEditorElement } from "../artifact/artifact-editor-element";
 import type { ArtifactEvents } from "../artifact/languages/generic";
 import { $new } from "../dom/dom";
 import "./block-action-widget.css";
@@ -40,7 +41,7 @@ export const blockActionPlugin = ViewPlugin.fromClass(
         }
       },
       click: (e, view) => {
-        const trigger = (e.target as HTMLElement).closest(`[data-action]`);
+        const trigger = (e.target as HTMLElement).closest<HTMLElement>(`[data-action]`);
         if (trigger) {
           const action = trigger.getAttribute("data-action");
           e.stopPropagation();
@@ -58,15 +59,29 @@ export const blockActionPlugin = ViewPlugin.fromClass(
           const props = parseCodeBlockProps(lang.split(" ").slice(1).join(" "));
 
           // code start is the first line below opening ```
-          // const codeStartWithInBlock = remaintingDoc.indexOf("\n", 3) + 1;
-          // const maybeBacktickIndex = remaintingDoc.indexOf("```", codeStartWithInBlock);
-          // const codeEndWithInBlock = maybeBacktickIndex === -1 ? remaintingDoc.length : maybeBacktickIndex;
+          const codeStartWithInBlock = remaintingDoc.indexOf("\n", 3) + 1;
+          const maybeBacktickIndex = remaintingDoc.indexOf("```", codeStartWithInBlock);
+          const codeEndWithInBlock = maybeBacktickIndex === -1 ? remaintingDoc.length : maybeBacktickIndex;
+          const codeStart = blockStart + codeStartWithInBlock;
+          const codeEnd = blockStart + codeEndWithInBlock;
           // const blockEndWithInBlock = maybeBacktickIndex === -1 ? remaintingDoc.length : maybeBacktickIndex + 3;
-          // const codeStart = blockStart + codeStartWithInBlock;
-          // const codeEnd = blockStart + codeEndWithInBlock;
           // const blockEnd = blockStart + blockEndWithInBlock;
 
           switch (action) {
+            case "edit": {
+              document
+                .querySelector<ArtifactEditorElement>("artifact-editor-element")!
+                .start({
+                  code: content,
+                  lang: resolvedLang,
+                  trigger,
+                })
+                .then((updatedValue) => {
+                  if (updatedValue === content) return; // no change, do nothing
+                  view.dispatch({ changes: { from: codeStart, to: codeEnd, insert: updatedValue } });
+                });
+              break;
+            }
             case "attach": {
               e.preventDefault();
               const lang = resolvedLang;
@@ -116,6 +131,7 @@ class BlockActionWidget extends WidgetType {
 
   toDOM(_view: EditorView) {
     return $new("span", { class: "block-actions", "data-from": this.from.toString(), "data-to": this.to.toString() }, [
+      $new("button", { "data-action": "edit", ...(this.isClosed ? {} : { disabled: "" }) }, ["Edit"]),
       $new("button", { "data-action": "attach", ...(this.isClosed ? {} : { disabled: "" }) }, ["Attach"]),
       $new("button", { "data-action": "copy", ...(this.isClosed ? {} : { disabled: "" }) }, [
         $new("span", { class: "ready" }, ["Copy"]),

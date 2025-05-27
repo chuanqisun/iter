@@ -16,6 +16,21 @@
       <settings-element></settings-element>
     </dialog>
     <dialog id="dynamic-dialog"></dialog>
+    <dialog class="fullscreen">
+      <artifact-editor-element>
+        <form id="artifact-menu" class="artifact-menu" method="dialog">
+          <button type="submit">Done</button>
+          <button type="button" data-action="run">Run</button>
+          <button type="button" class="copy" data-action="copy">
+            <span class="ready">Copy</span>
+            <span class="success">✅ Copied</span>
+          </button>
+          <button type="button" data-action="save">Download</button>
+        </form>
+        <code-editor-element></code-editor-element>
+        <artifact-preview></artifact-preview>
+      </artifact-editor-element>
+    </dialog>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

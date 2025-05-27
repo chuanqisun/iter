@@ -29,7 +29,7 @@
       }
     }
     &.copied {
-      opacity: 1;
+      color: currentColor;
       .ready {
         display: none;
       }

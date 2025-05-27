@@ -112,6 +112,10 @@ export class CodeEditorElement extends HTMLElement {
     );
   }
 
+  focus() {
+    setTimeout(() => this.editorView?.focus());
+  }
+
   get value() {
     return this.editorView?.state.doc.toString() ?? "";
   }
