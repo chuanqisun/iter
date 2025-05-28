@@ -67,7 +67,7 @@ body {
   }
 
   /* when doc has dialog open, disable overflow on body */
-  &:has(dialog) {
+  &:has(dialog:open) {
     overflow: hidden;
   }
 }
