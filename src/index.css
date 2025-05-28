@@ -65,6 +65,11 @@ body {
   &:has(artifact-element [data-action="edit"].running) {
     overflow: hidden;
   }
+
+  /* when doc has dialog open, disable overflow on body */
+  &:has(dialog) {
+    overflow: hidden;
+  }
 }
 
 dialog {
