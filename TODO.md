@@ -1,5 +1,7 @@
 # TODO
 
+- Bug: block action cannot handle long text
+- Bug: esplay should not transform url imports
 - Bug: abort error lingers after role switch
 - Download code block should map lang to file extension
 - Drag and drop file as upload
