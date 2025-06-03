@@ -175,7 +175,7 @@ export function respondWriteFile(
   if (event.data.type === "writeFile") {
     try {
       writeFile(event.data.filename, event.data.data);
-      event.source?.postMessage({ type: "writeFile" });
+      event.source?.postMessage({ type: "writeFile", filename: event.data.filename });
     } catch (error) {
       console.error(`Error writing file ${event.data.filename}:`, error);
     }
