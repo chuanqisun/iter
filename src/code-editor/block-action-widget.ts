@@ -138,10 +138,10 @@ class BlockActionWidget extends WidgetType {
 
   toDOM(_view: EditorView) {
     return $new("span", { class: "block-actions", "data-from": this.from.toString(), "data-to": this.to.toString() }, [
-      $new("button", { "data-action": "edit", ...(this.isClosed ? {} : { disabled: "" }) }, ["Edit"]),
-      $new("button", { "data-action": "attach", ...(this.isClosed ? {} : { disabled: "" }) }, ["Attach"]),
-      $new("button", { "data-action": "delete", ...(this.isClosed ? {} : { disabled: "" }) }, ["Delete"]),
-      $new("button", { "data-action": "copy", ...(this.isClosed ? {} : { disabled: "" }) }, [
+      $new("button", { "data-action": "edit" }, ["Edit"]),
+      $new("button", { "data-action": "attach" }, ["Attach"]),
+      $new("button", { "data-action": "delete" }, ["Delete"]),
+      $new("button", { "data-action": "copy" }, [
         $new("span", { class: "ready" }, ["Copy"]),
         $new("span", { class: "success" }, ["✅ Copied"]),
       ]),
