@@ -19,6 +19,7 @@ export const StreamingPreview = memo(StreamingPreviewInternal, (prevProps, nextP
     prevProps.node.content === nextProps.node.content &&
     prevProps.node.content$ === nextProps.node.content$ &&
     prevProps.node.cachedPreviewHtml?.key === nextProps.node.cachedPreviewHtml?.key &&
+    prevProps.node.isCollapsed === nextProps.node.isCollapsed &&
     prevProps.collapsedHeight === nextProps.collapsedHeight
   );
 });

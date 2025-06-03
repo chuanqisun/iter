@@ -65,6 +65,13 @@ export class CodeEditorElement extends HTMLElement {
     }
   }
 
+  disconnectedCallback() {
+    this.editorView?.destroy();
+    this.editorView = null;
+    this.cursorViews.forEach((view) => view.destroy());
+    this.cursorViews = [];
+  }
+
   attributeChangedCallback(name: string, _oldValue: string, newValue: string) {
     if (name === "data-lang") {
       this.updateLanguage(newValue);
