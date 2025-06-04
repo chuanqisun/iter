@@ -1,9 +1,13 @@
 import type {
-  ChatCompletionContentPartImage,
-  ChatCompletionContentPartText,
-  ChatCompletionMessageParam,
-} from "openai/resources/index.mjs";
-import { dataUrlToText } from "../storage/codec";
+  EasyInputMessage,
+  ResponseInputFile,
+  ResponseInputImage,
+  ResponseInputItem,
+  ResponseInputText,
+  ResponseOutputText,
+} from "openai/resources/responses/responses.mjs";
+import type { ReasoningEffort } from "openai/resources/shared.mjs";
+import { dataUrlToText, tryDecodeDataUrlAsText } from "../storage/codec";
 import type {
   BaseConnection,
   BaseCredential,
@@ -35,7 +39,7 @@ export interface AzureOpenAIConnection extends BaseConnection {
 
 export class AzureOpenAIProvider implements BaseProvider {
   static type = "aoai";
-  static defaultModels = ["o1-mini", "gpt-4o", "gpt-4o-mini"];
+  static defaultModels = ["o4-mini", "gpt-4o"];
 
   parseNewCredentialForm(formData: FormData): AzureOpenAICredential[] {
     const endpoint = this.ensureTrailingSlash(formData.get("newEndpoint") as string);
@@ -73,7 +77,7 @@ export class AzureOpenAIProvider implements BaseProvider {
           endpoint: credential.endpoint,
           deployment,
           apiKey: credential.apiKey,
-          apiVersion: "2025-01-01-preview",
+          apiVersion: "2025-04-01-preview",
         }) satisfies AzureOpenAIConnection,
     );
   }
@@ -90,10 +94,14 @@ export class AzureOpenAIProvider implements BaseProvider {
 
   getOptions(connection: BaseConnection): GenericOptions {
     if (!this.isAzureOpenAIConnection(connection)) throw new Error("Invalid connection type");
-    const isTemperatureSupported = !connection.deployment.startsWith("o");
+    const model = connection.deployment;
+
+    const isTemperatureSupported = model.startsWith("gpt");
+    const isThinkingEffortSupported = model.startsWith("o") || model.startsWith("codex");
 
     return {
       temperature: isTemperatureSupported ? { max: 2 } : undefined,
+      reasoningEffort: isThinkingEffortSupported ? ["low", "medium", "high"] : undefined,
     };
   }
 
@@ -111,24 +119,20 @@ export class AzureOpenAIProvider implements BaseProvider {
         dangerouslyAllowBrowser: true,
       });
 
-      const systemRoleName = connection.deployment.startsWith("o") ? "developer" : "system";
+      const options = that.getOptions(connection);
+
       const isSystemMessageSupported = !connection.deployment.startsWith("o1-mini");
-      const isTemperatureSupported = that.getOptions(connection).temperature !== undefined;
 
       const start = performance.now();
-      const stream = await client.chat.completions.create(
+      const stream = client.responses.stream(
         {
-          stream: true,
-          stream_options: {
-            include_usage: true,
-          },
-          messages: that.getOpenAIMessages(messages, {
-            systemRoleName,
-            isSystemMessageSupported,
-          }),
+          input: that.getOpenAIMessages(messages, { isSystemMessageSupported }),
           model: connection.deployment,
-          temperature: isTemperatureSupported ? config?.temperature : undefined,
-          max_completion_tokens: config?.maxTokens,
+          temperature: options.temperature !== undefined ? config?.temperature : undefined,
+          ...(options.reasoningEffort
+            ? { reasoning: { effort: (config.reasoningEffort ?? "medium") as ReasoningEffort } }
+            : {}),
+          max_output_tokens: config?.maxTokens,
           top_p: config?.topP,
         },
         {
@@ -137,64 +141,117 @@ export class AzureOpenAIProvider implements BaseProvider {
       );
 
       for await (const message of stream) {
-        const deltaText = message.choices?.at(0)?.delta?.content;
-        if (deltaText) yield deltaText;
-
-        if (message.usage) {
-          config?.onMetadata?.({
-            totalOutputTokens: message.usage.completion_tokens,
-            durationMs: performance.now() - start,
-          });
+        if (message.type === "response.output_text.delta" && message.delta) {
+          yield message.delta;
         }
+      }
+
+      const finalUsage = (await stream.finalResponse()).usage;
+      if (finalUsage) {
+        config?.onMetadata?.({
+          totalOutputTokens: finalUsage.output_tokens,
+          durationMs: performance.now() - start,
+        });
       }
     };
   }
 
   private getOpenAIMessages(
     messages: GenericMessage[],
-    options: {
-      systemRoleName: string;
+    options?: {
       isSystemMessageSupported?: boolean;
     },
-  ): ChatCompletionMessageParam[] {
+  ): ResponseInputItem[] {
     const convertedMessage = messages.map((message) => {
       switch (message.role) {
-        case "user":
-        case "assistant": {
+        case "user": {
           if (typeof message.content === "string") return { role: message.role, content: message.content };
 
           return {
             role: message.role,
             content: message.content
               .map((part) => {
-                if (part.type === "text/plain") {
-                  return {
-                    type: "text",
-                    text: dataUrlToText(part.url),
-                  } satisfies ChatCompletionContentPartText;
+                if (part.type === "text/plain" && !part.name) {
+                  // unnamed message is the main body text
+                  return { type: "input_text", text: dataUrlToText(part.url) } satisfies ResponseInputText;
                 } else if (part.type.startsWith("image/")) {
                   return {
-                    type: "image_url",
-                    image_url: {
-                      url: part.url,
-                    },
-                  } satisfies ChatCompletionContentPartImage;
+                    type: "input_image",
+                    detail: "auto",
+                    image_url: part.url,
+                  } satisfies ResponseInputImage;
+                } else if (part.type === "application/pdf") {
+                  return {
+                    type: "input_file",
+                    file_data: part.url,
+                    filename: part.name,
+                  } satisfies ResponseInputFile;
                 } else {
-                  console.warn("Unsupported message part", part);
-                  return null;
+                  const maybeTextFile = tryDecodeDataUrlAsText(part.url);
+                  if (maybeTextFile) {
+                    return {
+                      type: "input_text",
+                      text: `
+\`\`\`${part.name ?? "unnamed"} type=${maybeTextFile.mediaType}
+${maybeTextFile.text}
+\`\`\`
+                      `.trim(),
+                    } satisfies ResponseInputText;
+                  }
+                  throw new Error(`Unsupported embedded message attachment: ${part.name ?? "unnamed"} ${part.type}`);
                 }
               })
               .filter((part) => part !== null),
-          };
+          } satisfies EasyInputMessage;
+        }
+        case "assistant": {
+          if (typeof message.content === "string") return { role: message.role, content: message.content };
+          if (message.content.length === 0) return { role: message.role, content: "" };
+          if (message.content.length === 1 && message.content[0].type === "text/plain") {
+            return { role: message.role, content: dataUrlToText(message.content[0].url) };
+          }
+
+          const corcedOutputTexts = message.content.map((part) => {
+            if (part.type === "text/plain") {
+              return {
+                type: "output_text",
+                text: dataUrlToText(part.url),
+              } as ResponseOutputText;
+            } else {
+              const maybeTextFile = tryDecodeDataUrlAsText(part.url);
+              if (maybeTextFile) {
+                const filePrefix = message.role === "user" ? "input" : "output";
+                return {
+                  type: "output_text",
+                  text: `
+\`\`\`${part.name ?? "unnamed"} ${filePrefix} type=${maybeTextFile.mediaType}
+${maybeTextFile.text}
+\`\`\`
+                  `.trim(),
+                } as ResponseOutputText;
+              }
+              throw new Error(`Unsupported embedded message attachment: ${part.name ?? "unnamed"} ${part.type}`);
+            }
+          });
+
+          if (!corcedOutputTexts.length) {
+            console.warn(`Unable to format assistant message content`, message.content);
+            return null;
+          }
+
+          return {
+            role: message.role,
+            content: corcedOutputTexts as any[],
+          } satisfies EasyInputMessage;
         }
         case "system":
-          let finalRole = options.systemRoleName;
+          let finalRole: "developer" | "system" | "user" = "developer";
           if (!options?.isSystemMessageSupported) {
             console.error("System message is not supported for this model, converted to user message");
             finalRole = "user";
           }
           if (typeof message.content === "string") {
-            return { role: finalRole, content: message.content };
+            return { role: finalRole, content: message.content } satisfies EasyInputMessage;
           } else {
             return {
               role: finalRole,
@@ -202,7 +259,7 @@ export class AzureOpenAIProvider implements BaseProvider {
                 .filter((part) => part.type === "text/plain")
                 .map((part) => dataUrlToText(part.url))
                 .join("\n"),
-            };
+            } satisfies EasyInputMessage;
           }
         default: {
           console.warn("Unknown message type", message);
@@ -211,7 +268,7 @@ export class AzureOpenAIProvider implements BaseProvider {
       }
     });
 
-    return convertedMessage.filter((m) => m !== null) as ChatCompletionMessageParam[];
+    return convertedMessage.filter((m) => m !== null);
   }
 
   private isAzureOpenAICredential(credential: BaseCredential): credential is AzureOpenAICredential {

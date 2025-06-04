@@ -22,7 +22,7 @@ Recreate the UI of Airbnb with a single screenshot
 
 ## Supported model providers
 
-- OpenAI
+- OpenAI\*
   - ✅ codex-mini
   - ✅ o4-mini
   - ✅ o3
@@ -31,10 +31,6 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ GPT-4.1
   - ✅ GPT-4.1-mini
   - ✅ GPT-4.1-nano
-  - ✅ GPT-4o
-  - ✅ GPT-4o-mini
-- Azure OpenAI
-  - ✅ o1-mini
   - ✅ GPT-4o
   - ✅ GPT-4o-mini
 - Anthropic
@@ -51,6 +47,8 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ Gemini 2.0 Flash
   - ✅ Gemini 2.0 Flash Lite Preview
   - ✅ Gemini 2.0 Flash Thinking Experimental
+
+\*See detailed support matrix for [Azure OpenAI](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/responses?tabs=python-secure#responses-api)
 
 ## Keyboard shortcuts
 
