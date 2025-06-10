@@ -25,6 +25,7 @@ Recreate the UI of Airbnb with a single screenshot
 - OpenAI\*
   - ✅ codex-mini
   - ✅ o4-mini
+  - ✅ o3-pro
   - ✅ o3
   - ✅ o3-mini
   - ✅ GPT-4.5-preview

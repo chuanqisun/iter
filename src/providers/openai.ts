@@ -39,6 +39,7 @@ export class OpenAIProvider implements BaseProvider {
   static defaultModels = [
     "codex-mini-latest",
     "o4-mini",
+    "o3-pro",
     "o3",
     "o3-mini",
     "gpt-4.5-preview",
