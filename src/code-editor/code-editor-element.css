@@ -15,7 +15,7 @@ code-editor-element {
   max-height: var(--max-height);
   overflow: auto;
 
-  padding: 0 2px; /* cm line comes with padding */
+  padding: 0; /* cm line comes with padding */
   border: 1px solid currentColor;
   border-radius: 2px;
 

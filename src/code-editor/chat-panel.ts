@@ -104,25 +104,31 @@ export function chatPanel(): Extension[] {
       abortSignal: params.chatInterrupt,
     });
 
-    // clear the text in the currentSelectionRange
-    // shrink the currentSelectionRange in chatView
-    chatView.dispatch({
-      changes: {
-        from: currentSelectionRange.from,
-        to: currentSelectionRange.to,
-        insert: "",
-      },
-      selection: {
-        head: currentSelectionRange.from,
-        anchor: currentSelectionRange.from,
-      },
-    });
-
     const newCursorContent = getTaggedStream(chunks, "cursor-new");
     let fullResponse = "";
+    let isSelectionInitialized = false;
+
+    function initializeSelection() {
+      // clear the text in the currentSelectionRange
+      // shrink the currentSelectionRange in chatView
+      chatView.dispatch({
+        changes: {
+          from: currentSelectionRange.from,
+          to: currentSelectionRange.to,
+          insert: "",
+        },
+        selection: {
+          head: currentSelectionRange.from,
+          anchor: currentSelectionRange.from,
+        },
+      });
+      isSelectionInitialized = true;
+    }
 
     try {
       for await (const chunk of newCursorContent) {
+        if (!isSelectionInitialized) initializeSelection();
+
         fullResponse += chunk;
         chatView.dispatch({
           changes: { from: chatView.state.selection.main.from, insert: chunk },
@@ -151,17 +157,6 @@ export function chatPanel(): Extension[] {
 
     // destory the view
     chatView.destroy();
-
-    if (!params.focusInterrupt.aborted) {
-      // hide the chat panel
-      view.focus();
-      view.dispatch({ effects: toggleChat.of(false) });
-    }
-
-    if (!params.chatInterrupt.aborted) {
-      const fullContent = view.state.doc.toString();
-      view.contentDOM?.closest("code-editor-element")?.dispatchEvent(new CustomEvent("run", { detail: fullContent }));
-    }
   }
 
   const chatKeymap: KeyBinding[] = [
