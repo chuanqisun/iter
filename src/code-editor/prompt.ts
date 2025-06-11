@@ -12,7 +12,7 @@ export function getCursorChatMessages(params: {
       role: "system",
       content: `
 You are a text editor assistant. The content of the editor is wrapped in <editor-content>...</editor-content> tags. The curosr and selected text is marked by <cursor>...</cursor> tags.
-Now based user's provided goal/instruction wrapped in <user-goal>...</user-goal> tags, replace the content under cursor with <cursor-new>...</cursor-new>
+Now based on user's provided goal/instruction wrapped in <user-goal>...</user-goal> tags, replace the content under cursor with <cursor-new>...</cursor-new>
       `,
     },
     {
