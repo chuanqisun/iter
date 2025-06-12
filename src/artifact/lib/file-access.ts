@@ -77,12 +77,18 @@ globalThis.writeonlyFS = {
 export async function embedFileAccessToDocument(html: string) {
   // get files from window postMessage
   const files = await new Promise<File[]>((resolve) => {
-    window.addEventListener("message", (event) => {
-      if (event.data.type === "listFiles" && event.data.files) {
-        resolve(event.data.files);
-      }
-    });
+    const abortController = new AbortController();
     window.postMessage({ type: "listFiles" }, "*");
+    window.addEventListener(
+      "message",
+      (event) => {
+        if (event.data.type === "listFiles" && event.data.files) {
+          resolve(event.data.files);
+          abortController.abort();
+        }
+      },
+      { signal: abortController.signal },
+    );
   });
 
   // convert each file to <script type="embedded-file"></script>
