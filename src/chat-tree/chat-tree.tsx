@@ -289,7 +289,11 @@ export function ChatTree() {
 
   // expose file access api
   useEffect(() => {
+    const handledTypes = ["readFileRequest", "writeFileRequest", "listFilesRequest"];
+
     const handleIframeFileAccessRequest = (event: MessageEvent<any>) => {
+      if (!handledTypes.includes(event.data.type)) return;
+
       const allFiles = treeNodes$.value.flatMap(getAttachmentExternalFiles);
 
       // use reverse to keep the last file
