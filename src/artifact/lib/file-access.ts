@@ -78,6 +78,8 @@ export async function embedFileAccessToDocument(html: string) {
   // get files from window postMessage
   const files = await new Promise<File[]>((resolve) => {
     const abortController = new AbortController();
+    // note we are sending and receiving on the same window.
+    // We must define an exit condition to prevent accumulating listeners.
     window.postMessage({ type: "listFiles" }, "*");
     window.addEventListener(
       "message",
