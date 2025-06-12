@@ -292,7 +292,7 @@ export function ChatTree() {
     const handledTypes = ["readFileRequest", "writeFileRequest", "listFilesRequest"];
 
     const handleIframeFileAccessRequest = (event: MessageEvent<any>) => {
-      if (!handledTypes.includes(event.data.type)) return;
+      if (!handledTypes.includes(event.data?.type)) return;
 
       const allFiles = treeNodes$.value.flatMap(getAttachmentExternalFiles);
 
