@@ -44,12 +44,14 @@ function iframeFileAccessAPISource() {
 globalThis.readonlyFS = {
   async getFile(filename) {
     return new Promise((resolve, reject) => {
-      window.parent.postMessage({ type: "readFile", filename }, "*");
+      window.parent.postMessage({ type: "readFileRequest", filename }, "*");
+      const abortController = new AbortController();
       window.addEventListener("message", (event) => {
-        if (event.data.type === "readFile" && event.data.filename === filename) {
+        if (event.data.type === "readFileResponse" && event.data.filename === filename) {
           resolve(event.data.file);
+          abortController.abort();
         }
-      });
+      }, { signal: abortController.signal });
     });
   }
 }
@@ -60,12 +62,14 @@ globalThis.writeonlyFS = {
     const writableContent = typeof textOrBlob === "string" ? textOrBlob : await textOrBlob.arrayBuffer().then(buffer => new Uint8Array(buffer));
 
     return new Promise((resolve, reject) => {
-      window.parent.postMessage({ type: "writeFile", filename, data: writableContent }, "*");
+      window.parent.postMessage({ type: "writeFileRequest", filename, data: writableContent }, "*");
+      const abortController = new AbortController();
       window.addEventListener("message", (event) => {
-        if (event.data.type === "writeFile" && event.data.filename === filename) {
+        if (event.data.type === "writeFileResponse" && event.data.filename === filename) {
           resolve();
+          abortController.abort();
         }
-      });
+      }, { signal: abortController.signal });
     });
   }
 }
@@ -80,11 +84,11 @@ export async function embedFileAccessToDocument(html: string) {
     const abortController = new AbortController();
     // note we are sending and receiving on the same window.
     // We must define an exit condition to prevent accumulating listeners.
-    window.postMessage({ type: "listFiles" }, "*");
+    window.postMessage({ type: "listFilesRequest" }, "*");
     window.addEventListener(
       "message",
       (event) => {
-        if (event.data.type === "listFiles" && event.data.files) {
+        if (event.data.type === "listFilesResponse" && event.data.files) {
           resolve(event.data.files);
           abortController.abort();
         }
@@ -159,20 +163,20 @@ globalThis.writeonlyFS = {
 }
 
 export function respondReadFile(getFile: (name: string) => File | undefined | null, event: MessageEvent) {
-  if (event.data.type === "readFile") {
+  if (event.data.type === "readFileRequest") {
     const file = getFile(event.data.filename);
     if (!file) {
       console.error(`File not found: ${event.data.filename}`);
       return;
     }
-    event.source?.postMessage({ type: "readFile", filename: event.data.filename, file });
+    event.source?.postMessage({ type: "readFileResponse", filename: event.data.filename, file });
   }
 }
 
 export function respondListFiles(getFiles: () => File[], event: MessageEvent) {
-  if (event.data.type === "listFiles") {
+  if (event.data.type === "listFilesRequest") {
     const files = getFiles();
-    event.source?.postMessage({ type: "listFiles", files });
+    event.source?.postMessage({ type: "listFilesResponse", files });
   }
 }
 
@@ -180,10 +184,10 @@ export function respondWriteFile(
   writeFile: (name: string, writableContent: string | Uint8Array) => void,
   event: MessageEvent,
 ) {
-  if (event.data.type === "writeFile") {
+  if (event.data.type === "writeFileRequest") {
     try {
       writeFile(event.data.filename, event.data.data);
-      event.source?.postMessage({ type: "writeFile", filename: event.data.filename });
+      event.source?.postMessage({ type: "writeFileResponse", filename: event.data.filename });
     } catch (error) {
       console.error(`Error writing file ${event.data.filename}:`, error);
     }
