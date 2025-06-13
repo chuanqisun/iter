@@ -109,3 +109,7 @@ input:where([type="text"], [type="password"]) {
 *:where(input, select, textarea):focus {
   background-color: var(--input-active-background);
 }
+
+[hidden] {
+  display: none !important;
+}

@@ -14,7 +14,7 @@
     display: inline-flex;
     content: "⠋";
     font-size: 12px;
-    line-height: 15px;
+    line-height: var(--spinner-line-height, 15px);
     width: 15px;
     place-content: center;
     animation: braille-spin 0.6s steps(8, end) infinite;

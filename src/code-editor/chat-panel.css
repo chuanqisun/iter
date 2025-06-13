@@ -1,5 +1,6 @@
 .cm-chat-panel {
   display: grid;
+  position: relative;
 
   #chat-textarea {
     border: none;
@@ -20,6 +21,20 @@
 
     &[data-speaking] {
       color: GrayText;
+    }
+  }
+
+  .busy-indicator {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 4px;
+    --spinner-line-height: 21px;
+    opacity: 0.5;
+
+    &:not([hidden]) {
+      display: flex;
+      align-items: baseline;
     }
   }
 }

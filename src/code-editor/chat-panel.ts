@@ -28,6 +28,7 @@ export function chatPanel(): Extension[] {
   function createChatPanel(view: EditorView) {
     const dom = document.createElement("div");
     const textarea = document.createElement("textarea");
+    let activeChat = 0;
     textarea.id = "chat-textarea";
     textarea.placeholder = "Ctrl + Enter to send, Esc to cancel, Shift + Space to dictate";
     textarea.addEventListener("keydown", (e) => {
@@ -49,11 +50,18 @@ export function chatPanel(): Extension[] {
           textarea.value = "";
           focusInterrupt = new AbortController();
           chatInterrupt = new AbortController();
+          busyIndicator.hidden = false; // Show busy indicator
+          activeChat++;
           handleChatRequest({
             view,
             prompt,
             focusInterrupt: focusInterrupt.signal,
             chatInterrupt: chatInterrupt.signal,
+          }).finally(() => {
+            activeChat--;
+            if (activeChat === 0) {
+              busyIndicator.hidden = true; // Hide busy indicator when done
+            }
           });
           break;
       }
@@ -62,6 +70,12 @@ export function chatPanel(): Extension[] {
     textarea.addEventListener("blur", () => focusInterrupt?.abort());
 
     dom.appendChild(textarea);
+    // Add busy indicator below textarea
+    const busyIndicator = document.createElement("span");
+    busyIndicator.classList.add("busy-indicator", "c-spinner");
+    busyIndicator.hidden = true;
+    dom.appendChild(busyIndicator);
+
     dom.className = "cm-chat-panel";
     setTimeout(() => textarea.focus(), 0);
     return { top: false, dom };
