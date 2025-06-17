@@ -84,7 +84,7 @@ Include a `run` block in the user message to force the LLM to generate code and 
 
 The run block can take optional directives to expose additional APIs to the generated code
 
-**`llm`**: Expose the active Model provider to the generated code
+**`llm`**: Generate code that can prompt the active LLM model.
 
 ````
 ```run llm
