@@ -6,7 +6,7 @@ export function createESPlayDocument(code: string) {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ESPlay Demo</title>
-    <script src="https://unpkg.com/esplay@0.0.6" crossorigin></script>
+    <script src="https://unpkg.com/esplay@0.0.7" crossorigin></script>
   </head>
   <body>
     <div id="root"></div>

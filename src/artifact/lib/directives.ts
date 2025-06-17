@@ -42,7 +42,7 @@ Write a JavaScript program based on user's goal or instruction.
 
 ${[
   options?.fs
-    ? `To output data, you must use the global javascript API  \`window.writeonlyFS.writeFile(filename: string, data: string | Blob): Promise<void>\``
+    ? `To output data, you can use the global javascript API  \`window.writeonlyFS.writeFile(filename: string, data: string | Blob): Promise<void>\``
     : "",
   options?.llm
     ? `
