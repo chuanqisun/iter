@@ -1,5 +1,5 @@
 import { createESPlayDocument } from "../lib/create-esplay-document";
-import { embedFileAccessToDocument, injectIframeFileAccessToDocument } from "../lib/file-access";
+import { injectDirectivesRuntimeAPIToDocument, injectDirectivesStaticAPIToDocument } from "../lib/directives";
 import { runIframe } from "../lib/run-iframe";
 import { saveTextFile } from "../lib/save-text-file";
 import { GenericArtifact } from "./generic";
@@ -12,10 +12,10 @@ export class ScriptArtifact extends GenericArtifact {
   }
 
   onRun({ trigger, preview, code }: ArtifactContext) {
-    runIframe(trigger, preview, injectIframeFileAccessToDocument(createESPlayDocument(code)));
+    runIframe(trigger, preview, injectDirectivesRuntimeAPIToDocument(createESPlayDocument(code)));
   }
 
   async onSave({ code }: ArtifactContext) {
-    saveTextFile("text/html", "html", await embedFileAccessToDocument(createESPlayDocument(code)));
+    saveTextFile("text/html", "html", await injectDirectivesStaticAPIToDocument(createESPlayDocument(code)));
   }
 }

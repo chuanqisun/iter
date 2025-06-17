@@ -1,4 +1,4 @@
-import { embedFileAccessToDocument, injectIframeFileAccessToDocument } from "../lib/file-access";
+import { injectDirectivesRuntimeAPIToDocument, injectDirectivesStaticAPIToDocument } from "../lib/directives";
 import { runIframe } from "../lib/run-iframe";
 import { saveTextFile } from "../lib/save-text-file";
 import { GenericArtifact } from "./generic";
@@ -18,13 +18,13 @@ export class XmlArtifact extends GenericArtifact {
 
   onRun({ trigger, preview, code, lang }: ArtifactContext) {
     return lang === "html"
-      ? runIframe(trigger, preview, injectIframeFileAccessToDocument(code))
+      ? runIframe(trigger, preview, injectDirectivesRuntimeAPIToDocument(code))
       : runIframe(trigger, preview, code);
   }
 
   async onSave({ lang, code }: ArtifactContext) {
     return lang === "html"
-      ? saveTextFile(extensionToMimeType[lang], lang, await embedFileAccessToDocument(code))
+      ? saveTextFile(extensionToMimeType[lang], lang, await injectDirectivesStaticAPIToDocument(code))
       : saveTextFile(extensionToMimeType[lang], lang, code);
   }
 }

@@ -5,10 +5,12 @@ import type { ArtifactEvents } from "../artifact/languages/generic";
 import {
   getCodeInterpreterPrompt,
   getReadonlyFileAccessPostscript,
+  parseDirectives,
   respondListFiles,
   respondReadFile,
   respondWriteFile,
-} from "../artifact/lib/file-access";
+  streamToText,
+} from "../artifact/lib/directives";
 import type { CodeEditorElement } from "../code-editor/code-editor-element";
 import { type GenericMessage, type GenericMetadata } from "../providers/base";
 import { useRouteCache } from "../router/use-route-cache";
@@ -287,7 +289,7 @@ export function ChatTree() {
     return () => abortController.abort();
   }, [exportChat, importChat]);
 
-  // expose file access api
+  // handle file system runtime API requests from iframes
   useEffect(() => {
     const handledTypes = ["readFileRequest", "writeFileRequest", "listFilesRequest"];
 
@@ -334,6 +336,39 @@ export function ChatTree() {
 
     return () => window.removeEventListener("message", handleIframeFileAccessRequest);
   }, []);
+
+  // handle prompt runtime API requests from iframes
+  const promptAPIAbortControllersRef = useRef<AbortController[]>([]);
+  useEffect(() => {
+    const handledTypes = ["llmPromptRequest", "llmAbortAllRequest"];
+
+    const handlePromptRequest = async (event: MessageEvent<any>) => {
+      if (!handledTypes.includes(event.data?.type)) return;
+
+      if (event.data.type === "llmPromptRequest") {
+        const abortController = new AbortController();
+        const prompt = event.data.prompt;
+        promptAPIAbortControllersRef.current.push(abortController);
+        try {
+          const response = await streamToText(chat([{ role: "user", content: prompt }], abortController.signal));
+          event.source?.postMessage({ type: "llmPromptResponse", requestId: event.data.requestId, response });
+        } finally {
+          promptAPIAbortControllersRef.current = promptAPIAbortControllersRef.current.filter(
+            (controller) => controller !== abortController,
+          );
+        }
+      }
+
+      if (event.data.type === "llmAbortAllRequest") {
+        promptAPIAbortControllersRef.current.forEach((controller) => controller.abort());
+        promptAPIAbortControllersRef.current = [];
+      }
+    };
+
+    window.addEventListener("message", handlePromptRequest);
+
+    return () => window.removeEventListener("message", handlePromptRequest);
+  }, [chat]);
 
   // artifact-attachment conversion
   useEffect(() => {
@@ -441,7 +476,8 @@ export function ChatTree() {
       .slice(0, targetIndex + 1)
       .map((node) => {
         const filePostScript = getReadonlyFileAccessPostscript(getAttachmentExternalFiles(node));
-        const codeInterpreterPostScript = node.content.includes("```run") ? getCodeInterpreterPrompt() : "";
+        const { run, llm } = parseDirectives(node.content);
+        const codeInterpreterPostScript = run ? getCodeInterpreterPrompt({ llm, fs: true }) : "";
         const rawContentDataUrl = textToDataUrl(`${node.content}${filePostScript}${codeInterpreterPostScript}`);
 
         // in user node, we attachments are input, insert before prompts

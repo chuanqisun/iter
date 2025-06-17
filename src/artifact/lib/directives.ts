@@ -1,4 +1,24 @@
 import { getReadableFileSize } from "../../chat-tree/file-size";
+import fileAccessRuntimeAPI from "./directives/file-access-runtime-api.js?raw";
+import fileAccessStaticAPI from "./directives/file-access-static-api.js?raw";
+import llmRuntimeAPI from "./directives/llm-runtime-api.js?raw";
+import llmStaticAPI from "./directives/llm-static-api.js?raw";
+
+export interface ParsedDirective {
+  run?: boolean;
+  llm?: boolean;
+}
+export function parseDirectives(text: string): ParsedDirective {
+  // ```run -> run = true
+  // ```run llm -> run = true, llm = true
+  const directiveLines = text.split("\n").filter((line) => line.startsWith("```run"));
+  const run = directiveLines.some((line) => line.includes("```run"));
+  const llm = run && directiveLines.some((line) => line.includes(" llm"));
+  return {
+    run,
+    llm,
+  };
+}
 
 export function getReadonlyFileAccessPostscript(files: File[]) {
   const filePostScript = files?.length
@@ -12,21 +32,43 @@ Uploaded files can only be accessed in browser via global javascript API  \`wind
   return filePostScript;
 }
 
-export function getCodeInterpreterPrompt(): string {
+export interface CodeInterpreterOptions {
+  fs?: boolean;
+  llm?: boolean;
+}
+export function getCodeInterpreterPrompt(options?: CodeInterpreterOptions): string {
   return `
 Write a JavaScript program based on user's goal or instruction.
 
-To output data, you must use the global javascript API  \`window.writeonlyFS.writeFile(filename: string, data: string | Blob): Promise<void>\`
+${[
+  options?.fs
+    ? `To output data, you must use the global javascript API  \`window.writeonlyFS.writeFile(filename: string, data: string | Blob): Promise<void>\``
+    : "",
+  options?.llm
+    ? `
+To prompt a Large Language Model (LLM) for text response, you must use the global javascript API  \`window.llm.prompt(prompt: string): Promise<string>\`
+To abort all LLM requests, you must use \`window.llm.abortAll(): void\`
+`.trim()
+    : "",
+].join("\n")}
 
-Respond in a markdown code block like this:
+
+If the program needs UI, respond a single HTML file:
+\`\`\`html
+<!DOCTYPE html>
+...
+\`\`\`
+
+Otherwise respond in javascript like this:
 
 \`\`\`javascript 
 // ...
-\`\`\``;
+\`\`\`
+`;
 }
 
-export function injectIframeFileAccessToDocument(html: string) {
-  // add <script</script> before the 1st <script> element, or at the end of the <head> element;
+export function injectDirectivesRuntimeAPIToDocument(html: string) {
+  // add <script></script> before the 1st <script> element, or at the end of the <head> element;
   let insertPosition = html.indexOf("<script");
   if (insertPosition === -1) insertPosition = html.indexOf("</head>");
   if (insertPosition < 0) {
@@ -35,50 +77,13 @@ export function injectIframeFileAccessToDocument(html: string) {
   }
 
   const injectedCode =
-    html.slice(0, insertPosition) + `<script>${iframeFileAccessAPISource()}</script>` + html.slice(insertPosition);
+    html.slice(0, insertPosition) +
+    `<script>${fileAccessRuntimeAPI}\n${llmRuntimeAPI}</script>` +
+    html.slice(insertPosition);
   return injectedCode;
 }
 
-function iframeFileAccessAPISource() {
-  const scriptContent = `
-globalThis.readonlyFS = {
-  async getFile(filename) {
-    return new Promise((resolve, reject) => {
-      window.parent.postMessage({ type: "readFileRequest", filename }, "*");
-      const abortController = new AbortController();
-      window.addEventListener("message", (event) => {
-        if (event.data.type === "readFileResponse" && event.data.filename === filename) {
-          resolve(event.data.file);
-          abortController.abort();
-        }
-      }, { signal: abortController.signal });
-    });
-  }
-}
-
-globalThis.writeonlyFS = {
-  async writeFile(filename, textOrBlob) {
-
-    const writableContent = typeof textOrBlob === "string" ? textOrBlob : await textOrBlob.arrayBuffer().then(buffer => new Uint8Array(buffer));
-
-    return new Promise((resolve, reject) => {
-      window.parent.postMessage({ type: "writeFileRequest", filename, data: writableContent }, "*");
-      const abortController = new AbortController();
-      window.addEventListener("message", (event) => {
-        if (event.data.type === "writeFileResponse" && event.data.filename === filename) {
-          resolve();
-          abortController.abort();
-        }
-      }, { signal: abortController.signal });
-    });
-  }
-}
-  `;
-
-  return scriptContent;
-}
-
-export async function embedFileAccessToDocument(html: string) {
+export async function injectDirectivesStaticAPIToDocument(html: string) {
   // get files from window postMessage
   const files = await new Promise<File[]>((resolve) => {
     const abortController = new AbortController();
@@ -104,7 +109,7 @@ export async function embedFileAccessToDocument(html: string) {
         fileToUrl(file).then((url) => `<script type="embedded-file" filename="${file.name}" data="${url}"></script>`),
       ),
     )),
-    `<script>${embedFileAccessAPISource()}</script>`,
+    `<script>${fileAccessStaticAPI}\n${llmStaticAPI}</script>`,
   ].join("\n");
   // add <script></script> before the 1st <script> element, or at the end of the <head> element;
   let insertPosition = html.indexOf("<script");
@@ -125,41 +130,6 @@ function fileToUrl(file: File) {
     fileReader.onerror = reject;
     fileReader.readAsDataURL(file);
   });
-}
-
-/** Get readonly files from the script tags, and handle write files by downloading them with a temporary <a> tag */
-function embedFileAccessAPISource() {
-  const scriptContent = `
-globalThis.readonlyFS = {
-  async getFile(filename) {
-    const script = document.querySelector(\`script[type="embedded-file"][filename="\${filename}"]\`);
-    if (!script) {
-      throw new Error(\`File not found: \${filename}\`);
-    }
-    const data = script.getAttribute("data");
-    // fetch dataUrl into File object
-    const blob = await (await fetch(data)).blob();
-    const file = new File([blob], filename, { type: blob.type });
-    return file;
-  }
-}
-
-globalThis.writeonlyFS = {
-  async writeFile(filename, text) {
-    const blob = new Blob([text], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-}
-`.trim();
-
-  return scriptContent;
 }
 
 export function respondReadFile(getFile: (name: string) => File | undefined | null, event: MessageEvent) {
@@ -192,4 +162,12 @@ export function respondWriteFile(
       console.error(`Error writing file ${event.data.filename}:`, error);
     }
   }
+}
+
+export async function streamToText(stream: AsyncGenerator<string>): Promise<string> {
+  let fullResponse = "";
+  for await (const chunk of stream) {
+    fullResponse += chunk;
+  }
+  return fullResponse;
 }
