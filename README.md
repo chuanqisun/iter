@@ -81,3 +81,13 @@ Include a `run` block in the user message to force the LLM to generate code and 
 <describe what the code should do in natural language, you can also include what types of files to output>
 ```
 ````
+
+The run block can take optional directives to expose additional APIs to the generated code
+
+**`llm`**: Expose the active Model provider to the generated code
+
+````
+```run llm
+<describe how the code should use LLM to perform tasks, e.g. summarize, extract, generate content>
+```
+````
