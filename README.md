@@ -6,8 +6,8 @@ A minimalist frontend for Gen AI Chat models, optimized for rapid prompt iterati
 - **⚡ API endpoint and model hot-swap**: Switch between different APIs and models without losing any chat progress
 - **🦉 Adapts to OS/Browser default theme**: Dark theme for happy night owls
 - **💅 Markdown parser**: Built-in syntax highlight and copy button for code blocks
-- **🧭 Artifacts**: Live edit and preview code blocks for SVG, HTML, Mermaid, TypeScript, and React in JSX
-- **💻 Interpreter**: Process uploaded files with TypeScript and any browser-friendly npm packages
+- **🧭 Artifacts**: Live edit and preview code blocks for SVG, HTML, Mermaid, TypeScript, and React
+- **💻 Interpreter**: Process uploaded files with TypeScript, with access to NPM registry, a virtual File System, and an LLM prompt API.
 - **🖱️ Cursor chat**: Precisely edit the selected text
 - **📸 Vision input**: Handle visual inputs with multi-modal models
 - **🎙️ Speech input**: Use microphone to input text that can be mixed with typed message
