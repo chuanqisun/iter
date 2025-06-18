@@ -4,10 +4,9 @@ import { Marked } from "marked";
 import markedShiki from "marked-shiki";
 import { bundledLanguages, createHighlighter } from "shiki/bundle/web";
 import xss, { escapeAttrValue, whiteList } from "xss";
-import { mermaidLanguages, scriptingLanguages, xmlLanguages } from "../artifact/languages/runnable-languages";
+import { runnableArtifactLanguages } from "../artifact/languages/runnable-languages";
 
 const supportedLanguages = Object.keys(bundledLanguages);
-const runnableArtifactLanguages = new Set([...scriptingLanguages, ...mermaidLanguages, ...xmlLanguages]);
 const editorLanguages = runnableArtifactLanguages.union(new Set(supportedLanguages));
 
 const markedAsync = initializeMarked();
