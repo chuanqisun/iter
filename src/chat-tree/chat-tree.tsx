@@ -339,6 +339,14 @@ export function ChatTree() {
 
   // handle prompt runtime API requests from iframes
   const promptAPIAbortControllersRef = useRef<AbortController[]>([]);
+  const handleAbortPromptAPI = useCallback(() => {
+    const taskCount = promptAPIAbortControllersRef.current.length;
+    if (!taskCount) return;
+    promptAPIAbortControllersRef.current.forEach((controller) => controller.abort());
+    promptAPIAbortControllersRef.current = [];
+    showToast(`⚠️ Aborted ${taskCount} prompt API requests`);
+  }, []);
+
   useEffect(() => {
     const handledTypes = ["llmPromptRequest", "llmAbortAllRequest"];
 
@@ -359,10 +367,7 @@ export function ChatTree() {
         }
       }
 
-      if (event.data.type === "llmAbortAllRequest") {
-        promptAPIAbortControllersRef.current.forEach((controller) => controller.abort());
-        promptAPIAbortControllersRef.current = [];
-      }
+      if (event.data.type === "llmAbortAllRequest") handleAbortPromptAPI();
     };
 
     window.addEventListener("message", handlePromptRequest);
@@ -503,6 +508,7 @@ export function ChatTree() {
   }, []);
 
   const handleAbortSensible = useCallback((nodeId: string) => {
+    // selectively abort chat nodes
     const isTargetNodeAbortable = treeNodes$.value.find((node) => node.id === nodeId)?.abortController;
     if (!isTargetNodeAbortable) handleAbortAll();
     else handleAbort(nodeId);
