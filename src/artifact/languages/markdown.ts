@@ -21,6 +21,25 @@ export class MarkdownArtifact extends GenericArtifact {
 
   async markdownToHtml(code: string) {
     const { marked } = await import("marked");
-    return marked.parse(code);
+    const coreHTML = marked.parse(code);
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Markdown Preview</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown-light.min.css" />
+  <style>
+body {
+  padding: 1rem;
+}
+  </style>
+</head>
+<body class="markdown-body">
+${coreHTML}
+</body>
+</html>
+    `.trim();
   }
 }
