@@ -98,6 +98,14 @@ export const blockActionPlugin = ViewPlugin.fromClass(
               );
               break;
             }
+            case "only": {
+              e.preventDefault();
+              // replace the editor content with the code block content (inclusive)
+              view.dispatch({
+                changes: { from: 0, to: view.state.doc.length, insert: view.state.sliceDoc(blockStart, blockEnd) },
+              });
+              break;
+            }
             case "delete": {
               e.preventDefault();
               view.dispatch({
@@ -140,6 +148,7 @@ class BlockActionWidget extends WidgetType {
     return $new("span", { class: "block-actions", "data-from": this.from.toString(), "data-to": this.to.toString() }, [
       $new("button", { "data-action": "edit" }, ["Edit"]),
       $new("button", { "data-action": "attach" }, ["Attach"]),
+      $new("button", { "data-action": "only" }, ["Only"]),
       $new("button", { "data-action": "delete" }, ["Delete"]),
       $new("button", { "data-action": "copy" }, [
         $new("span", { class: "ready" }, ["Copy"]),
