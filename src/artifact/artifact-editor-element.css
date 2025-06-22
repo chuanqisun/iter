@@ -45,6 +45,7 @@ artifact-editor-element {
 
   .artifact-code {
     grid-area: code;
+    min-height: 0;
   }
 
   artifact-preview {
