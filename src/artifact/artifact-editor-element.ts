@@ -99,6 +99,7 @@ export class ArtifactEditorElement extends HTMLElement {
       "close",
       () => {
         result.resolve(editor.value);
+        if (preview) preview.innerHTML = "";
         abortController.abort();
       },
       { signal: abortController.signal },
