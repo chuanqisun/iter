@@ -1,8 +1,6 @@
-export function runIframe(trigger: HTMLElement, preview?: HTMLElement, code?: string) {
+export function runIframe(preview?: HTMLElement, code?: string) {
   if (!code) return;
   if (!preview) return;
-
-  trigger.classList.add("running");
   renderIframe(code, preview);
 }
 

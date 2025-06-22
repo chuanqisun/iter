@@ -2,6 +2,7 @@ import { CodeEditorElement } from "../code-editor/code-editor-element";
 import "./artifact-editor-element.css";
 import { supportedArtifacts } from "./languages";
 import type { ArtifactContext, ArtifactSupport } from "./languages/type";
+import { copy } from "./lib/copy-button";
 
 export interface StartEditorProps {
   trigger: HTMLElement;
@@ -10,8 +11,6 @@ export interface StartEditorProps {
   filename?: string;
   onCodeChange?: (code: string) => void;
 }
-
-const timers = new WeakMap<Element, number>();
 
 export class ArtifactEditorElement extends HTMLElement {
   static define() {
@@ -44,7 +43,6 @@ export class ArtifactEditorElement extends HTMLElement {
       lang: props.lang,
       code: props.code,
       filename: props.filename,
-      trigger,
       nodeId,
       preview,
     };
@@ -110,7 +108,7 @@ export class ArtifactEditorElement extends HTMLElement {
         const action = trigger?.dataset.action ?? "";
         const code = editor.value;
         if (!artifact) return;
-        this.handleArtifactAction(artifact, action, { ...context, trigger, code });
+        this.handleArtifactAction(artifact, action, { ...context, code }, trigger);
       },
       {
         signal: abortController.signal,
@@ -125,7 +123,12 @@ export class ArtifactEditorElement extends HTMLElement {
     return result.promise;
   }
 
-  private handleArtifactAction(artifact: ArtifactSupport, action: string, context: ArtifactContext) {
+  private handleArtifactAction(
+    artifact: ArtifactSupport,
+    action: string,
+    context: ArtifactContext,
+    trigger: HTMLElement,
+  ) {
     switch (action) {
       case "run": {
         artifact.onRun?.(context);
@@ -133,7 +136,7 @@ export class ArtifactEditorElement extends HTMLElement {
       }
 
       case "copy": {
-        this.onCopy(context.trigger, context.code);
+        copy(trigger, context.code);
         return;
       }
 
@@ -147,18 +150,5 @@ export class ArtifactEditorElement extends HTMLElement {
         return;
       }
     }
-  }
-
-  private onCopy(trigger: HTMLElement, code: string) {
-    navigator.clipboard.writeText(code).then(() => {
-      trigger.classList.add("copied");
-      const previousTimer = timers.get(trigger);
-      if (previousTimer) clearTimeout(previousTimer);
-
-      timers.set(
-        trigger,
-        window.setTimeout(() => trigger.classList.remove("copied"), 3000),
-      );
-    });
   }
 }

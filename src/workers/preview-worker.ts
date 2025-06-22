@@ -32,11 +32,6 @@ async function initializeMarked() {
         return `
         <artifact-element lang="${editorLanguage}" data-is-runnable="${runnableArtifactLanguages.has(lang)}" ${attrStr}>  
           <artifact-source>${highlightedHtml}</artifact-source>  
-          <artifact-focus-trap-element disabled>
-            <div class="split-layout">
-              <artifact-edit></artifact-edit>
-              <artifact-preview></artifact-preview>
-            </div>
             <artifact-action>
               <button data-action="edit">Edit</button>
               <button data-action="attach">Attach</button>
@@ -46,7 +41,6 @@ async function initializeMarked() {
               </button>
               <button data-action="save">Download</button>
             </artifact-action>
-          </artifact-focus-trap-element>
         </artifact-element>`;
       },
     }),

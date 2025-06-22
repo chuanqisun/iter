@@ -11,8 +11,8 @@ export class ScriptArtifact extends GenericArtifact {
     return scriptingLanguages.includes(lang) ? lang : undefined;
   }
 
-  onRun({ trigger, preview, code }: ArtifactContext) {
-    runIframe(trigger, preview, injectDirectivesRuntimeAPIToDocument(createESPlayDocument(code)));
+  onRun({ preview, code }: ArtifactContext) {
+    runIframe(preview, injectDirectivesRuntimeAPIToDocument(createESPlayDocument(code)));
   }
 
   async onSave({ code }: ArtifactContext) {

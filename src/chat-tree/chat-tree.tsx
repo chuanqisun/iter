@@ -687,6 +687,8 @@ export function ChatTree() {
 
         // Enter a code block
         if ((e.target as HTMLElement).closest("artifact-source")) {
+          e.preventDefault(); // Otherwise, the dialog will immediately close
+
           (e.target as HTMLElement)
             .closest("artifact-element")
             ?.querySelector<HTMLButtonElement>(`[data-action="edit"]`)

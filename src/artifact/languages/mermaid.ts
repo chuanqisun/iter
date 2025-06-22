@@ -9,8 +9,8 @@ export class MermaidArtifact extends GenericArtifact {
     return mermaidLanguages.includes(lang) ? "mermaid" : undefined;
   }
 
-  onRun({ trigger, preview, code }: ArtifactContext) {
-    runMermaid(trigger, preview, code);
+  onRun({ preview, code }: ArtifactContext) {
+    runMermaid(preview, code);
   }
 
   onSave({ preview }: ArtifactContext) {

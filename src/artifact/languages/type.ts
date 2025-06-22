@@ -11,7 +11,6 @@ export interface ArtifactContext {
   lang: string;
   code: string;
   filename?: string;
-  trigger: HTMLElement;
   preview?: HTMLElement;
   nodeId?: string;
 }
