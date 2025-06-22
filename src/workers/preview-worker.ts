@@ -30,7 +30,7 @@ async function initializeMarked() {
         const attrStr = props.join(" ");
 
         return `
-        <artifact-element lang="${editorLanguage}" data-is-runnable="${runnableArtifactLanguages.has(lang)}" ${attrStr}>  
+        <artifact-element lang="${editorLanguage}" ${attrStr}>  
           <artifact-source>${highlightedHtml}</artifact-source>  
             <artifact-action>
               <button data-action="edit">Edit</button>
