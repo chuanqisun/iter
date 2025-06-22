@@ -47,11 +47,14 @@ export class ArtifactEditorElement extends HTMLElement {
       preview,
     };
 
+    let lastRunCode: string = props.code; // We called `onRun` initially
     // editor node will be removed, no need to remove listeneres
     editor.addEventListener(
       "contentchange",
       () => {
         const latestSourceCode = editor.value;
+        if (latestSourceCode === lastRunCode) return; // no change, do nothing
+        lastRunCode = latestSourceCode;
         props.onCodeChange?.(latestSourceCode);
         artifact?.onRun?.({ ...context, code: latestSourceCode });
       },

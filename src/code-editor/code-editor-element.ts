@@ -5,7 +5,7 @@ import { languages } from "@codemirror/language-data";
 import { Compartment, EditorSelection, EditorState, type Extension } from "@codemirror/state";
 import { drawSelection, EditorView, highlightSpecialChars, keymap } from "@codemirror/view";
 import { githubDark } from "@uiw/codemirror-theme-github/src/index.ts";
-import { Subject, tap } from "rxjs";
+import { distinctUntilChanged, Subject, tap } from "rxjs";
 import { blockActionPlugin } from "./block-action-widget";
 import { chatKeymap } from "./chat-keymap";
 import { chatPanel } from "./chat-panel";
@@ -25,6 +25,7 @@ export class CodeEditorElement extends HTMLElement {
 
   private editorView: EditorView | null = null;
   private cursorViews: EditorView[] = [];
+  private change$ = new Subject<string>();
 
   private extensions: Extension[] = [
     highlightSpecialChars(),
@@ -40,7 +41,7 @@ export class CodeEditorElement extends HTMLElement {
     dynamicLanguage.of([]),
     EditorView.focusChangeEffect.of((state, focusing) => {
       if (focusing) return null;
-      this.dispatchEvent(new CustomEvent("contentchange", { detail: state.doc.toString() }));
+      this.change$.next(state.doc.toString());
       return null;
     }),
   ];
@@ -63,6 +64,10 @@ export class CodeEditorElement extends HTMLElement {
       // HACK: there is an unknown issue that moves focus away when entering edit mode from clicking a button
       setTimeout(() => this.editorView?.focus());
     }
+
+    this.change$.pipe(distinctUntilChanged()).subscribe((value) => {
+      this.dispatchEvent(new CustomEvent("contentchange", { detail: value }));
+    });
   }
 
   disconnectedCallback() {
@@ -70,6 +75,7 @@ export class CodeEditorElement extends HTMLElement {
     this.editorView = null;
     this.cursorViews.forEach((view) => view.destroy());
     this.cursorViews = [];
+    this.change$.complete();
   }
 
   attributeChangedCallback(name: string, _oldValue: string, newValue: string) {
