@@ -9,8 +9,8 @@ export class MarkdownArtifact extends GenericArtifact {
     return markdownLanguages.includes(lang) ? lang : undefined;
   }
 
-  async onRun({ trigger, preview, code }: ArtifactContext) {
-    return runIframe(trigger, preview, await this.markdownToHtml(code));
+  async onRun({ preview, code }: ArtifactContext) {
+    return runIframe(preview, await this.markdownToHtml(code));
   }
 
   async onSave({ code }: ArtifactContext) {

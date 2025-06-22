@@ -1,11 +1,10 @@
 import mermaid from "mermaid";
 
 let id = 0;
-export function runMermaid(trigger: HTMLElement, preview?: HTMLElement, code?: string) {
+export function runMermaid(preview?: HTMLElement, code?: string) {
   if (!code) return;
   if (!preview) return;
 
-  trigger.classList.add("running");
   const graphDefinition = code?.trim() ?? "";
   mermaid.parse(graphDefinition).then((ok) => {
     if (!ok) return;

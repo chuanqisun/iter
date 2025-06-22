@@ -55,9 +55,16 @@ artifact-editor-element {
     display: block;
     width: 100%;
     height: 100%;
+    background-color: white;
 
     &:empty {
       display: none;
+    }
+
+    iframe {
+      display: block;
+      width: 100%;
+      height: 100%;
     }
   }
 
