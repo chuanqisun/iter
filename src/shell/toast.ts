@@ -11,8 +11,13 @@ export function showToast(message: string): void {
   toast.className = "toast-message";
   toast.setAttribute("role", "alert");
 
-  // Append the toast to the body
-  document.body.appendChild(toast);
+  const openDialog = document.querySelector("dialog[open]");
+  if (openDialog) {
+    // HACK: there is no way to display content above native dialog's top layer.
+    openDialog.appendChild(toast);
+  } else {
+    document.body.appendChild(toast);
+  }
 
   // Remove the toast after 3 seconds
   setTimeout(() => {
