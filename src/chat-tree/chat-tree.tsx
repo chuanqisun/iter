@@ -742,6 +742,27 @@ export function ChatTree() {
     [handleRunNode],
   );
 
+  const handleOnly = useCallback((nodeId: string) => {
+    handleAbortAll();
+
+    setTreeNodes((nodes) => {
+      const systemNode = nodes[0]; // First node is always the system node
+      const targetNode = nodes.find((n) => n.id === nodeId);
+
+      if (!targetNode) return nodes;
+
+      // Keep system node and the selected node
+      const newNodes = [systemNode, targetNode];
+
+      // Ensure last node is a user node
+      if (targetNode.role !== "user") {
+        newNodes.push(getUserNode(crypto.randomUUID()));
+      }
+
+      return newNodes;
+    });
+  }, []);
+
   const handlePaste = useCallback(async (nodeId: string, e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const activeUserNodeId = getActiveUserNodeId(treeNodes$.value.find((node) => node.id === nodeId));
     if (!activeUserNodeId) return;
@@ -921,6 +942,7 @@ export function ChatTree() {
               onDownloadAttachment={handleDownloadAttachment}
               onCopyAttachment={handleCopyAttachment}
               onKeydown={handleKeydown}
+              onOnly={handleOnly}
               onPaste={handlePaste}
               onPreviewDoubleClick={handlePreviewDoubleClick}
               onRemoveAttachment={handleRemoveAttachment}

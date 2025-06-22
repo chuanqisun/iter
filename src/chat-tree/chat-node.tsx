@@ -35,6 +35,7 @@ export interface ChatNodeProps {
   onDownloadAttachment: (id: string, attachmentId: string) => void;
   onKeydown: (id: string, e: React.KeyboardEvent<HTMLElement>) => void;
   onCopyAttachment: (id: string, attachmentId: string) => void;
+  onOnly: (id: string) => void;
   onPaste: (id: string, e: React.ClipboardEvent<HTMLTextAreaElement>) => void;
   onPreviewDoubleClick: (id: string, e: React.MouseEvent) => void;
   onRemoveAttachment: (id: string, attachmentId: string) => void;
@@ -59,6 +60,7 @@ export function ChatNodeInternal(props: ChatNodeProps) {
     onDownloadAttachment,
     onKeydown,
     onCopyAttachment,
+    onOnly,
     onPaste,
     onPreviewDoubleClick,
     onRemoveAttachment,
@@ -159,6 +161,10 @@ export function ChatNodeInternal(props: ChatNodeProps) {
               <span> · </span>
               <button data-managed-focus="message-action" onClick={() => onDeleteBelow(node.id)}>
                 Trim
+              </button>
+              <span> · </span>
+              <button data-managed-focus="message-action" onClick={() => onOnly(node.id)}>
+                Only
               </button>
               <span> · </span>
               <button data-managed-focus="message-action" onClick={() => onUploadFiles(node.id)}>
