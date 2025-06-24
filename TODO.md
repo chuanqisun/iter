@@ -1,5 +1,6 @@
 # TODO
 
+- triple tick `run` block with `edit` macro that exposes file type specific hooks for efficient edit
 - Bug: abort error lingers after role switch
 - Download code block should map lang to file extension
 - Drag and drop file as upload
