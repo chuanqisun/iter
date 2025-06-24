@@ -4,7 +4,6 @@
 - Download code block should map lang to file extension
 - Drag and drop file as upload
 - Share readable file size algorithm with token counter algorithm
-- Closing artifact while it is compiling left iframe on main thread
 - Language override for editor
 - Reference pinned code blocks
 - Migrate from styled components to CSS
@@ -22,6 +21,7 @@
 
 # DONE
 
+- Closing artifact while it is compiling left iframe on main thread
 - Migrate artifact to use shared editor
 - Bug: block action cannot handle long text
 - Bug: esplay should not transform url imports
