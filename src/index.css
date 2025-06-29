@@ -61,13 +61,8 @@ body {
   font-family: var(--system-font);
   overflow-y: scroll;
 
-  /** HACK disable body scroll when full screen editor is on */
-  &:has(artifact-element [data-action="edit"].running) {
-    overflow: hidden;
-  }
-
   /* when doc has dialog open, disable overflow on body */
-  &:has(dialog:open) {
+  &:has(dialog[open]) {
     overflow: hidden;
   }
 }
