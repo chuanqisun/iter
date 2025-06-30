@@ -77,7 +77,7 @@ function ChatConfig(props: ChatConfigProps) {
             Thinking
             <AutoWidthInput
               type="number"
-              min={0}
+              min={options.thinkingBudget.min ?? 0}
               max={options.thinkingBudget.max}
               value={props.thinkingBudget.value}
               step={100}

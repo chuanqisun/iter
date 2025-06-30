@@ -81,19 +81,42 @@ export class GoogleGenAIProvider implements BaseProvider {
   }
 
   getOptions(connection: BaseConnection): GenericOptions {
-    if (!this.isAnthropicConnection(connection)) throw new Error("Invalid connection type");
-
-    const isThinkingModel = connection.model.startsWith("gemini-2.5-flash") || connection.model.includes("thinking");
+    if (!this.isGoogleGenAIConnection(connection)) throw new Error("Invalid connection type");
 
     // ref: https://ai.google.dev/gemini-api/docs/thinking
     return {
-      thinkingBudget: isThinkingModel ? { max: 24576 } : undefined,
+      thinkingBudget: this.getThinkingBugetConfig(connection.model),
       temperature: { max: 2 },
     };
   }
 
+  private getThinkingBugetConfig(model: string): undefined | { min: number; max: number } {
+    if (model.startsWith("gemini-2.5-pro")) return { min: -100, max: 32768 };
+    if (model.startsWith("gemini-2.5-flash")) return { min: -100, max: 24576 };
+    if (model.startsWith("gemini-2.5-flash-lite")) return { min: -100, max: 24576 };
+    if (model.includes("thinking")) return { min: 0, max: 24576 };
+    return undefined;
+  }
+
+  private getFinalBudget(model: string, inputBudget?: number): number | undefined {
+    if (inputBudget === undefined) return undefined;
+    if (model.startsWith("gemini-2.5-pro"))
+      return inputBudget < 0 ? this.clamp(inputBudget, -1, -1) : this.clamp(inputBudget, 128, 32768);
+    if (model.startsWith("gemini-2.5-flash"))
+      return inputBudget < 0 ? this.clamp(inputBudget, -1, -1) : this.clamp(inputBudget, 0, 24576);
+    if (model.startsWith("gemini-2.5-flash-lite"))
+      return inputBudget < 0 ? this.clamp(inputBudget, -1, -1) : this.clamp(inputBudget, 512, 24576);
+    if (model.includes("thinking"))
+      return inputBudget < 0 ? this.clamp(inputBudget, -1, -1) : this.clamp(inputBudget, 0, 24576);
+    return undefined;
+  }
+
+  private clamp(value: number, min: number, max: number): number {
+    return Math.max(min, Math.min(max, value));
+  }
+
   getChatStreamProxy(connection: BaseConnection): ChatStreamProxy {
-    if (!this.isAnthropicConnection(connection)) throw new Error("Invalid connection type");
+    if (!this.isGoogleGenAIConnection(connection)) throw new Error("Invalid connection type");
     const that = this;
 
     return async function* ({ messages, abortSignal, ...config }: GenericChatParams) {
@@ -103,7 +126,9 @@ export class GoogleGenAIProvider implements BaseProvider {
       const { system, messages: googleMessages } = that.getGoogleGenAIMessages(messages);
 
       const options = that.getOptions(connection);
-      const thinkingBudget = options.thinkingBudget ? (config.thinkingBudget ?? 0) : undefined;
+      const thinkingBudget = options.thinkingBudget
+        ? that.getFinalBudget(connection.model, config.thinkingBudget)
+        : undefined;
 
       const start = performance.now();
       const result = await client.models.generateContentStream({
@@ -115,7 +140,9 @@ export class GoogleGenAIProvider implements BaseProvider {
           temperature: config?.temperature,
           topP: config?.topP,
           maxOutputTokens: config?.maxTokens,
-          thinkingConfig: thinkingBudget !== undefined ? { thinkingBudget } : undefined,
+          thinkingConfig: {
+            thinkingBudget: that.getFinalBudget(connection.model, thinkingBudget),
+          },
         },
       });
 
@@ -135,7 +162,7 @@ export class GoogleGenAIProvider implements BaseProvider {
     return credential.type === "google-gen-ai";
   }
 
-  private isAnthropicConnection(connection: BaseConnection): connection is GoogleGenAIConnection {
+  private isGoogleGenAIConnection(connection: BaseConnection): connection is GoogleGenAIConnection {
     return connection.type === "google-gen-ai";
   }
 

@@ -29,7 +29,7 @@ export interface GenericOptions {
   topK?: { min: number; max: number; step: number };
   temperature?: { max: number };
   reasoningEffort?: string[];
-  thinkingBudget?: { max: number };
+  thinkingBudget?: { min?: number; max: number };
 }
 
 export interface GenericMessage {
