@@ -1,6 +1,7 @@
 <div class="form-scroll tabbed-forms">
   <div class="radio-group">
     <label><input name="newType" type="radio" value="openai" checked /> OpenAI</label>
+    <label><input name="newType" type="radio" value="xai" /> xAI</label>
     <label><input name="newType" type="radio" value="aoai" /> Azure OpenAI</label>
     <label><input name="newType" type="radio" value="anthropic" /> Anthropic</label>
     <label><input name="newType" type="radio" value="google-gen-ai" /> Google Gen AI</label>
@@ -18,6 +19,25 @@
         <div class="field">
           <label for="newOpenAIAccountName">Account name (optional)</label>
           <input id="newOpenAIAccountName" name="newAccountName" type="text" placeholder="personal" />
+        </div>
+
+        <button type="submit">Submit</button>
+      </div>
+    </fieldset>
+  </form>
+
+  <form data-type="xai">
+    <fieldset>
+      <legend>New</legend>
+      <div class="rows">
+        <div class="field">
+          <label for="newXAIKey">API key</label>
+          <input id="newXAIKey" name="newKey" type="password" required />
+        </div>
+
+        <div class="field">
+          <label for="newXAIAccountName">Account name (optional)</label>
+          <input id="newXAIAccountName" name="newAccountName" type="text" placeholder="personal" />
         </div>
 
         <button type="submit">Submit</button>

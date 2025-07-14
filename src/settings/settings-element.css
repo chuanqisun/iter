@@ -36,6 +36,12 @@ settings-element {
       }
     }
 
+    &:has([value="xai"]:checked) {
+      form:not([data-type="xai"]) {
+        display: none;
+      }
+    }
+
     &:has([value="aoai"]:checked) {
       form:not([data-type="aoai"]) {
         display: none;
