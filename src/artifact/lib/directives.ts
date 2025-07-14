@@ -7,16 +7,20 @@ import llmStaticAPI from "./directives/llm-static-api.js?raw";
 export interface ParsedDirective {
   run?: boolean;
   llm?: boolean;
+  edit?: boolean;
 }
 export function parseDirectives(text: string): ParsedDirective {
   // ```run -> run = true
   // ```run llm -> run = true, llm = true
-  const directiveLines = text.split("\n").filter((line) => line.startsWith("```run"));
+  // ```edit -> edit = true
+  const directiveLines = text.split("\n").filter((line) => line.startsWith("```run") || line.startsWith("```edit"));
   const run = directiveLines.some((line) => line.includes("```run"));
   const llm = run && directiveLines.some((line) => line.includes(" llm"));
+  const edit = directiveLines.some((line) => line.includes("```edit"));
   return {
     run,
     llm,
+    edit,
   };
 }
 
@@ -65,6 +69,33 @@ Otherwise respond in javascript like this:
 // ...
 \`\`\`
 `;
+}
+
+export function getEditPrompt(document: string): string {
+  return `
+Edit the following document:
+\`\`\`
+${document}
+\`\`\`
+
+Write typescript to perform the edit based on user's goal or instruction.
+- You can read the document content via \`window.editor.readContent(): Promise<string>\`
+- You can write the updated document content via \`window.editor.writeContent(): Promise<void>\`
+- You can return string literal directly when write content from scratch
+- Use string replacement function to make precise edits, pay attention to whitespace
+- Use regex to match complex patterns
+- Use logic for data manipulation
+
+Write compact code without comments. When performing multiple types of edit, delimit the their code by a new line.
+
+Respond with typescript code block:
+
+\`\`\`typescript
+const content = await window.editor.readContent();
+/** Your implementation here */
+await window.editor.writeContent(updatedContent);
+\`\`\`
+    `;
 }
 
 export function injectDirectivesRuntimeAPIToDocument(html: string) {
@@ -130,6 +161,28 @@ function fileToUrl(file: File) {
     fileReader.onerror = reject;
     fileReader.readAsDataURL(file);
   });
+}
+
+export function respondReadContent(getContent: (id: string) => string, event: MessageEvent) {
+  if (event.data.type === "readContentRequest") {
+    const content = getContent(event.data.id);
+    if (!content) {
+      console.error("No content found to read");
+      return;
+    }
+    event.source?.postMessage({ type: "readContentResponse", content });
+  }
+}
+
+export function respondWriteContent(writeContent: (content: string) => void, event: MessageEvent) {
+  if (event.data.type === "writeContentRequest") {
+    try {
+      writeContent(event.data.content);
+      event.source?.postMessage({ type: "writeContentResponse" });
+    } catch (error) {
+      console.error("Error writing content:", error);
+    }
+  }
 }
 
 export function respondReadFile(getFile: (name: string) => File | undefined | null, event: MessageEvent) {

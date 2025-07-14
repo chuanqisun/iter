@@ -40,3 +40,38 @@ globalThis.writeonlyFS = {
     });
   },
 };
+
+globalThis.editor = {
+  async readContent(filename) {
+    return new Promise((resolve, reject) => {
+      window.parent.postMessage({ type: "readContentRequest" }, "*");
+      const abortController = new AbortController();
+      window.addEventListener(
+        "message",
+        (event) => {
+          if (event.data.type === "readContentResponse") {
+            resolve(event.data.content);
+            abortController.abort();
+          }
+        },
+        { signal: abortController.signal },
+      );
+    });
+  },
+  async writeContent(content) {
+    return new Promise((resolve, reject) => {
+      window.parent.postMessage({ type: "writeContentRequest", content }, "*");
+      const abortController = new AbortController();
+      window.addEventListener(
+        "message",
+        (event) => {
+          if (event.data.type === "writeContentResponse") {
+            resolve();
+            abortController.abort();
+          }
+        },
+        { signal: abortController.signal },
+      );
+    });
+  },
+};
