@@ -166,10 +166,6 @@ function fileToUrl(file: File) {
 export function respondReadContent(getContent: (id: string) => string, event: MessageEvent) {
   if (event.data.type === "readContentRequest") {
     const content = getContent(event.data.id);
-    if (!content) {
-      console.error("No content found to read");
-      return;
-    }
     event.source?.postMessage({ type: "readContentResponse", content });
   }
 }

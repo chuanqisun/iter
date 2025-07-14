@@ -529,43 +529,50 @@ export function ChatTree() {
   const getMessageChain = useCallback((id: string) => {
     const targetIndex = treeNodes$.value.findIndex((n) => n.id === id);
     if (targetIndex === -1) return [];
-    let exclusiveMessageIndex: number[] = [];
 
-    return treeNodes$.value
-      .slice(0, targetIndex + 1)
-      .map((node, i, array) => {
-        const { run, llm, edit } = parseDirectives(node.content);
-        const filePostScript = edit ? getReadonlyFileAccessPostscript(getAttachmentExternalFiles(node)) : "";
-        if (edit) exclusiveMessageIndex.push(i);
-        const codeInterpreterPostScript = run ? getCodeInterpreterPrompt({ llm, fs: true }) : "";
-        const editPrompt = edit ? getEditPrompt(array.at(i - 1)?.content ?? "") : "";
-        const rawContentDataUrl = textToDataUrl(
-          `${node.content}${filePostScript}${codeInterpreterPostScript}${editPrompt}`,
-        );
+    const annotated = treeNodes$.value.slice(0, targetIndex + 1).flatMap((node, i, array) => {
+      const { run, llm, edit } = parseDirectives(node.content);
+      const filePostScript = edit ? "" : getReadonlyFileAccessPostscript(getAttachmentExternalFiles(node));
+      const codeInterpreterPostScript = run ? getCodeInterpreterPrompt({ llm, fs: true }) : "";
+      const editPrompt = edit ? getEditPrompt(array.at(i - 1)?.content ?? "") : "";
+      const rawContentDataUrl = textToDataUrl(
+        `${node.content}${filePostScript}${codeInterpreterPostScript}${editPrompt}`,
+      );
 
-        // in user node, we attachments are input, insert before prompts
-        // in assistant node, attachments are output, append after prompts
-        const attachments = getAttachmentEmbeddedFiles(node).map((part) => ({
-          name: part.name,
-          type: part.type as any,
-          url: part.url,
-        }));
+      // in user node, we attachments are input, insert before prompts
+      // in assistant node, attachments are output, append after prompts
+      // no attachments in edit mode
+      const attachments = edit
+        ? []
+        : getAttachmentEmbeddedFiles(node).map((part) => ({
+            name: part.name,
+            type: part.type as any,
+            url: part.url,
+          }));
 
-        const message: GenericMessage = {
-          role: node.role,
-          content: [
-            ...(node.role === "user" ? attachments : []),
-            ...(node.content ? ([{ type: "text/plain", url: rawContentDataUrl }] as const) : []),
-            ...(node.role === "assistant" ? attachments : []),
-          ],
-        };
+      const message: GenericMessage = {
+        role: node.role,
+        content: [
+          ...(node.role === "user" ? attachments : []),
+          ...(node.content ? ([{ type: "text/plain", url: rawContentDataUrl }] as const) : []),
+          ...(node.role === "assistant" ? attachments : []),
+        ],
+      };
 
-        return message;
-      })
-      .filter((_message, i) => {
-        return exclusiveMessageIndex.length ? exclusiveMessageIndex.includes(i) : true;
-      })
-      .filter((message) => message.content.length);
+      return [{ message, run, llm, edit }];
+    });
+
+    const relevantMessages = annotated.reduce((acc, item) => {
+      // no empty message
+      if (!item.message.content.length) return acc;
+
+      // edit mode: run system message plus the last edit message
+      if (item.edit) return [...acc.filter((msg) => msg.role === "system"), item.message];
+
+      return [...acc, item.message];
+    }, [] as GenericMessage[]);
+
+    return relevantMessages;
   }, []);
 
   const handleAbortSensible = useCallback((nodeId: string) => {

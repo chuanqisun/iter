@@ -42,7 +42,7 @@ globalThis.writeonlyFS = {
 };
 
 globalThis.editor = {
-  async readContent(filename) {
+  async readContent() {
     return new Promise((resolve, reject) => {
       window.parent.postMessage({ type: "readContentRequest" }, "*");
       const abortController = new AbortController();
