@@ -81,6 +81,8 @@ Mac users, please use <kbd>⌘</kbd> instead of <kbd>Ctrl</kbd>
 
 ## Directives
 
+Directives force the LLM to generate code that performs specific tasks. The code will take effect after manually run in the editor.
+
 ### `Run` directive
 
 Include a `run` block in the user message to force the LLM to generate code and output files.
