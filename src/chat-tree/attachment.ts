@@ -23,6 +23,12 @@ export function getAttachmentEmbeddedFiles(node: ChatNode): EmbeddedFile[] {
   );
 }
 
+export async function castToFile(maybeFile?: File | EmbeddedFile | null): Promise<File | undefined> {
+  if (!maybeFile) return undefined;
+  if (maybeFile instanceof File) return maybeFile;
+  return dataUrlToFile(maybeFile.url, maybeFile.name);
+}
+
 /**
  * Assuming new attachments are unique by type and file name already
  */

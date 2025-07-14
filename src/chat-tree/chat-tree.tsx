@@ -21,7 +21,6 @@ import { useRouteParameter } from "../router/use-route-parameter";
 import { useConnections } from "../settings/use-connections";
 import { showToast } from "../shell/toast";
 import {
-  dataUrlToFile,
   fileExtensionToLanguage,
   filenameToMimeType,
   languageToFileExtension,
@@ -31,6 +30,7 @@ import {
 import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import {
+  castToFile,
   createAttachmentFromChatPart,
   createAttacchmentFromFile as createAttachmentFromFile,
   downloadAttachment,
@@ -54,7 +54,7 @@ import { autoFocusNthInput } from "./focus";
 import { InputTokenizer } from "./input-tokenizer";
 import { getCombo } from "./keyboard";
 import { getAssistantNode, getNextId, getPrevId, getUserNode, INITIAL_NODES, patchNode } from "./tree-helper";
-import { useTreeNodes, type ChatNode, type EmbeddedFile } from "./tree-store";
+import { useTreeNodes, type ChatNode } from "./tree-store";
 
 export function ChatTree() {
   const { treeNodes, setTreeNodes, treeNodes$, createWriter } = useTreeNodes({ initialNodes: INITIAL_NODES });
@@ -319,12 +319,6 @@ export function ChatTree() {
           .reverse()
           .map((file) => [file.name, file]),
       );
-
-      async function castToFile(maybeFile?: File | EmbeddedFile | null): Promise<File | undefined> {
-        if (!maybeFile) return undefined;
-        if (maybeFile instanceof File) return maybeFile;
-        return dataUrlToFile(maybeFile.url, maybeFile.name);
-      }
 
       respondReadFile((filename) => castToFile(latestFileMap.get(filename)), event);
       respondListFiles(
