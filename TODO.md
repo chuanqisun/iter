@@ -1,6 +1,5 @@
 # TODO
 
-- triple tick `run` block with `edit` macro that exposes file type specific hooks for efficient edit
 - Bug: abort error lingers after role switch
 - Download code block should map lang to file extension
 - Drag and drop file as upload
@@ -22,6 +21,7 @@
 
 # DONE
 
+- Triple tick `run` block with `edit` macro that exposes file type specific hooks for efficient edit
 - Closing artifact while it is compiling left iframe on main thread
 - Migrate artifact to use shared editor
 - Bug: block action cannot handle long text
