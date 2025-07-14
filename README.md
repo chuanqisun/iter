@@ -79,7 +79,11 @@ Mac users, please use <kbd>⌘</kbd> instead of <kbd>Ctrl</kbd>
 | Export               | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>E</kbd>               |
 | Import               | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>O</kbd>               |
 
-## Code interpreter
+## Directives
+
+Directives force the LLM to generate code that performs specific tasks. The code will take effect after manually run in the editor.
+
+### `Run` directive
 
 Include a `run` block in the user message to force the LLM to generate code and output files.
 
@@ -98,3 +102,20 @@ The run block can take optional directives to expose additional APIs to the gene
 <describe how the code should use LLM to perform tasks, e.g. summarize, extract, generate content>
 ```
 ````
+
+### `Edit` directive
+
+Include an `edit` block in the user message to force the LLM to generate code that edits the nearest assistant message. Other messages will be hidden.
+
+````
+```edit
+<editorial goals or instructions>
+```
+````
+
+## Attachments
+
+You can copy/paste or upload files into each message in one of the following formats:
+
+- **Embedded**: LLM can see the image, PDF, or text content. If using `run` directive, LLM can write code that accesses the content as a file.
+- **External**: LLM can only see the metadata of the file (name, size, type, etc.). If using `run` directive, LLM can write code that accesses the content as a file without reading the content.

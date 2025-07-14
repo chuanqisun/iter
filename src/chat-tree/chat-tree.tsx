@@ -4,10 +4,13 @@ import { useArtifactActions } from "../artifact/artifact";
 import type { ArtifactEvents } from "../artifact/languages/generic";
 import {
   getCodeInterpreterPrompt,
+  getEditMessages,
   getReadonlyFileAccessPostscript,
   parseDirectives,
   respondListFiles,
+  respondReadContent,
   respondReadFile,
+  respondWriteContent,
   respondWriteFile,
   streamToText,
 } from "../artifact/lib/directives";
@@ -27,6 +30,7 @@ import {
 import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import {
+  castToFile,
   createAttachmentFromChatPart,
   createAttacchmentFromFile as createAttachmentFromFile,
   downloadAttachment,
@@ -291,12 +295,21 @@ export function ChatTree() {
 
   // handle file system runtime API requests from iframes
   useEffect(() => {
-    const handledTypes = ["readFileRequest", "writeFileRequest", "listFilesRequest"];
+    const handledTypes = [
+      "readFileRequest",
+      "writeFileRequest",
+      "listFilesRequest",
+      "readContentRequest",
+      "writeContentRequest",
+    ];
 
     const handleIframeFileAccessRequest = (event: MessageEvent<any>) => {
       if (!handledTypes.includes(event.data?.type)) return;
 
-      const allFiles = treeNodes$.value.flatMap(getAttachmentExternalFiles);
+      const allFiles = treeNodes$.value.flatMap((item) => [
+        ...getAttachmentEmbeddedFiles(item),
+        ...getAttachmentExternalFiles(item),
+      ]);
 
       // use reverse to keep the last file
       const latestFileMap = new Map(
@@ -307,8 +320,59 @@ export function ChatTree() {
           .map((file) => [file.name, file]),
       );
 
-      respondReadFile((filename) => latestFileMap.get(filename), event);
-      respondListFiles(() => [...latestFileMap.values()], event);
+      respondReadFile((filename) => castToFile(latestFileMap.get(filename)), event);
+      respondListFiles(
+        () => Promise.all([...latestFileMap.values().map(castToFile)]).then((files) => files.filter(Boolean) as File[]),
+        event,
+      );
+
+      respondReadContent(() => {
+        // find the nearest assistant node to sourceNode
+        const sourceNodeId = [...document.querySelectorAll("iframe")]
+          .find((iframe) => iframe.contentWindow === event.source)
+          ?.closest(`[data-node-id]`)
+          ?.getAttribute("data-node-id");
+        if (!sourceNodeId) return "";
+
+        const sourceNodeIndex = treeNodes$.value.findIndex((node) => node.id === sourceNodeId);
+        const nearestAssistantNodeBeforeSourceNode = treeNodes$.value
+          .slice(0, sourceNodeIndex)
+          .reverse()
+          .find((node) => node.role === "assistant");
+
+        const content = nearestAssistantNodeBeforeSourceNode?.content ?? "";
+        return content;
+      }, event);
+
+      respondWriteContent((content) => {
+        const sourceNodeId = [...document.querySelectorAll("iframe")]
+          .find((iframe) => iframe.contentWindow === event.source)
+          ?.closest(`[data-node-id]`)
+          ?.getAttribute("data-node-id");
+        if (!sourceNodeId) return;
+
+        // insert an assistant node after the source node, also ensure the entire thread would end with a user node
+        const sourceIndex = treeNodes$.value.findIndex((node) => node.id === sourceNodeId);
+        if (sourceIndex === -1) return;
+
+        const newAssistantNode = getAssistantNode(crypto.randomUUID(), { content });
+
+        setTreeNodes((nodes) => {
+          const base = nodes.slice(0, sourceIndex + 1);
+          const rest = nodes.slice(sourceIndex + 1);
+          const newNodes = [...base, newAssistantNode, ...rest];
+
+          // Ensure last node is user
+          if (newNodes[newNodes.length - 1]?.role !== "user") {
+            const newUserNode = getUserNode(crypto.randomUUID());
+            newNodes.push(newUserNode);
+          }
+
+          return newNodes;
+        });
+
+        showToast(`✅ Wrote content`);
+      }, event);
 
       // when writing a file, we treat it as uploading a file to the chat message as attachment
       respondWriteFile((name, data) => {
@@ -318,11 +382,6 @@ export function ChatTree() {
           (iframe) => iframe.contentWindow === event.source,
         );
         const sourceNodeId = sourceIframe?.closest(`[data-node-id]`)?.getAttribute("data-node-id");
-        if (!sourceNodeId) {
-          console.error("Cannot locate source message for file write");
-          return;
-        }
-
         const newAttachment = createAttachmentFromFile(file);
 
         setTreeNodes((nodes) =>
@@ -477,34 +536,45 @@ export function ChatTree() {
   const getMessageChain = useCallback((id: string) => {
     const targetIndex = treeNodes$.value.findIndex((n) => n.id === id);
     if (targetIndex === -1) return [];
-    return treeNodes$.value
-      .slice(0, targetIndex + 1)
-      .map((node) => {
-        const filePostScript = getReadonlyFileAccessPostscript(getAttachmentExternalFiles(node));
-        const { run, llm } = parseDirectives(node.content);
-        const codeInterpreterPostScript = run ? getCodeInterpreterPrompt({ llm, fs: true }) : "";
-        const rawContentDataUrl = textToDataUrl(`${node.content}${filePostScript}${codeInterpreterPostScript}`);
 
-        // in user node, we attachments are input, insert before prompts
-        // in assistant node, attachments are output, append after prompts
-        const attachments = getAttachmentEmbeddedFiles(node).map((part) => ({
-          name: part.name,
-          type: part.type as any,
-          url: part.url,
-        }));
+    const relevantMessages = treeNodes$.value.slice(0, targetIndex + 1).reduce((acc, node, i, array) => {
+      const directives = parseDirectives(node.content);
 
-        const message: GenericMessage = {
-          role: node.role,
-          content: [
-            ...(node.role === "user" ? attachments : []),
-            ...(node.content ? ([{ type: "text/plain", url: rawContentDataUrl }] as const) : []),
-            ...(node.role === "assistant" ? attachments : []),
-          ],
-        };
+      if (directives.edit) {
+        if (!node.content) return acc;
+        // Edit mode: special handling
+        const messages = getEditMessages(array.at(i - 1)?.content ?? "", node.content);
+        return messages;
+      }
 
-        return message;
-      })
-      .filter((message) => message.content.length);
+      // Normal mode: build content with postscripts
+      const embeddedFiles = getAttachmentEmbeddedFiles(node);
+      const filePostScript = getReadonlyFileAccessPostscript([...embeddedFiles, ...getAttachmentExternalFiles(node)]);
+      const codeInterpreterPostScript = directives.run
+        ? getCodeInterpreterPrompt({ llm: directives.llm, fs: true })
+        : "";
+
+      const fullContent = `${node.content}${filePostScript}${codeInterpreterPostScript}`;
+      const contentUrl = fullContent ? textToDataUrl(fullContent) : null;
+
+      const attachments = embeddedFiles.map((part) => ({ name: part.name, type: part.type, url: part.url }));
+
+      // attachments are user's inputs (before content) and assistant's outputs (after content)
+      const message: GenericMessage = {
+        role: node.role,
+        content: [
+          ...(node.role === "user" ? attachments : []),
+          ...(contentUrl ? ([{ type: "text/plain", url: contentUrl }] as const) : []),
+          ...(node.role === "assistant" ? attachments : []),
+        ],
+      };
+
+      if (!message.content.length) return acc;
+
+      return [...acc, message];
+    }, [] as GenericMessage[]);
+
+    return relevantMessages;
   }, []);
 
   const handleAbortSensible = useCallback((nodeId: string) => {
