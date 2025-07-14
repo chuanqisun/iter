@@ -26,9 +26,10 @@ export function parseDirectives(text: string): ParsedDirective {
   };
 }
 
-export function getReadonlyFileAccessPostscript(files: File[]) {
+export function getReadonlyFileAccessPostscript(files: { name: string; size: number; type: string }[]) {
   const filePostScript = files?.length
-    ? `Files uploaded:
+    ? `
+Files uploaded:
 ${files.map((file) => `- Filename: ${file.name} | Size: ${getReadableFileSize(file.size)}${file.type ? ` | Type: ${file.type}` : ""}`).join("\n")}
 
 Uploaded files can only be accessed in browser via global javascript API  \`window.readonlyFS.getFile(filename: string): Promise<File>\`
@@ -202,9 +203,12 @@ export function respondWriteContent(writeContent: (content: string) => void, eve
   }
 }
 
-export function respondReadFile(getFile: (name: string) => File | undefined | null, event: MessageEvent) {
+export async function respondReadFile(
+  getFile: (name: string) => Promise<File | undefined | null>,
+  event: MessageEvent,
+) {
   if (event.data.type === "readFileRequest") {
-    const file = getFile(event.data.filename);
+    const file = await getFile(event.data.filename);
     if (!file) {
       console.error(`File not found: ${event.data.filename}`);
       return;
@@ -213,7 +217,7 @@ export function respondReadFile(getFile: (name: string) => File | undefined | nu
   }
 }
 
-export function respondListFiles(getFiles: () => File[], event: MessageEvent) {
+export function respondListFiles(getFiles: () => Promise<File[]>, event: MessageEvent) {
   if (event.data.type === "listFilesRequest") {
     const files = getFiles();
     event.source?.postMessage({ type: "listFilesResponse", files });

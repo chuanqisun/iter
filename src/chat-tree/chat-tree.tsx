@@ -21,6 +21,7 @@ import { useRouteParameter } from "../router/use-route-parameter";
 import { useConnections } from "../settings/use-connections";
 import { showToast } from "../shell/toast";
 import {
+  dataUrlToFile,
   fileExtensionToLanguage,
   filenameToMimeType,
   languageToFileExtension,
@@ -53,7 +54,7 @@ import { autoFocusNthInput } from "./focus";
 import { InputTokenizer } from "./input-tokenizer";
 import { getCombo } from "./keyboard";
 import { getAssistantNode, getNextId, getPrevId, getUserNode, INITIAL_NODES, patchNode } from "./tree-helper";
-import { useTreeNodes, type ChatNode } from "./tree-store";
+import { useTreeNodes, type ChatNode, type EmbeddedFile } from "./tree-store";
 
 export function ChatTree() {
   const { treeNodes, setTreeNodes, treeNodes$, createWriter } = useTreeNodes({ initialNodes: INITIAL_NODES });
@@ -305,7 +306,10 @@ export function ChatTree() {
     const handleIframeFileAccessRequest = (event: MessageEvent<any>) => {
       if (!handledTypes.includes(event.data?.type)) return;
 
-      const allFiles = treeNodes$.value.flatMap(getAttachmentExternalFiles);
+      const allFiles = treeNodes$.value.flatMap((item) => [
+        ...getAttachmentEmbeddedFiles(item),
+        ...getAttachmentExternalFiles(item),
+      ]);
 
       // use reverse to keep the last file
       const latestFileMap = new Map(
@@ -316,8 +320,17 @@ export function ChatTree() {
           .map((file) => [file.name, file]),
       );
 
-      respondReadFile((filename) => latestFileMap.get(filename), event);
-      respondListFiles(() => [...latestFileMap.values()], event);
+      async function castToFile(maybeFile?: File | EmbeddedFile | null): Promise<File | undefined> {
+        if (!maybeFile) return undefined;
+        if (maybeFile instanceof File) return maybeFile;
+        return dataUrlToFile(maybeFile.url, maybeFile.name);
+      }
+
+      respondReadFile((filename) => castToFile(latestFileMap.get(filename)), event);
+      respondListFiles(
+        () => Promise.all([...latestFileMap.values().map(castToFile)]).then((files) => files.filter(Boolean) as File[]),
+        event,
+      );
 
       respondReadContent(() => {
         // find the nearest assistant node to sourceNode
@@ -541,18 +554,16 @@ export function ChatTree() {
       }
 
       // Normal mode: build content with postscripts
-      const filePostScript = getReadonlyFileAccessPostscript(getAttachmentExternalFiles(node));
+      const embeddedFiles = getAttachmentEmbeddedFiles(node);
+      const filePostScript = getReadonlyFileAccessPostscript([...embeddedFiles, ...getAttachmentExternalFiles(node)]);
       const codeInterpreterPostScript = directives.run
         ? getCodeInterpreterPrompt({ llm: directives.llm, fs: true })
         : "";
+
       const fullContent = `${node.content}${filePostScript}${codeInterpreterPostScript}`;
       const contentUrl = fullContent ? textToDataUrl(fullContent) : null;
 
-      const attachments = getAttachmentEmbeddedFiles(node).map((part) => ({
-        name: part.name,
-        type: part.type as any,
-        url: part.url,
-      }));
+      const attachments = embeddedFiles.map((part) => ({ name: part.name, type: part.type, url: part.url }));
 
       // attachments are user's inputs (before content) and assistant's outputs (after content)
       const message: GenericMessage = {
