@@ -105,7 +105,7 @@ The run block can take optional directives to expose additional APIs to the gene
 
 ### `Edit` directive
 
-Include an `edit` block in the user message to force the LLM to generate code that edits the nearest assistant message
+Include an `edit` block in the user message to force the LLM to generate code that edits the nearest assistant message. Other messages will be hidden.
 
 ````
 ```edit

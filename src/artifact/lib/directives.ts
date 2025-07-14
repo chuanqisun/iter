@@ -1,4 +1,6 @@
 import { getReadableFileSize } from "../../chat-tree/file-size";
+import type { GenericMessage } from "../../providers/base";
+import { textToDataUrl } from "../../storage/codec";
 import fileAccessRuntimeAPI from "./directives/file-access-runtime-api.js?raw";
 import fileAccessStaticAPI from "./directives/file-access-static-api.js?raw";
 import llmRuntimeAPI from "./directives/llm-runtime-api.js?raw";
@@ -71,22 +73,41 @@ Otherwise respond in javascript like this:
 `;
 }
 
-export function getEditPrompt(document: string): string {
-  return `
-Edit the following document:
-\`\`\`
-${document}
-\`\`\`
+export function getEditMessages(document: string, instruction: string): GenericMessage[] {
+  return [
+    {
+      role: "system",
+      content: getEditSystemPrompt(),
+    },
+    {
+      role: "user",
+      content: [
+        {
+          type: "text/plain",
+          name: "document.md",
+          url: textToDataUrl(document),
+        },
+        {
+          type: "text/plain",
+          name: "instruction.md",
+          url: textToDataUrl(instruction),
+        },
+      ],
+    },
+  ];
+}
 
-Write typescript to perform the edit based on user's goal or instruction.
+function getEditSystemPrompt(): string {
+  return `
+Write typescript to edit the user provided document based on goal or instruction.
 - You can read the document content via \`window.editor.readContent(): Promise<string>\`
-- You can write the updated document content via \`window.editor.writeContent(): Promise<void>\`
-- You can return string literal directly when write content from scratch
+- You can write the edited document content via \`window.editor.writeContent(): Promise<void>\`
+- You can return string literal directly when you need to write entirely new content
 - Use string replacement function to make precise edits, pay attention to whitespace
 - Use regex to match complex patterns
 - Use logic for data manipulation
 
-Write compact code without comments. When performing multiple types of edit, delimit the their code by a new line.
+Write compact code without comments. When performing multiple types of edit, delimit them by new lines.
 
 Respond with typescript code block:
 

@@ -4,7 +4,7 @@ import { useArtifactActions } from "../artifact/artifact";
 import type { ArtifactEvents } from "../artifact/languages/generic";
 import {
   getCodeInterpreterPrompt,
-  getEditPrompt,
+  getEditMessages,
   getReadonlyFileAccessPostscript,
   parseDirectives,
   respondListFiles,
@@ -530,46 +530,43 @@ export function ChatTree() {
     const targetIndex = treeNodes$.value.findIndex((n) => n.id === id);
     if (targetIndex === -1) return [];
 
-    const annotated = treeNodes$.value.slice(0, targetIndex + 1).flatMap((node, i, array) => {
-      const { run, llm, edit } = parseDirectives(node.content);
-      const filePostScript = edit ? "" : getReadonlyFileAccessPostscript(getAttachmentExternalFiles(node));
-      const codeInterpreterPostScript = run ? getCodeInterpreterPrompt({ llm, fs: true }) : "";
-      const editPrompt = edit ? getEditPrompt(array.at(i - 1)?.content ?? "") : "";
-      const rawContentDataUrl = textToDataUrl(
-        `${node.content}${filePostScript}${codeInterpreterPostScript}${editPrompt}`,
-      );
+    const relevantMessages = treeNodes$.value.slice(0, targetIndex + 1).reduce((acc, node, i, array) => {
+      const directives = parseDirectives(node.content);
 
-      // in user node, we attachments are input, insert before prompts
-      // in assistant node, attachments are output, append after prompts
-      // no attachments in edit mode
-      const attachments = edit
-        ? []
-        : getAttachmentEmbeddedFiles(node).map((part) => ({
-            name: part.name,
-            type: part.type as any,
-            url: part.url,
-          }));
+      if (directives.edit) {
+        if (!node.content) return acc;
+        // Edit mode: special handling
+        const messages = getEditMessages(array.at(i - 1)?.content ?? "", node.content);
+        return messages;
+      }
 
+      // Normal mode: build content with postscripts
+      const filePostScript = getReadonlyFileAccessPostscript(getAttachmentExternalFiles(node));
+      const codeInterpreterPostScript = directives.run
+        ? getCodeInterpreterPrompt({ llm: directives.llm, fs: true })
+        : "";
+      const fullContent = `${node.content}${filePostScript}${codeInterpreterPostScript}`;
+      const contentUrl = fullContent ? textToDataUrl(fullContent) : null;
+
+      const attachments = getAttachmentEmbeddedFiles(node).map((part) => ({
+        name: part.name,
+        type: part.type as any,
+        url: part.url,
+      }));
+
+      // attachments are user's inputs (before content) and assistant's outputs (after content)
       const message: GenericMessage = {
         role: node.role,
         content: [
           ...(node.role === "user" ? attachments : []),
-          ...(node.content ? ([{ type: "text/plain", url: rawContentDataUrl }] as const) : []),
+          ...(contentUrl ? ([{ type: "text/plain", url: contentUrl }] as const) : []),
           ...(node.role === "assistant" ? attachments : []),
         ],
       };
 
-      return [{ message, run, llm, edit }];
-    });
+      if (!message.content.length) return acc;
 
-    const relevantMessages = annotated.reduce((acc, item) => {
-      // no empty message
-      if (!item.message.content.length) return acc;
-
-      // edit mode: run system message plus the last edit message
-      if (item.edit) return [...acc.filter((msg) => msg.role === "system"), item.message];
-
-      return [...acc, item.message];
+      return [...acc, message];
     }, [] as GenericMessage[]);
 
     return relevantMessages;
