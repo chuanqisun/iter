@@ -112,3 +112,10 @@ Include an `edit` block in the user message to force the LLM to generate code th
 <editorial goals or instructions>
 ```
 ````
+
+## Attachments
+
+You can copy/paste or upload files into each message in one of the following formats:
+
+- **Embedded**: LLM can see the image, PDF, or text content. If using `run` directive, LLM can write code that accesses the content as a file.
+- **External**: LLM can only see the metadata of the file (name, size, type, etc.). If using `run` directive, LLM can write code that accesses the content as a file without reading the content.
