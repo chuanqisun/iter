@@ -3,7 +3,7 @@ import { markdown } from "@codemirror/lang-markdown";
 import { defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
 import { Compartment, EditorSelection, EditorState, type Extension } from "@codemirror/state";
-import { drawSelection, EditorView, highlightSpecialChars, keymap } from "@codemirror/view";
+import { drawSelection, EditorView, highlightSpecialChars, keymap, placeholder } from "@codemirror/view";
 import { githubDark } from "@uiw/codemirror-theme-github/src/index.ts";
 import { distinctUntilChanged, Subject, tap } from "rxjs";
 import { blockActionPlugin } from "./block-action-widget";
@@ -14,6 +14,8 @@ import { syncDispatch } from "./sync";
 
 const dynamicLanguage = new Compartment();
 const dynamicReadonly = new Compartment();
+const dynamicTabIndent = new Compartment();
+const dynamicPlaceholder = new Compartment();
 
 export class CodeEditorElement extends HTMLElement {
   static define() {
@@ -21,7 +23,7 @@ export class CodeEditorElement extends HTMLElement {
     customElements.define("code-editor-element", CodeEditorElement);
   }
 
-  static observedAttributes = ["data-lang", "data-value", "data-readonly"];
+  static observedAttributes = ["data-lang", "data-value", "data-readonly", "data-tab-indent", "data-placeholder"];
 
   private editorView: EditorView | null = null;
   private cursorViews: EditorView[] = [];
@@ -35,10 +37,13 @@ export class CodeEditorElement extends HTMLElement {
     ...chatPanel(),
     blockActionPlugin,
     EditorView.lineWrapping,
-    keymap.of([...chatKeymap(this, this.change$), ...defaultKeymap, ...historyKeymap, indentWithTab]),
+    // base key bindings without tab indent; tab indent is added dynamically
+    keymap.of([...chatKeymap(this, this.change$), ...defaultKeymap, ...historyKeymap]),
     githubDark,
     dynamicReadonly.of([]),
     dynamicLanguage.of([]),
+    dynamicTabIndent.of([]),
+    dynamicPlaceholder.of([]),
     EditorView.focusChangeEffect.of((state, focusing) => {
       if (focusing) return null;
       this.change$.next(state.doc.toString());
@@ -68,6 +73,10 @@ export class CodeEditorElement extends HTMLElement {
     this.change$.pipe(distinctUntilChanged()).subscribe((value) => {
       this.dispatchEvent(new CustomEvent("contentchange", { detail: value }));
     });
+    // initial tab-indent keymap based on attribute
+    this.updateTabIndent(this.hasAttribute("data-tab-indent"));
+    // initial placeholder based on attribute
+    this.updatePlaceholder(this.getAttribute("data-placeholder"));
   }
 
   disconnectedCallback() {
@@ -91,11 +100,32 @@ export class CodeEditorElement extends HTMLElement {
       const isReadonly = this.hasAttribute("data-readonly");
       this.updateReadonly(isReadonly);
     }
+    if (name === "data-tab-indent") {
+      this.updateTabIndent(this.hasAttribute("data-tab-indent"));
+    }
+    if (name === "data-placeholder") {
+      this.updatePlaceholder(newValue);
+    }
   }
 
   updateReadonly(isReadonly: boolean) {
     const reconfig = dynamicReadonly.reconfigure(EditorState.readOnly.of(isReadonly)); // This keeps focusability while preventing edits
     // const reconfig = dynamicReadonly.reconfigure(EditorView.editable.of(!isReadonly)); // This prevent DOM focusability
+    this.editorView?.dispatch({ effects: reconfig });
+  }
+
+  /** Dynamically add or remove indentWithTab key binding */
+  updateTabIndent(isTabIndent: boolean) {
+    const ext = isTabIndent ? keymap.of([indentWithTab]) : [];
+    const reconfig = dynamicTabIndent.reconfigure(ext);
+    this.editorView?.dispatch({ effects: reconfig });
+  }
+  
+  /** Dynamically set the editor placeholder text via data-placeholder */
+  updatePlaceholder(text: string | null) {
+    // if no text, clear placeholder
+    const ext = text ? placeholder(text) : [];
+    const reconfig = dynamicPlaceholder.reconfigure(ext);
     this.editorView?.dispatch({ effects: reconfig });
   }
 

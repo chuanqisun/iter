@@ -108,3 +108,8 @@ input:where([type="text"], [type="password"]) {
 [hidden] {
   display: none !important;
 }
+
+.js-focusable:focus {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}

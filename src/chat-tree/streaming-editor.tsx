@@ -7,7 +7,9 @@ export interface StreamingEditorProps {
   node: ChatNode;
   collapsedHeight?: number;
   onTextChange: (id: string, text: string) => void;
-  onToggleViewFormat: (id: string) => void;
+  onNavigatePrevious: (id: string) => void;
+  onNavigateNext: (id: string) => void;
+  onEscape: (id: string) => void;
 }
 
 export function StreamingEditor(props: StreamingEditorProps) {
@@ -49,6 +51,8 @@ export function StreamingEditor(props: StreamingEditorProps) {
   return (
     <code-editor-element
       ref={codeEditorRef}
+      id={props.node.id}
+      className="js-focusable"
       data-autofocus
       data-value={props.node.content}
       data-lang="md"
@@ -57,8 +61,10 @@ export function StreamingEditor(props: StreamingEditorProps) {
           "--max-height": props.node.isCollapsed ? `${props.collapsedHeight}px` : undefined,
         } as any
       }
-      onescape={() => props.onToggleViewFormat(props.node.id)}
+      onescape={() => props.onEscape(props.node.id)}
       oncontentchange={(e) => props.onTextChange(props.node.id, e.detail)}
+      onnavigateprevious={() => props.onNavigatePrevious(props.node.id)}
+      onnavigatenext={() => props.onNavigateNext(props.node.id)}
     ></code-editor-element>
   );
 }

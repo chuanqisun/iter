@@ -1,8 +1,9 @@
 # TODO
 
-- Use code editor for all chat messages input: handle paste, abort, hint text, focus management
 - Bug: abort error lingers after role switch
+- When user pastes html partial text, convert it to markdown
 - Download code block should map lang to file extension
+- Light theme: remove? fix?
 - Drag and drop file as upload
 - Share readable file size algorithm with token counter algorithm
 - Language override for editor
@@ -22,6 +23,7 @@
 
 # DONE
 
+- Use code editor for all chat messages input: handle paste, abort, hint text, focus management
 - Triple tick `run` block with `edit` macro that exposes file type specific hooks for efficient edit
 - Closing artifact while it is compiling left iframe on main thread
 - Migrate artifact to use shared editor

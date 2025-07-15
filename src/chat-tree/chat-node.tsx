@@ -7,6 +7,7 @@ import { getCombo } from "./keyboard";
 import { OutputMetadata } from "./output-metadata";
 import { StreamingEditor } from "./streaming-editor";
 import { StreamingPreview } from "./streaming-preview";
+import { INITIAL_USER_NODE } from "./tree-helper";
 import type { ChatNode } from "./tree-store";
 
 const roleIcon = {
@@ -29,14 +30,16 @@ const COLLAPSED_HEIGHT = 72;
 export interface ChatNodeProps {
   node: ChatNode;
   onAbort: (id: string) => void;
+  onAbortAll: () => void;
   onCodeBlockChange: (id: string, current: string, index: number) => void;
   onDelete: (id: string) => void;
   onDeleteBelow: (id: string) => void;
   onDownloadAttachment: (id: string, attachmentId: string) => void;
-  onKeydown: (id: string, e: React.KeyboardEvent<HTMLElement>) => void;
   onCopyAttachment: (id: string, attachmentId: string) => void;
+  onNavigatePrevious: (id: string) => void;
+  onNavigateNext: (id: string) => void;
   onOnly: (id: string) => void;
-  onPaste: (id: string, e: React.ClipboardEvent<HTMLTextAreaElement>) => void;
+  onPaste: (id: string, e: ClipboardEvent) => void;
   onPreviewDoubleClick: (id: string, e: React.MouseEvent) => void;
   onRemoveAttachment: (id: string, attachmentId: string) => void;
   onRunNode: (id: string) => void;
@@ -54,12 +57,14 @@ export function ChatNodeInternal(props: ChatNodeProps) {
   const {
     node,
     onAbort,
+    onAbortAll,
     onCodeBlockChange,
     onDelete,
     onDeleteBelow,
     onDownloadAttachment,
-    onKeydown,
     onCopyAttachment,
+    onNavigatePrevious,
+    onNavigateNext,
     onOnly,
     onPaste,
     onPreviewDoubleClick,
@@ -140,10 +145,6 @@ export function ChatNodeInternal(props: ChatNodeProps) {
               <button data-managed-focus="message-action" onClick={() => onDeleteBelow(node.id)}>
                 Trim
               </button>
-              <span> · </span>
-              <button data-managed-focus="message-action" onClick={() => onToggleViewFormat(node.id)}>
-                {node.isViewSource ? "Chat" : "Code"}
-              </button>
               <span className="c-far-group">
                 <InputMetadata metadata$={node.metadata$} />
               </span>
@@ -170,10 +171,14 @@ export function ChatNodeInternal(props: ChatNodeProps) {
               <button data-managed-focus="message-action" onClick={() => onUploadFiles(node.id)}>
                 Upload
               </button>
-              <span> · </span>
-              <button data-managed-focus="message-action" onClick={() => onToggleViewFormat(node.id)}>
-                {node.role === "user" ? (node.isViewSource ? "Chat" : "Code") : node.isViewSource ? "View" : "Edit"}
-              </button>
+              {node.role === "assistant" ? (
+                <>
+                  <span> · </span>
+                  <button data-managed-focus="message-action" onClick={() => onToggleViewFormat(node.id)}>
+                    {node.isViewSource ? "View" : "Edit"}
+                  </button>
+                </>
+              ) : null}
               {node.abortController ? (
                 <>
                   <span> · </span>
@@ -199,52 +204,49 @@ export function ChatNodeInternal(props: ChatNodeProps) {
           ></code-block-events>
           <>
             {node.role === "user" || node.role === "system" ? (
-              node.isViewSource ? (
-                <code-editor-element
-                  data-autofocus
-                  data-value={node.content}
-                  data-lang="md"
-                  style={
-                    {
-                      "--max-height": node.isCollapsed ? `${COLLAPSED_HEIGHT}px` : undefined,
-                    } as any
-                  }
-                  onescape={() => onToggleViewFormat(node.id)}
-                  oncontentchange={(e) => onTextChange(node.id, e.detail)}
-                  onrun={(e) => {
-                    onTextChange(node.id, e.detail);
-                    onRunNode(node.id);
-                  }}
-                ></code-editor-element>
-              ) : (
-                <ResizableTextArea
-                  $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}
-                  className="js-focusable"
-                  id={node.id}
-                  value={node.content}
-                  rows={1}
-                  onKeyDown={(e) => onKeydown(node.id, e)}
-                  onPaste={(e) => onPaste(node.id, e)}
-                  onChange={(e) => onTextChange(node.id, e.target.value)}
-                  placeholder={
-                    node.role === "user"
-                      ? "Ctrl + Enter to send, Esc to cancel, paste images for vision models, Shift + Space to dictate"
-                      : "System message"
-                  }
-                />
-              )
+              <code-editor-element
+                className="js-focusable"
+                id={node.id}
+                data-autofocus={node.id === INITIAL_USER_NODE.id ? "" : null}
+                data-value={node.content}
+                data-lang="md"
+                data-placeholder={
+                  node.role === "user"
+                    ? "Ctrl + Enter to send, Esc to cancel, paste images for vision models, Shift + Space to dictate"
+                    : "System message"
+                }
+                style={
+                  {
+                    "--max-height": node.isCollapsed ? `${COLLAPSED_HEIGHT}px` : undefined,
+                  } as any
+                }
+                onescape={onAbortAll}
+                oncontentchange={(e) => onTextChange(node.id, e.detail)}
+                onpaste={(e) => onPaste(node.id, e)}
+                onnavigateprevious={() => onNavigatePrevious(node.id)}
+                onnavigatenext={() => onNavigateNext(node.id)}
+                onrun={(e) => {
+                  onTextChange(node.id, e.detail);
+                  onRunNode(node.id);
+                }}
+              ></code-editor-element>
             ) : node.isViewSource ? (
               <StreamingEditor
                 node={node}
                 collapsedHeight={COLLAPSED_HEIGHT}
+                onEscape={() => onToggleViewFormat(node.id)}
+                onNavigatePrevious={onNavigatePrevious}
+                onNavigateNext={onNavigateNext}
                 onTextChange={onTextChange}
-                onToggleViewFormat={onToggleViewFormat}
               />
             ) : (
               <StreamingPreview
                 node={node}
-                onKeyDown={(e) => onKeydown(node.id, e)}
+                onAbort={() => onAbort(node.id)}
+                onEnter={() => onToggleViewFormat(node.id)}
                 onDoubleClick={(e) => onPreviewDoubleClick(node.id, e)}
+                onNavigatePrevious={() => onNavigatePrevious(node.id)}
+                onNavigateNext={() => onNavigateNext(node.id)}
                 collapsedHeight={COLLAPSED_HEIGHT}
               />
             )}
@@ -273,23 +275,6 @@ export function ChatNodeInternal(props: ChatNodeProps) {
     </Thread>
   );
 }
-
-const ResizableTextArea = styled.textarea<{ $maxHeight?: number }>`
-  border-radius: 2px;
-  line-height: 18px;
-  field-sizing: content;
-  white-space: pre-wrap;
-  padding: 7px var(--input-padding-inline);
-  border-width: var(--input-border-width);
-  resize: none;
-  ${(props) => props.$maxHeight && `max-height: ${props.$maxHeight}px;`}
-  overflow-y: ${(props) => (props.$maxHeight ? "scroll" : "auto")};
-  scrollbar-gutter: stable;
-
-  &[data-speaking] {
-    color: GrayText;
-  }
-`;
 
 const Thread = styled.div`
   display: grid;

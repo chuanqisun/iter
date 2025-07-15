@@ -577,13 +577,6 @@ export function ChatTree() {
     return relevantMessages;
   }, []);
 
-  const handleAbortSensible = useCallback((nodeId: string) => {
-    // selectively abort chat nodes
-    const isTargetNodeAbortable = treeNodes$.value.find((node) => node.id === nodeId)?.abortController;
-    if (!isTargetNodeAbortable) handleAbortAll();
-    else handleAbort(nodeId);
-  }, []);
-
   const handleAbortBelow = useCallback((nodeId: string) => {
     const targetIndex = treeNodes$.value.findIndex((node) => node.id === nodeId);
     if (targetIndex === -1) return;
@@ -707,112 +700,21 @@ export function ChatTree() {
     [chat, getMessageChain],
   );
 
-  const handleKeydown = useCallback(
-    async (nodeId: string, e: React.KeyboardEvent<HTMLElement>) => {
-      const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
-      if (!targetNode) return;
+  const handleNavigatePrevious = useCallback((nodeId: string) => {
+    const targetId = getPrevId(nodeId, treeNodes$.value);
+    if (targetId) {
+      const targetElement = document.getElementById(targetId) as HTMLTextAreaElement | null;
+      targetElement?.focus();
+    }
+  }, []);
 
-      const combo = getCombo(e as any as KeyboardEvent);
-
-      const activeUserNodeId = getActiveUserNodeId(targetNode);
-
-      if (combo === "escape") {
-        if (!activeUserNodeId) return;
-        e.preventDefault();
-        handleAbortSensible(activeUserNodeId);
-      }
-
-      if (combo === "`") {
-        // if textarea only has 2 backticks, toggle to code mode
-        const maybeTextarea = e.target as HTMLTextAreaElement;
-        if (maybeTextarea.value === "``" && maybeTextarea.selectionStart === 2 && maybeTextarea.selectionEnd === 2) {
-          setTimeout(
-            () =>
-              setTreeNodes((nodes) => {
-                return nodes.map(
-                  patchNode(
-                    (node) => node.id === nodeId,
-                    (_node) => ({ isViewSource: true }),
-                  ),
-                );
-              }),
-            0,
-          );
-          // HACK, wait for editor to initialize
-          setTimeout(() => {
-            const editor = document.querySelector<CodeEditorElement>(`[data-node-id="${nodeId}"] code-editor-element`);
-            editor?.moveCursorToEnd();
-            console.log("Found editor", editor);
-          }, 10);
-        }
-        return;
-      }
-
-      // Enter to activate edit mode
-      if (targetNode.role === "assistant" && combo === "enter") {
-        // Enter the entire message
-        if ((e.target as HTMLElement).classList.contains("js-focusable")) {
-          setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { isViewSource: true })));
-        }
-
-        // Enter a code block
-        if ((e.target as HTMLElement).closest("artifact-source")) {
-          e.preventDefault(); // Otherwise, the dialog will immediately close
-
-          (e.target as HTMLElement)
-            .closest("artifact-element")
-            ?.querySelector<HTMLButtonElement>(`[data-action="edit"]`)
-            ?.click();
-        }
-        return;
-      }
-
-      // up/down arrow
-      let targetId: null | string = null;
-      if ((e.target as HTMLElement).tagName === "TEXTAREA") {
-        if (combo === "arrowup" || combo === "arrowdown") {
-          const textarea = e.target as HTMLTextAreaElement;
-
-          if (
-            combo === "arrowup" &&
-            textarea.selectionStart === 0 &&
-            (textarea.selectionEnd === 0 || textarea.selectionEnd === textarea.value.length)
-          ) {
-            e.preventDefault();
-            targetId = getPrevId(nodeId, treeNodes$.value);
-          } else if (
-            combo === "arrowdown" &&
-            (textarea.selectionStart === 0 || textarea.selectionStart === textarea.value.length) &&
-            textarea.selectionEnd === textarea.value.length
-          ) {
-            e.preventDefault();
-            targetId = getNextId(nodeId, treeNodes$.value);
-          }
-        }
-      } else if ((e.target as HTMLElement).classList.contains("js-focusable")) {
-        if (combo === "arrowup") {
-          e.preventDefault();
-          targetId = getPrevId(nodeId, treeNodes$.value);
-        } else if (combo === "arrowdown") {
-          e.preventDefault();
-          targetId = getNextId(nodeId, treeNodes$.value);
-        }
-      }
-
-      if (targetId) {
-        const targetElement = document.getElementById(targetId) as HTMLTextAreaElement | null;
-        targetElement?.focus();
-      }
-
-      // submit message
-      if (combo === "ctrl+enter") {
-        if (!activeUserNodeId) return;
-        e.preventDefault();
-        handleRunNode(activeUserNodeId);
-      }
-    },
-    [handleRunNode],
-  );
+  const handleNavigateNext = useCallback((nodeId: string) => {
+    const targetId = getNextId(nodeId, treeNodes$.value);
+    if (targetId) {
+      const targetElement = document.getElementById(targetId) as HTMLTextAreaElement | null;
+      targetElement?.focus();
+    }
+  }, []);
 
   const handleOnly = useCallback((nodeId: string) => {
     handleAbortAll();
@@ -835,22 +737,25 @@ export function ChatTree() {
     });
   }, []);
 
-  const handlePaste = useCallback(async (nodeId: string, e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const activeUserNodeId = getActiveUserNodeId(treeNodes$.value.find((node) => node.id === nodeId));
-    if (!activeUserNodeId) return;
+  const handlePaste = useCallback(
+    async (nodeId: string, e: ClipboardEvent | React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const activeUserNodeId = getActiveUserNodeId(treeNodes$.value.find((node) => node.id === nodeId));
+      if (!activeUserNodeId) return;
 
-    // if has files, prevent default
-    if (e.clipboardData?.files.length) e.preventDefault();
+      // if has files, prevent default
+      if (e.clipboardData?.files.length) e.preventDefault();
 
-    const parts = await getParts(e.clipboardData);
-    if (!parts.length) return;
+      const parts = e.clipboardData ? await getParts(e.clipboardData) : [];
+      if (!parts.length) return;
 
-    const pastedAttachments = parts.map(createAttachmentFromChatPart);
+      const pastedAttachments = parts.map(createAttachmentFromChatPart);
 
-    setTreeNodes((nodes) =>
-      nodes.map(patchNode((node) => node.id === activeUserNodeId, upsertAttachments(...pastedAttachments))),
-    );
-  }, []);
+      setTreeNodes((nodes) =>
+        nodes.map(patchNode((node) => node.id === activeUserNodeId, upsertAttachments(...pastedAttachments))),
+      );
+    },
+    [],
+  );
 
   const handleRemoveAttachment = useCallback((nodeId: string, attachmentId: string) => {
     setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, removeAttachment(attachmentId))));
@@ -1008,12 +913,14 @@ export function ChatTree() {
             <ChatNodeMemo
               node={node}
               onAbort={handleAbort}
+              onAbortAll={handleAbortAll}
               onCodeBlockChange={handleCodeBlockChange}
               onDelete={handleDelete}
               onDeleteBelow={handleDeleteBelow}
               onDownloadAttachment={handleDownloadAttachment}
               onCopyAttachment={handleCopyAttachment}
-              onKeydown={handleKeydown}
+              onNavigatePrevious={handleNavigatePrevious}
+              onNavigateNext={handleNavigateNext}
               onOnly={handleOnly}
               onPaste={handlePaste}
               onPreviewDoubleClick={handlePreviewDoubleClick}
