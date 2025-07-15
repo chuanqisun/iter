@@ -10,7 +10,6 @@ export interface StreamingEditorProps {
   onNavigatePrevious: (id: string) => void;
   onNavigateNext: (id: string) => void;
   onEscape: (id: string) => void;
-  onToggleViewFormat: (id: string) => void;
 }
 
 export function StreamingEditor(props: StreamingEditorProps) {

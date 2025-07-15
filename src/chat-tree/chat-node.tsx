@@ -238,7 +238,6 @@ export function ChatNodeInternal(props: ChatNodeProps) {
                 onNavigatePrevious={onNavigatePrevious}
                 onNavigateNext={onNavigateNext}
                 onTextChange={onTextChange}
-                onToggleViewFormat={onToggleViewFormat}
               />
             ) : (
               <StreamingPreview
