@@ -18,7 +18,7 @@ code-editor-element {
   max-height: var(--max-height);
 
   padding: 0; /* cm line comes with padding */
-  border: 1px solid transparent;
+  border: 1px solid var(--button-border-rest-color);
   border-radius: 2px;
 
   &.cm-focused {
