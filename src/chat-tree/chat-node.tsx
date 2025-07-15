@@ -39,7 +39,7 @@ export interface ChatNodeProps {
   onNavigatePrevious: (id: string) => void;
   onNavigateNext: (id: string) => void;
   onOnly: (id: string) => void;
-  onPaste: (id: string, e: ClipboardEvent | React.ClipboardEvent<HTMLTextAreaElement>) => void;
+  onPaste: (id: string, e: ClipboardEvent) => void;
   onPreviewDoubleClick: (id: string, e: React.MouseEvent) => void;
   onRemoveAttachment: (id: string, attachmentId: string) => void;
   onRunNode: (id: string) => void;
@@ -205,54 +205,36 @@ export function ChatNodeInternal(props: ChatNodeProps) {
           ></code-block-events>
           <>
             {node.role === "user" || node.role === "system" ? (
-              node.isViewSource ? (
-                <code-editor-element
-                  className="js-focusable"
-                  id={node.id}
-                  data-value={node.content}
-                  data-lang="md"
-                  data-placeholder={
-                    node.role === "user"
-                      ? "Ctrl + Enter to send, Esc to cancel, paste images for vision models, Shift + Space to dictate"
-                      : "System message"
-                  }
-                  style={
-                    {
-                      "--max-height": node.isCollapsed ? `${COLLAPSED_HEIGHT}px` : undefined,
-                    } as any
-                  }
-                  onescape={onAbortAll}
-                  oncontentchange={(e) => onTextChange(node.id, e.detail)}
-                  onpaste={(e) => onPaste(node.id, e)}
-                  onnavigateprevious={() => onNavigatePrevious(node.id)}
-                  onnavigatenext={() => onNavigateNext(node.id)}
-                  onrun={(e) => {
-                    onTextChange(node.id, e.detail);
-                    onRunNode(node.id);
-                  }}
-                ></code-editor-element>
-              ) : (
-                <ResizableTextArea
-                  $maxHeight={node.isCollapsed ? COLLAPSED_HEIGHT : undefined}
-                  className="js-focusable"
-                  id={node.id}
-                  value={node.content}
-                  rows={1}
-                  onKeyDown={(e) => onKeydown(node.id, e)}
-                  onPaste={(e) => onPaste(node.id, e)}
-                  onChange={(e) => onTextChange(node.id, e.target.value)}
-                  placeholder={
-                    node.role === "user"
-                      ? "Ctrl + Enter to send, Esc to cancel, paste images for vision models, Shift + Space to dictate"
-                      : "System message"
-                  }
-                />
-              )
+              <code-editor-element
+                className="js-focusable"
+                id={node.id}
+                data-value={node.content}
+                data-lang="md"
+                data-placeholder={
+                  node.role === "user"
+                    ? "Ctrl + Enter to send, Esc to cancel, paste images for vision models, Shift + Space to dictate"
+                    : "System message"
+                }
+                style={
+                  {
+                    "--max-height": node.isCollapsed ? `${COLLAPSED_HEIGHT}px` : undefined,
+                  } as any
+                }
+                onescape={onAbortAll}
+                oncontentchange={(e) => onTextChange(node.id, e.detail)}
+                onpaste={(e) => onPaste(node.id, e)}
+                onnavigateprevious={() => onNavigatePrevious(node.id)}
+                onnavigatenext={() => onNavigateNext(node.id)}
+                onrun={(e) => {
+                  onTextChange(node.id, e.detail);
+                  onRunNode(node.id);
+                }}
+              ></code-editor-element>
             ) : node.isViewSource ? (
               <StreamingEditor
                 node={node}
                 collapsedHeight={COLLAPSED_HEIGHT}
-                onAbort={onAbortAll}
+                onEscape={() => onToggleViewFormat(node.id)}
                 onNavigatePrevious={onNavigatePrevious}
                 onNavigateNext={onNavigateNext}
                 onTextChange={onTextChange}
@@ -261,7 +243,8 @@ export function ChatNodeInternal(props: ChatNodeProps) {
             ) : (
               <StreamingPreview
                 node={node}
-                onKeyDown={(e) => onKeydown(node.id, e)}
+                onAbort={() => onAbort(node.id)}
+                onEdit={() => onToggleViewFormat(node.id)}
                 onDoubleClick={(e) => onPreviewDoubleClick(node.id, e)}
                 collapsedHeight={COLLAPSED_HEIGHT}
               />

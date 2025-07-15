@@ -9,7 +9,7 @@ export interface StreamingEditorProps {
   onTextChange: (id: string, text: string) => void;
   onNavigatePrevious: (id: string) => void;
   onNavigateNext: (id: string) => void;
-  onAbort: (id: string) => void;
+  onEscape: (id: string) => void;
   onToggleViewFormat: (id: string) => void;
 }
 
@@ -62,7 +62,7 @@ export function StreamingEditor(props: StreamingEditorProps) {
           "--max-height": props.node.isCollapsed ? `${props.collapsedHeight}px` : undefined,
         } as any
       }
-      onescape={() => props.onAbort(props.node.id)}
+      onescape={() => props.onEscape(props.node.id)}
       oncontentchange={(e) => props.onTextChange(props.node.id, e.detail)}
       onnavigateprevious={() => props.onNavigatePrevious(props.node.id)}
       onnavigatenext={() => props.onNavigateNext(props.node.id)}

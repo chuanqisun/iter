@@ -3,6 +3,7 @@
 - Use code editor for all chat messages input: handle paste, abort, hint text, focus management
 - Bug: abort error lingers after role switch
 - Download code block should map lang to file extension
+- Light theme: remove? fix?
 - Drag and drop file as upload
 - Share readable file size algorithm with token counter algorithm
 - Language override for editor

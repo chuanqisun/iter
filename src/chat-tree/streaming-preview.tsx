@@ -1,13 +1,15 @@
-import type { KeyboardEvent, MouseEvent } from "react";
-import { memo, useEffect, useState } from "react";
+import type { MouseEvent } from "react";
+import React, { memo, useCallback, useEffect, useState } from "react";
 import { markdownToHtml, preloadPreviewWorker } from "../workers/worker-proxy";
+import { getCombo } from "./keyboard";
 import { MarkdownPreview } from "./markdown-preview";
 import { skipWhenBusy } from "./skip-when-busy";
 import type { ChatNode } from "./tree-store";
 
 export interface StreamingPreviewProps {
   node: ChatNode;
-  onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
+  onAbort: () => void;
+  onEdit: () => void;
   onDoubleClick: (e: MouseEvent) => void;
   collapsedHeight?: number;
 }
@@ -61,11 +63,33 @@ export function StreamingPreviewInternal(props: StreamingPreviewProps) {
     };
   }, [props.node.content$, props.node.content]);
 
+  const handleKeyDown = useCallback<React.KeyboardEventHandler>((e) => {
+    const combo = getCombo(e as any as KeyboardEvent);
+    if (combo === "escape") {
+      props.onAbort();
+    } else if (combo === "enter") {
+      // Enter the entire message
+      if ((e.target as HTMLElement).classList.contains("js-focusable")) {
+        props.onEdit();
+      }
+
+      // Enter a code block
+      if ((e.target as HTMLElement).closest("artifact-source")) {
+        e.preventDefault(); // Otherwise, the dialog will immediately close
+
+        (e.target as HTMLElement)
+          .closest("artifact-element")
+          ?.querySelector<HTMLButtonElement>(`[data-action="edit"]`)
+          ?.click();
+      }
+    }
+  }, []);
+
   return (
     <MarkdownPreview
       tabIndex={0}
       className="js-focusable"
-      onKeyDown={(e) => props.onKeyDown(e)}
+      onKeyDown={handleKeyDown}
       onDoubleClick={(e) => props.onDoubleClick(e)}
       id={props.node.id}
       $maxHeight={props.node.isCollapsed ? props.collapsedHeight : undefined}
