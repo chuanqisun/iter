@@ -10,6 +10,7 @@ declare module "react" {
         "data-value"?: string | undefined;
         "data-lang"?: string | undefined;
         onescape?: (event: Event) => void;
+        onenterreadonly?: (event: Event) => void;
         oncontentchange?: (event: CustomEvent<string>) => void;
         onrun?: (event: CustomEvent<string>) => void;
         ref?: RefObject<CodeEditorElement | null>;
