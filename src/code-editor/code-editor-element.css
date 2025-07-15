@@ -7,13 +7,15 @@ code-editor-element {
     outline: 2px solid currentColor;
     outline-offset: -2px;
   }
+  &[style*="--max-height"] .cm-scroller {
+    overflow-y: scroll;
+  }
 }
 
 .cm-editor {
   height: 100%;
   min-height: 32px;
   max-height: var(--max-height);
-  overflow: auto;
 
   padding: 0; /* cm line comes with padding */
   border: 1px solid transparent;
