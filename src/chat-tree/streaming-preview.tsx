@@ -9,7 +9,7 @@ import type { ChatNode } from "./tree-store";
 export interface StreamingPreviewProps {
   node: ChatNode;
   onAbort: () => void;
-  onEdit: () => void;
+  onEnter: () => void;
   onNavigatePrevious: () => void;
   onNavigateNext: () => void;
   onDoubleClick: (e: MouseEvent) => void;
@@ -75,7 +75,7 @@ export function StreamingPreviewInternal(props: StreamingPreviewProps) {
       case "enter": {
         // Enter the entire message
         if ((e.target as HTMLElement).classList.contains("js-focusable")) {
-          props.onEdit();
+          props.onEnter();
         }
 
         // Enter a code block

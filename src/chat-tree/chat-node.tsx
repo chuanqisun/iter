@@ -244,7 +244,7 @@ export function ChatNodeInternal(props: ChatNodeProps) {
               <StreamingPreview
                 node={node}
                 onAbort={() => onAbort(node.id)}
-                onEdit={() => onToggleViewFormat(node.id)}
+                onEnter={() => onToggleViewFormat(node.id)}
                 onDoubleClick={(e) => onPreviewDoubleClick(node.id, e)}
                 onNavigatePrevious={() => onNavigatePrevious(node.id)}
                 onNavigateNext={() => onNavigateNext(node.id)}
