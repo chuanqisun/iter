@@ -1,6 +1,6 @@
 # TODO
 
-- Use code editor for all chat messages input: handle paste, abort
+- Use code editor for all chat messages input: handle paste, abort, hint text
 - Bug: abort error lingers after role switch
 - Download code block should map lang to file extension
 - Drag and drop file as upload
