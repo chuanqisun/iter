@@ -6,6 +6,7 @@ export const INITIAL_SYSTEM_NODE: ChatNode = {
   id: crypto.randomUUID(),
   role: "system",
   content: "",
+  isViewSource: true,
   metadata$: new BehaviorSubject({}),
 };
 export const INITIAL_NODES = [INITIAL_SYSTEM_NODE, INITIAL_USER_NODE];
@@ -25,6 +26,7 @@ export function getUserNode(id: string, patch?: Partial<Omit<ChatNode, "id">>): 
     id,
     role: "user",
     content: "",
+    isViewSource: true,
     metadata$: new BehaviorSubject({}),
     ...patch,
   };

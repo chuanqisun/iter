@@ -814,6 +814,22 @@ export function ChatTree() {
     [handleRunNode],
   );
 
+  const handleNavigatePrevious = useCallback((nodeId: string) => {
+    const targetId = getPrevId(nodeId, treeNodes$.value);
+    if (targetId) {
+      const targetElement = document.getElementById(targetId) as HTMLTextAreaElement | null;
+      targetElement?.focus();
+    }
+  }, []);
+
+  const handleNavigateNext = useCallback((nodeId: string) => {
+    const targetId = getNextId(nodeId, treeNodes$.value);
+    if (targetId) {
+      const targetElement = document.getElementById(targetId) as HTMLTextAreaElement | null;
+      targetElement?.focus();
+    }
+  }, []);
+
   const handleOnly = useCallback((nodeId: string) => {
     handleAbortAll();
 
@@ -835,22 +851,25 @@ export function ChatTree() {
     });
   }, []);
 
-  const handlePaste = useCallback(async (nodeId: string, e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const activeUserNodeId = getActiveUserNodeId(treeNodes$.value.find((node) => node.id === nodeId));
-    if (!activeUserNodeId) return;
+  const handlePaste = useCallback(
+    async (nodeId: string, e: ClipboardEvent | React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const activeUserNodeId = getActiveUserNodeId(treeNodes$.value.find((node) => node.id === nodeId));
+      if (!activeUserNodeId) return;
 
-    // if has files, prevent default
-    if (e.clipboardData?.files.length) e.preventDefault();
+      // if has files, prevent default
+      if (e.clipboardData?.files.length) e.preventDefault();
 
-    const parts = await getParts(e.clipboardData);
-    if (!parts.length) return;
+      const parts = e.clipboardData ? await getParts(e.clipboardData) : [];
+      if (!parts.length) return;
 
-    const pastedAttachments = parts.map(createAttachmentFromChatPart);
+      const pastedAttachments = parts.map(createAttachmentFromChatPart);
 
-    setTreeNodes((nodes) =>
-      nodes.map(patchNode((node) => node.id === activeUserNodeId, upsertAttachments(...pastedAttachments))),
-    );
-  }, []);
+      setTreeNodes((nodes) =>
+        nodes.map(patchNode((node) => node.id === activeUserNodeId, upsertAttachments(...pastedAttachments))),
+      );
+    },
+    [],
+  );
 
   const handleRemoveAttachment = useCallback((nodeId: string, attachmentId: string) => {
     setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, removeAttachment(attachmentId))));
@@ -1008,12 +1027,15 @@ export function ChatTree() {
             <ChatNodeMemo
               node={node}
               onAbort={handleAbort}
+              onAbortAll={handleAbortAll}
               onCodeBlockChange={handleCodeBlockChange}
               onDelete={handleDelete}
               onDeleteBelow={handleDeleteBelow}
               onDownloadAttachment={handleDownloadAttachment}
               onCopyAttachment={handleCopyAttachment}
               onKeydown={handleKeydown}
+              onNavigatePrevious={handleNavigatePrevious}
+              onNavigateNext={handleNavigateNext}
               onOnly={handleOnly}
               onPaste={handlePaste}
               onPreviewDoubleClick={handlePreviewDoubleClick}

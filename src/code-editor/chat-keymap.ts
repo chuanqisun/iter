@@ -42,4 +42,26 @@ export const chatKeymap = (eventTarget: CodeEditorElement, change$: Subject<stri
         return true;
       },
     },
+    {
+      key: "ArrowUp",
+      run: (view) => {
+        const cursor = view.state.selection.main.head;
+        if (cursor === 0 && view.state.selection.main.empty) {
+          eventTarget.dispatchEvent(new Event("navigateprevious"));
+          return true;
+        }
+        return false;
+      },
+    },
+    {
+      key: "ArrowDown",
+      run: (view) => {
+        const cursor = view.state.selection.main.head;
+        if (cursor === view.state.doc.length && view.state.selection.main.empty) {
+          eventTarget.dispatchEvent(new Event("navigatenext"));
+          return true;
+        }
+        return false;
+      },
+    },
   ] as KeyBinding[];

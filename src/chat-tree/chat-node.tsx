@@ -29,14 +29,17 @@ const COLLAPSED_HEIGHT = 72;
 export interface ChatNodeProps {
   node: ChatNode;
   onAbort: (id: string) => void;
+  onAbortAll: () => void;
   onCodeBlockChange: (id: string, current: string, index: number) => void;
   onDelete: (id: string) => void;
   onDeleteBelow: (id: string) => void;
   onDownloadAttachment: (id: string, attachmentId: string) => void;
   onKeydown: (id: string, e: React.KeyboardEvent<HTMLElement>) => void;
   onCopyAttachment: (id: string, attachmentId: string) => void;
+  onNavigatePrevious: (id: string) => void;
+  onNavigateNext: (id: string) => void;
   onOnly: (id: string) => void;
-  onPaste: (id: string, e: React.ClipboardEvent<HTMLTextAreaElement>) => void;
+  onPaste: (id: string, e: ClipboardEvent | React.ClipboardEvent<HTMLTextAreaElement>) => void;
   onPreviewDoubleClick: (id: string, e: React.MouseEvent) => void;
   onRemoveAttachment: (id: string, attachmentId: string) => void;
   onRunNode: (id: string) => void;
@@ -54,12 +57,15 @@ export function ChatNodeInternal(props: ChatNodeProps) {
   const {
     node,
     onAbort,
+    onAbortAll,
     onCodeBlockChange,
     onDelete,
     onDeleteBelow,
     onDownloadAttachment,
     onKeydown,
     onCopyAttachment,
+    onNavigatePrevious,
+    onNavigateNext,
     onOnly,
     onPaste,
     onPreviewDoubleClick,
@@ -140,10 +146,6 @@ export function ChatNodeInternal(props: ChatNodeProps) {
               <button data-managed-focus="message-action" onClick={() => onDeleteBelow(node.id)}>
                 Trim
               </button>
-              <span> · </span>
-              <button data-managed-focus="message-action" onClick={() => onToggleViewFormat(node.id)}>
-                {node.isViewSource ? "Chat" : "Code"}
-              </button>
               <span className="c-far-group">
                 <InputMetadata metadata$={node.metadata$} />
               </span>
@@ -170,10 +172,14 @@ export function ChatNodeInternal(props: ChatNodeProps) {
               <button data-managed-focus="message-action" onClick={() => onUploadFiles(node.id)}>
                 Upload
               </button>
-              <span> · </span>
-              <button data-managed-focus="message-action" onClick={() => onToggleViewFormat(node.id)}>
-                {node.role === "user" ? (node.isViewSource ? "Chat" : "Code") : node.isViewSource ? "View" : "Edit"}
-              </button>
+              {node.role === "assistant" ? (
+                <>
+                  <span> · </span>
+                  <button data-managed-focus="message-action" onClick={() => onToggleViewFormat(node.id)}>
+                    {node.isViewSource ? "View" : "Edit"}
+                  </button>
+                </>
+              ) : null}
               {node.abortController ? (
                 <>
                   <span> · </span>
@@ -201,16 +207,25 @@ export function ChatNodeInternal(props: ChatNodeProps) {
             {node.role === "user" || node.role === "system" ? (
               node.isViewSource ? (
                 <code-editor-element
-                  data-autofocus
+                  className="js-focusable"
+                  id={node.id}
                   data-value={node.content}
                   data-lang="md"
+                  data-placeholder={
+                    node.role === "user"
+                      ? "Ctrl + Enter to send, Esc to cancel, paste images for vision models, Shift + Space to dictate"
+                      : "System message"
+                  }
                   style={
                     {
                       "--max-height": node.isCollapsed ? `${COLLAPSED_HEIGHT}px` : undefined,
                     } as any
                   }
-                  onescape={() => onToggleViewFormat(node.id)}
+                  onescape={onAbortAll}
                   oncontentchange={(e) => onTextChange(node.id, e.detail)}
+                  onpaste={(e) => onPaste(node.id, e)}
+                  onnavigateprevious={() => onNavigatePrevious(node.id)}
+                  onnavigatenext={() => onNavigateNext(node.id)}
                   onrun={(e) => {
                     onTextChange(node.id, e.detail);
                     onRunNode(node.id);
@@ -237,6 +252,9 @@ export function ChatNodeInternal(props: ChatNodeProps) {
               <StreamingEditor
                 node={node}
                 collapsedHeight={COLLAPSED_HEIGHT}
+                onAbort={onAbortAll}
+                onNavigatePrevious={onNavigatePrevious}
+                onNavigateNext={onNavigateNext}
                 onTextChange={onTextChange}
                 onToggleViewFormat={onToggleViewFormat}
               />
