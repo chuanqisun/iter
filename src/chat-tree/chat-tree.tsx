@@ -577,13 +577,6 @@ export function ChatTree() {
     return relevantMessages;
   }, []);
 
-  const handleAbortSensible = useCallback((nodeId: string) => {
-    // selectively abort chat nodes
-    const isTargetNodeAbortable = treeNodes$.value.find((node) => node.id === nodeId)?.abortController;
-    if (!isTargetNodeAbortable) handleAbortAll();
-    else handleAbort(nodeId);
-  }, []);
-
   const handleAbortBelow = useCallback((nodeId: string) => {
     const targetIndex = treeNodes$.value.findIndex((node) => node.id === nodeId);
     if (targetIndex === -1) return;
@@ -706,40 +699,6 @@ export function ChatTree() {
     },
     [chat, getMessageChain],
   );
-
-  const handleKeydown = useCallback(async (nodeId: string, e: React.KeyboardEvent<HTMLElement>) => {
-    const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
-    if (!targetNode) return;
-
-    const combo = getCombo(e as any as KeyboardEvent);
-
-    const activeUserNodeId = getActiveUserNodeId(targetNode);
-
-    if (combo === "escape") {
-      if (!activeUserNodeId) return;
-      e.preventDefault();
-      handleAbortSensible(activeUserNodeId);
-    }
-
-    // Enter to activate edit mode
-    if (targetNode.role === "assistant" && combo === "enter") {
-      // Enter the entire message
-      if ((e.target as HTMLElement).classList.contains("js-focusable")) {
-        setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { isViewSource: true })));
-      }
-
-      // Enter a code block
-      if ((e.target as HTMLElement).closest("artifact-source")) {
-        e.preventDefault(); // Otherwise, the dialog will immediately close
-
-        (e.target as HTMLElement)
-          .closest("artifact-element")
-          ?.querySelector<HTMLButtonElement>(`[data-action="edit"]`)
-          ?.click();
-      }
-      return;
-    }
-  }, []);
 
   const handleNavigatePrevious = useCallback((nodeId: string) => {
     const targetId = getPrevId(nodeId, treeNodes$.value);
@@ -960,7 +919,6 @@ export function ChatTree() {
               onDeleteBelow={handleDeleteBelow}
               onDownloadAttachment={handleDownloadAttachment}
               onCopyAttachment={handleCopyAttachment}
-              onKeydown={handleKeydown}
               onNavigatePrevious={handleNavigatePrevious}
               onNavigateNext={handleNavigateNext}
               onOnly={handleOnly}
