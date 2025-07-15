@@ -7,6 +7,7 @@ import { getCombo } from "./keyboard";
 import { OutputMetadata } from "./output-metadata";
 import { StreamingEditor } from "./streaming-editor";
 import { StreamingPreview } from "./streaming-preview";
+import { INITIAL_USER_NODE } from "./tree-helper";
 import type { ChatNode } from "./tree-store";
 
 const roleIcon = {
@@ -206,6 +207,7 @@ export function ChatNodeInternal(props: ChatNodeProps) {
               <code-editor-element
                 className="js-focusable"
                 id={node.id}
+                data-autofocus={node.id === INITIAL_USER_NODE.id ? "" : null}
                 data-value={node.content}
                 data-lang="md"
                 data-placeholder={
@@ -244,6 +246,8 @@ export function ChatNodeInternal(props: ChatNodeProps) {
                 onAbort={() => onAbort(node.id)}
                 onEdit={() => onToggleViewFormat(node.id)}
                 onDoubleClick={(e) => onPreviewDoubleClick(node.id, e)}
+                onNavigatePrevious={() => onNavigatePrevious(node.id)}
+                onNavigateNext={() => onNavigateNext(node.id)}
                 collapsedHeight={COLLAPSED_HEIGHT}
               />
             )}
@@ -272,23 +276,6 @@ export function ChatNodeInternal(props: ChatNodeProps) {
     </Thread>
   );
 }
-
-const ResizableTextArea = styled.textarea<{ $maxHeight?: number }>`
-  border-radius: 2px;
-  line-height: 18px;
-  field-sizing: content;
-  white-space: pre-wrap;
-  padding: 7px var(--input-padding-inline);
-  border-width: var(--input-border-width);
-  resize: none;
-  ${(props) => props.$maxHeight && `max-height: ${props.$maxHeight}px;`}
-  overflow-y: ${(props) => (props.$maxHeight ? "scroll" : "auto")};
-  scrollbar-gutter: stable;
-
-  &[data-speaking] {
-    color: GrayText;
-  }
-`;
 
 const Thread = styled.div`
   display: grid;

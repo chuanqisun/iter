@@ -16,11 +16,12 @@ code-editor-element {
   overflow: auto;
 
   padding: 0; /* cm line comes with padding */
-  border: 1px solid currentColor;
+  border: 1px solid transparent;
   border-radius: 2px;
 
   &.cm-focused {
-    outline: none;
+    outline: 1px solid currentColor;
+    outline-offset: -1px;
   }
 
   .cm-line {

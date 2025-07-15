@@ -10,6 +10,8 @@ export interface StreamingPreviewProps {
   node: ChatNode;
   onAbort: () => void;
   onEdit: () => void;
+  onNavigatePrevious: () => void;
+  onNavigateNext: () => void;
   onDoubleClick: (e: MouseEvent) => void;
   collapsedHeight?: number;
 }
@@ -65,22 +67,36 @@ export function StreamingPreviewInternal(props: StreamingPreviewProps) {
 
   const handleKeyDown = useCallback<React.KeyboardEventHandler>((e) => {
     const combo = getCombo(e as any as KeyboardEvent);
-    if (combo === "escape") {
-      props.onAbort();
-    } else if (combo === "enter") {
-      // Enter the entire message
-      if ((e.target as HTMLElement).classList.contains("js-focusable")) {
-        props.onEdit();
+    switch (combo) {
+      case "escape": {
+        props.onAbort();
+        return;
       }
+      case "enter": {
+        // Enter the entire message
+        if ((e.target as HTMLElement).classList.contains("js-focusable")) {
+          props.onEdit();
+        }
 
-      // Enter a code block
-      if ((e.target as HTMLElement).closest("artifact-source")) {
-        e.preventDefault(); // Otherwise, the dialog will immediately close
+        // Enter a code block
+        if ((e.target as HTMLElement).closest("artifact-source")) {
+          e.preventDefault(); // Otherwise, the dialog will immediately close
 
-        (e.target as HTMLElement)
-          .closest("artifact-element")
-          ?.querySelector<HTMLButtonElement>(`[data-action="edit"]`)
-          ?.click();
+          (e.target as HTMLElement)
+            .closest("artifact-element")
+            ?.querySelector<HTMLButtonElement>(`[data-action="edit"]`)
+            ?.click();
+        }
+
+        return;
+      }
+      case "arrowup": {
+        props.onNavigatePrevious();
+        return;
+      }
+      case "arrowdown": {
+        props.onNavigateNext();
+        return;
       }
     }
   }, []);
