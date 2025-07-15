@@ -35,7 +35,7 @@ export class CodeEditorElement extends HTMLElement {
     ...chatPanel(),
     blockActionPlugin,
     EditorView.lineWrapping,
-    keymap.of([...chatKeymap(this), ...defaultKeymap, ...historyKeymap, indentWithTab]),
+    keymap.of([...chatKeymap(this, this.change$), ...defaultKeymap, ...historyKeymap, indentWithTab]),
     githubDark,
     dynamicReadonly.of([]),
     dynamicLanguage.of([]),

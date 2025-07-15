@@ -1,11 +1,12 @@
 import { type KeyBinding } from "@codemirror/view";
+import type { Subject } from "rxjs";
 import type { CodeEditorElement } from "./code-editor-element";
 
 export interface CommandEventDetails {
   command: string;
 }
 
-export const chatKeymap = (eventTarget: CodeEditorElement) =>
+export const chatKeymap = (eventTarget: CodeEditorElement, change$: Subject<string>) =>
   [
     {
       key: "Ctrl-Enter",
@@ -34,6 +35,8 @@ export const chatKeymap = (eventTarget: CodeEditorElement) =>
         if (eventTarget.hasAttribute("data-readonly")) {
           eventTarget.dispatchEvent(new Event("escapereadonly"));
         } else {
+          // emit change event on exit
+          change$.next(view.state.doc.toString());
           eventTarget.dispatchEvent(new Event("escape"));
         }
         return true;
