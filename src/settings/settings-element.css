@@ -29,6 +29,11 @@ settings-element {
     gap: 8px;
   }
 
+  .settings-layout {
+    display: grid;
+    gap: 8px;
+  }
+
   .tabbed-forms {
     &:has([value="openai"]:checked) {
       form:not([data-type="openai"]) {
@@ -70,6 +75,6 @@ settings-element {
   .radio-group {
     display: flex;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 8px 16px;
   }
 }
