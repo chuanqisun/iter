@@ -5,6 +5,7 @@
     <label><input name="newType" type="radio" value="aoai" /> Azure OpenAI</label>
     <label><input name="newType" type="radio" value="anthropic" /> Anthropic</label>
     <label><input name="newType" type="radio" value="google-gen-ai" /> Google Gen AI</label>
+    <label><input name="newType" type="radio" value="openrouter" /> OpenRouter</label>
   </div>
 
   <form data-type="openai">
@@ -13,7 +14,7 @@
       <div class="rows">
         <div class="field">
           <label for="newOpenAIKey">API key</label>
-          <input id="newOpenAIKey" name="newKey" type="password" required />
+          <input id="newOpenAIKey" name="newKey" type="password" required data-1p-ignore />
         </div>
 
         <div class="field">
@@ -32,7 +33,7 @@
       <div class="rows">
         <div class="field">
           <label for="newXAIKey">API key</label>
-          <input id="newXAIKey" name="newKey" type="password" required />
+          <input id="newXAIKey" name="newKey" type="password" required data-1p-ignore />
         </div>
 
         <div class="field">
@@ -62,12 +63,41 @@
 
         <div class="field">
           <label for="newAOAIKey">API key</label>
-          <input id="newAOAIKey" name="newKey" type="password" required />
+          <input id="newAOAIKey" name="newKey" type="password" required data-1p-ignore />
         </div>
 
         <div class="field">
           <label for="newDeployments">Deployments (comma separated)</label>
           <input id="newDeployments" name="newDeployments" type="text" placeholder="o4-mini,gpt-4o" required />
+        </div>
+
+        <button type="submit">Submit</button>
+      </div>
+    </fieldset>
+  </form>
+
+  <form data-type="openrouter">
+    <fieldset>
+      <legend>New</legend>
+      <div class="rows">
+        <div class="field">
+          <label for="newOpenRouterKey">API key</label>
+          <input id="newOpenRouterKey" name="newKey" type="password" required data-1p-ignore />
+        </div>
+
+        <div class="field">
+          <label for="newOpenRouterAccountName">Account name (optional)</label>
+          <input id="newOpenRouterAccountName" name="newAccountName" type="text" placeholder="personal" />
+        </div>
+
+        <div class="field">
+          <label for="newModels">Models (comma separated)</label>
+          <input
+            id="newModels"
+            name="newModels"
+            type="text"
+            placeholder="moonshotai/kimi-k2:free,qwen/qwen3-coder:free"
+          />
         </div>
 
         <button type="submit">Submit</button>
@@ -81,7 +111,7 @@
       <div class="rows">
         <div class="field">
           <label for="newAnthropicKey">API key</label>
-          <input id="newAnthropicKey" name="newKey" type="password" required />
+          <input id="newAnthropicKey" name="newKey" type="password" required data-1p-ignore />
         </div>
 
         <div class="field">
@@ -100,7 +130,7 @@
       <div class="rows">
         <div class="field">
           <label for="newGoogleGenAIKey">API key</label>
-          <input id="newGoogleGenAIKey" name="newKey" type="password" required />
+          <input id="newGoogleGenAIKey" name="newKey" type="password" required data-1p-ignore />
         </div>
 
         <div class="field">

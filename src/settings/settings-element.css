@@ -59,6 +59,12 @@ settings-element {
         display: none;
       }
     }
+
+    &:has([value="openrouter"]:checked) {
+      form:not([data-type="openrouter"]) {
+        display: none;
+      }
+    }
   }
 
   .radio-group {

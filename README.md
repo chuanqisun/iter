@@ -55,6 +55,8 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ Grok 3 Fast
   - ✅ Grok 3 Mini
   - ✅ Grok 3 Mini Fast
+- OpenRouter
+  - All chat models
 
 \*See detailed support matrix for [Azure OpenAI](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/responses?tabs=python-secure#responses-api)  
 \*\*xAI models do not support PDF document

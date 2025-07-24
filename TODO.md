@@ -1,5 +1,6 @@
 # TODO
 
+- Edit existing connection
 - Bug: abort error lingers after role switch
 - When user pastes html partial text, convert it to markdown
 - Download code block should map lang to file extension
