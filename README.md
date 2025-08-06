@@ -36,6 +36,7 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ GPT-4o
   - ✅ GPT-4o-mini
 - Anthropic
+  - ✅ Claude Opus 4.1
   - ✅ Claude Opus 4
   - ✅ Claude Sonnet 4
   - ✅ Claude 3.7 Sonnet
