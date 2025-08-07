@@ -107,7 +107,7 @@ function ChatConfig(props: ChatConfigProps) {
           <AutoWidthInput
             type="number"
             min={0}
-            max={32000}
+            max={128000}
             step={100}
             value={props.maxTokens.value}
             onChange={(e) => props.maxTokens.replace((e.target as HTMLInputElement).valueAsNumber)}
