@@ -37,6 +37,9 @@ export interface OpenAIConnection extends BaseConnection {
 export class OpenAIProvider implements BaseProvider {
   static type = "openai";
   static defaultModels = [
+    "gpt-5",
+    "gpt-5-mini",
+    "gpt-5-nano",
     "codex-mini-latest",
     "o4-mini",
     "o3-pro",
@@ -96,12 +99,23 @@ export class OpenAIProvider implements BaseProvider {
     if (!this.isOpenAIConnection(connection)) throw new Error("Invalid connection type");
     const model = connection.model;
 
-    const isTemperatureSupported = model.startsWith("gpt");
-    const isThinkingEffortSupported = model.startsWith("o") || model.startsWith("codex");
+    const isTemperatureSupported = model.startsWith("gpt") && !model.startsWith("gpt-5");
+    const reasoningOptions = [];
+    if (model.startsWith("o") || model.startsWith("codex")) {
+      reasoningOptions.push("low", "medium", "high");
+    } else if (model.startsWith("gpt-5")) {
+      reasoningOptions.push("minimal", "low", "medium", "high");
+    }
+
+    const verbosityOptions = [];
+    if (model.startsWith("gpt-5")) {
+      verbosityOptions.push("low", "medium", "high");
+    }
 
     return {
       temperature: isTemperatureSupported ? { max: 2 } : undefined,
-      reasoningEffort: isThinkingEffortSupported ? ["low", "medium", "high"] : undefined,
+      reasoningEffort: reasoningOptions.length > 0 ? reasoningOptions : undefined,
+      verbosity: verbosityOptions.length > 0 ? verbosityOptions : undefined,
     };
   }
 

@@ -29,6 +29,7 @@ export interface GenericOptions {
   topK?: { min: number; max: number; step: number };
   temperature?: { max: number };
   reasoningEffort?: string[];
+  verbosity?: string[];
   thinkingBudget?: { min?: number; max: number };
 }
 

@@ -11,6 +11,7 @@ export interface ChatConfigProps {
   connectionKey: RouteParameter<string | null>;
   temperature: RouteParameter<number>;
   reasoningEffort: RouteParameter<string>;
+  verbosity: RouteParameter<string>;
   thinkingBudget: RouteParameter<number>;
   maxTokens: RouteParameter<number>;
 }
@@ -66,6 +67,22 @@ function ChatConfig(props: ChatConfigProps) {
               {options.reasoningEffort.map((effort) => (
                 <option key={effort} value={effort}>
                   {effort}
+                </option>
+              ))}
+            </BasicSelect>
+          </label>
+        ) : null}
+
+        {options?.verbosity ? (
+          <label>
+            Verbosity
+            <BasicSelect
+              value={props.verbosity.value ?? "medium"}
+              onChange={(e) => props.verbosity.replace(e.target.value)}
+            >
+              {options.verbosity.map((level) => (
+                <option key={level} value={level}>
+                  {level}
                 </option>
               ))}
             </BasicSelect>

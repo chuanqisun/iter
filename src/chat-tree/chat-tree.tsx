@@ -91,6 +91,12 @@ export function ChatTree() {
     encode: String,
     decode: String,
   });
+  const verbosity = useRouteParameter({
+    name: "verbosity",
+    initial: "medium" as string,
+    encode: String,
+    decode: String,
+  });
   const thinkingBudget = useRouteParameter({
     name: "thinking_budget",
     initial: 0,
@@ -904,6 +910,7 @@ export function ChatTree() {
         temperature={temperature}
         reasoningEffort={reasoningEffort}
         thinkingBudget={thinkingBudget}
+        verbosity={verbosity}
         maxTokens={maxTokens}
       />
       <MessageList ref={treeRootRef}>
