@@ -96,12 +96,23 @@ export class AzureOpenAIProvider implements BaseProvider {
     if (!this.isAzureOpenAIConnection(connection)) throw new Error("Invalid connection type");
     const model = connection.deployment;
 
-    const isTemperatureSupported = model.startsWith("gpt");
-    const isThinkingEffortSupported = model.startsWith("o") || model.startsWith("codex");
+    const isTemperatureSupported = model.startsWith("gpt") && !model.startsWith("gpt-5");
+    const reasoningOptions = [];
+    if (model.startsWith("o") || model.startsWith("codex")) {
+      reasoningOptions.push("low", "medium", "high");
+    } else if (model.startsWith("gpt-5")) {
+      reasoningOptions.push("minimal", "low", "medium", "high");
+    }
+
+    const verbosityOptions = [];
+    if (model.startsWith("gpt-5")) {
+      verbosityOptions.push("low", "medium", "high");
+    }
 
     return {
       temperature: isTemperatureSupported ? { max: 2 } : undefined,
-      reasoningEffort: isThinkingEffortSupported ? ["low", "medium", "high"] : undefined,
+      reasoningEffort: reasoningOptions.length > 0 ? reasoningOptions : undefined,
+      verbosity: verbosityOptions.length > 0 ? verbosityOptions : undefined,
     };
   }
 
@@ -124,21 +135,21 @@ export class AzureOpenAIProvider implements BaseProvider {
       const isSystemMessageSupported = !connection.deployment.startsWith("o1-mini");
 
       const start = performance.now();
-      const stream = client.responses.stream(
-        {
-          input: that.getOpenAIMessages(messages, { isSystemMessageSupported }),
-          model: connection.deployment,
-          temperature: options.temperature !== undefined ? config?.temperature : undefined,
-          ...(options.reasoningEffort
-            ? { reasoning: { effort: (config.reasoningEffort ?? "medium") as ReasoningEffort } }
-            : {}),
-          max_output_tokens: config?.maxTokens,
-          top_p: config?.topP,
+      const stream = client.responses.stream({
+        input: that.getOpenAIMessages(messages, { isSystemMessageSupported }),
+        model: connection.deployment,
+        temperature: options.temperature !== undefined ? config?.temperature : undefined,
+        ...(options.reasoningEffort
+          ? { reasoning: { effort: (config.reasoningEffort ?? "medium") as ReasoningEffort } }
+          : {}),
+        // @ts-ignore see: https://github.com/openai/openai-node/issues/1606
+        text: {
+          ...(options.verbosity ? { verbosity: config?.verbosity as "low" | "medium" | "high" } : {}),
         },
-        {
-          signal: abortSignal,
-        },
-      );
+        max_output_tokens: config?.maxTokens,
+        top_p: config?.topP,
+        user: "iter", // HACK: this seems to significantly improve cache hit rate
+      });
 
       for await (const message of stream) {
         if (message.type === "response.output_text.delta" && message.delta) {
