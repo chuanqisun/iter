@@ -117,6 +117,7 @@ export function ChatTree() {
         maxTokens: maxTokens.value,
         reasoningEffort: reasoningEffort.value,
         thinkingBudget: thinkingBudget.value,
+        verbosity: verbosity.value,
         messages,
         abortSignal,
         onMetadata,
@@ -128,6 +129,7 @@ export function ChatTree() {
       temperature.value,
       maxTokens.value,
       reasoningEffort.value,
+      verbosity.value,
       thinkingBudget.value,
     ],
   );

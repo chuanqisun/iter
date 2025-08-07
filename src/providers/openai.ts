@@ -143,6 +143,10 @@ export class OpenAIProvider implements BaseProvider {
           ...(options.reasoningEffort
             ? { reasoning: { effort: (config.reasoningEffort ?? "medium") as ReasoningEffort } }
             : {}),
+          // @ts-ignore see: https://github.com/openai/openai-node/issues/1606
+          text: {
+            ...(options.verbosity ? { verbosity: config?.verbosity as "low" | "medium" | "high" } : {}),
+          },
           max_output_tokens: config?.maxTokens,
           top_p: config?.topP,
           user: "iter", // HACK: this seems to significantly improve cache hit rate

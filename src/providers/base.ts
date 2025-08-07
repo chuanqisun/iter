@@ -51,6 +51,7 @@ export interface GenericChatParams {
   abortSignal?: AbortSignal;
   temperature?: number;
   maxTokens?: number;
+  verbosity?: string;
   topP?: number;
   topK?: number;
   reasoningEffort?: string;
