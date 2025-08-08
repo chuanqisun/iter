@@ -9,7 +9,30 @@ import { unified } from "unified";
 import { u } from "unist-builder";
 import { SKIP, visit } from "unist-util-visit";
 
+const BLOCK_TAGS = new Set(["div", "p", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote"]);
+const LIST_TAGS = new Set(["li", "ul", "ol"]);
+const REMOVABLE_WHEN_EMPTY = new Set([
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "p",
+  "div",
+  "span",
+  "strong",
+  "em",
+  "b",
+  "i",
+  "blockquote",
+]);
+
+const SPACES_PATTERN = /&nbsp;|[\u00A0\u2009\u200A\u2007\u2002\u2003\u2004\u2005\u2006\u2008\u2000\u2001]/g;
+
 export async function htmlToMarkdown(html: string): Promise<string> {
+  const preprocessedHtml = preprocessHtml(html);
+
   const file = await unified()
     .use(rehypeParse, { fragment: true })
     .use(rehypePrepare)
@@ -21,89 +44,72 @@ export async function htmlToMarkdown(html: string): Promise<string> {
       bullet: "-",
       fences: true,
       tightDefinitions: true,
+      emphasis: "_",
       listItemIndent: "one",
     })
-    .process(html);
+    .process(preprocessedHtml);
 
   return cleanup(String(file));
 }
 
-const BLOCK_TAGS = new Set(["div", "p", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote"]);
-const LIST_TAGS = new Set(["li", "ul", "ol"]);
+function preprocessHtml(html: string): string {
+  const normalizedHtml = html.replace(SPACES_PATTERN, " ");
 
-function isElement(node: any): node is { type: "element"; tagName: string; children?: any[] } {
-  return node && node.type === "element";
-}
+  return normalizedHtml.replace(/<a([^>]*)>(.*?)<\/a>/gs, (match, attributes, content) => {
+    const contentWithExtractedSpaces = content.replace(/<[^>]*>(\s+)<\/[^>]*>/g, "$1");
+    const leadingSpaces = contentWithExtractedSpaces.match(/^(\s+)/);
+    const trailingSpaces = contentWithExtractedSpaces.match(/(\s+)$/);
+    const trimmedContent = contentWithExtractedSpaces.replace(/^\s+|\s+$/g, "");
 
-function unwrapChildren(children: any[], shouldUnwrap: (child: any) => boolean): any[] {
-  return children.flatMap((child) => {
-    if (isElement(child) && shouldUnwrap(child)) {
-      return Array.isArray(child.children) ? child.children : [];
-    }
-    return [child];
+    if (!trimmedContent) return match;
+
+    const leadingSpace = leadingSpaces ? " " : "";
+    const trailingSpace = trailingSpaces ? " " : "";
+    return `${leadingSpace}<a${attributes}>${trimmedContent}</a>${trailingSpace}`;
   });
-}
-
-function compressTextChildrenWhitespace(children: any[]): void {
-  for (const ch of children) {
-    if (ch?.type === "text" && typeof ch.value === "string") {
-      ch.value = ch.value.replace(/\s+/g, " ").trim();
-    }
-  }
 }
 
 function rehypePrepare() {
   return (tree: any) => {
-    // Replace non-breaking spaces in text nodes
-    visit(tree, "text", (node: Text) => {
-      if (typeof node.value === "string") {
-        node.value = node.value.replace(/\u00A0|&nbsp;/g, " ");
-      }
-    });
-
     visit(tree, "element", (node: Element, index: number | undefined, parent: Parent) => {
       if (!parent || typeof index !== "number") {
-        // For operations below we only act when parent/index are available.
-        // Still traverse into children for further matches.
         if (node.tagName === "li" && Array.isArray(node.children)) {
           node.children = unwrapChildren(node.children, (c) => BLOCK_TAGS.has(c.tagName));
         }
-        if (node.tagName === "a" && Array.isArray(node.children)) {
-          node.children = unwrapChildren(node.children, (c) => BLOCK_TAGS.has(c.tagName) || LIST_TAGS.has(c.tagName));
-          const text = (hastToString as any)(node).replace(/\s+/g, " ").trim();
-          node.children = text ? [{ type: "text", value: text }] : [];
-        }
-        if ((node.tagName === "td" || node.tagName === "th") && Array.isArray(node.children)) {
+        if (isTableCell(node) && Array.isArray(node.children)) {
           node.children = unwrapChildren(node.children, (c) => BLOCK_TAGS.has(c.tagName));
-          compressTextChildrenWhitespace(node.children);
+          compressTextWhitespace(node.children);
         }
         return;
       }
 
-      // Remove <img> and <svg>
       if (node.tagName === "img" || node.tagName === "svg") {
         parent.children.splice(index, 1);
         return [SKIP, index];
       }
 
-      // Inline block elements inside <li> to compress lists
+      if (node.tagName === "a" && Array.isArray(node.children)) {
+        return processLinkElement(node, index, parent);
+      }
+
       if (node.tagName === "li" && Array.isArray(node.children)) {
         node.children = unwrapChildren(node.children, (c) => BLOCK_TAGS.has(c.tagName));
+        if (shouldRemoveEmptyElement(node)) {
+          parent.children.splice(index, 1);
+          return [SKIP, index];
+        }
         return;
       }
 
-      // Inline block or list elements inside <a> and compress link text whitespace
-      if (node.tagName === "a" && Array.isArray(node.children)) {
-        node.children = unwrapChildren(node.children, (c) => BLOCK_TAGS.has(c.tagName) || LIST_TAGS.has(c.tagName));
-        const text = (hastToString as any)(node).replace(/\s+/g, " ").trim();
-        node.children = text ? [{ type: "text", value: text }] : [];
-        return;
-      }
-
-      // Tidy table cell content: unwrap blocks and compress whitespace
-      if ((node.tagName === "td" || node.tagName === "th") && Array.isArray(node.children)) {
+      if (isTableCell(node) && Array.isArray(node.children)) {
         node.children = unwrapChildren(node.children, (c) => BLOCK_TAGS.has(c.tagName));
-        compressTextChildrenWhitespace(node.children);
+        compressTextWhitespace(node.children);
+        return;
+      }
+
+      if (shouldRemoveEmptyElement(node)) {
+        parent.children.splice(index, 1);
+        return [SKIP, index];
       }
     });
   };
@@ -112,24 +118,13 @@ function rehypePrepare() {
 function remarkTableCellCleanup() {
   return (tree: any) => {
     visit(tree, "tableCell", (cell: TableCell) => {
-      const parts: string[] = [];
-      visit(cell, "text", (n: Text) => {
-        parts.push(n.value || "");
-      });
-      if (parts.length > 0) {
-        const combined = parts.join(" ").replace(/\s+/g, " ").trim().replace(/\|/g, "\\|");
-        cell.children = combined ? [{ type: "text", value: combined }] : [];
+      const textContent = extractTextContent(cell);
+      if (textContent) {
+        const cleaned = textContent.replace(/\s+/g, " ").trim().replace(/\|/g, "\\|");
+        cell.children = cleaned ? [{ type: "text", value: cleaned }] : [];
       }
     });
   };
-}
-
-function getLinkText(node: Link): string {
-  const parts: string[] = [];
-  visit(node, "text", (n: Text) => {
-    parts.push(n.value || "");
-  });
-  return parts.join("").trim();
 }
 
 function remarkInlineLinksToFootnotes() {
@@ -137,21 +132,19 @@ function remarkInlineLinksToFootnotes() {
     const urlToId = new Map<string, string>();
     let nextId = 1;
 
-    // Collect existing definitions to avoid id collisions
     visit(tree, "definition", (node: Definition) => {
       const n = parseInt(node.identifier, 10);
       if (!Number.isNaN(n)) nextId = Math.max(nextId, n + 1);
       if (node.url && !urlToId.has(node.url)) urlToId.set(node.url, node.identifier);
     });
+
     visit(tree, "link", (node: Link, index: number | undefined, parent: Parent) => {
       if (!parent || typeof index !== "number") return;
       const url = node.url || "";
       if (!url) return;
 
-      // Check if link has meaningful text content
-      const linkText = getLinkText(node);
+      const linkText = extractTextContent(node);
       if (!linkText) {
-        // Remove empty links entirely
         parent.children.splice(index, 1);
         return [SKIP, index];
       }
@@ -175,7 +168,6 @@ function remarkInlineLinksToFootnotes() {
       if (!defs.has(id)) defs.set(id, { url, title: node.title || null });
     });
 
-    // Append definitions at end
     const defs: Map<string, { url: string; title: string | null }> = (tree.data && tree.data.__defs) || new Map();
     if (defs.size > 0) {
       const defNodes = Array.from(defs.entries()).map(([identifier, { url, title }]) =>
@@ -188,5 +180,70 @@ function remarkInlineLinksToFootnotes() {
 }
 
 function cleanup(s: string): string {
-  return s.replace(/\n{3,}/g, "\n\n").trim();
+  return s
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/&#x([0-9a-fA-F]+);/g, (_match, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_match, decimal) => String.fromCharCode(parseInt(decimal, 10)))
+    .trim();
+}
+
+function isElement(node: any): node is Element {
+  return node && node.type === "element";
+}
+
+function isTableCell(node: Element): boolean {
+  return node.tagName === "td" || node.tagName === "th";
+}
+
+function unwrapChildren(children: any[], shouldUnwrap: (child: any) => boolean): any[] {
+  return children.flatMap((child) => {
+    if (isElement(child) && shouldUnwrap(child)) {
+      return Array.isArray(child.children) ? child.children : [];
+    }
+    return [child];
+  });
+}
+
+function compressTextWhitespace(children: any[]): void {
+  for (const ch of children) {
+    if (ch?.type === "text" && typeof ch.value === "string") {
+      ch.value = ch.value.replace(/\s+/g, " ").trim();
+    }
+  }
+}
+
+function processLinkElement(node: Element, index: number, parent: Parent): [typeof SKIP, number] | void {
+  node.children = unwrapChildren(node.children!, (c) => BLOCK_TAGS.has(c.tagName) || LIST_TAGS.has(c.tagName));
+  const text = (hastToString as any)(node).replace(/\s+/g, " ").trim();
+  const href = node.properties?.href;
+
+  if (!href || (typeof href === "string" && !href.trim())) {
+    if (text) {
+      parent.children.splice(index, 1, { type: "text", value: text });
+    } else {
+      parent.children.splice(index, 1);
+    }
+    return [SKIP, index];
+  }
+
+  if (text) {
+    node.children = [{ type: "text", value: text }];
+  } else {
+    parent.children.splice(index, 1);
+    return [SKIP, index];
+  }
+}
+
+function shouldRemoveEmptyElement(node: Element): boolean {
+  if (!REMOVABLE_WHEN_EMPTY.has(node.tagName)) return false;
+  const text = (hastToString as any)(node).replace(/\s+/g, " ");
+  return !text;
+}
+
+function extractTextContent(node: any): string {
+  const parts: string[] = [];
+  visit(node, "text", (n: Text) => {
+    parts.push(n.value || "");
+  });
+  return parts.join("").trim();
 }
