@@ -225,7 +225,7 @@ export function respondListFiles(getFiles: () => Promise<File[]>, event: Message
 }
 
 export function respondWriteFile(
-  writeFile: (name: string, writableContent: string | Uint8Array) => void,
+  writeFile: (name: string, writableContent: string | Uint8Array<ArrayBuffer>) => void,
   event: MessageEvent,
 ) {
   if (event.data.type === "writeFileRequest") {
