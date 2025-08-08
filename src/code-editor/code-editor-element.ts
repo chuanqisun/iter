@@ -9,6 +9,7 @@ import { distinctUntilChanged, Subject, tap } from "rxjs";
 import { blockActionPlugin } from "./block-action-widget";
 import { chatKeymap } from "./chat-keymap";
 import { chatPanel } from "./chat-panel";
+import { Clipboard } from "./clipboard";
 import "./code-editor-element.css";
 import { syncDispatch } from "./sync";
 
@@ -36,6 +37,7 @@ export class CodeEditorElement extends HTMLElement {
     syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
     ...chatPanel(),
     blockActionPlugin,
+    Clipboard(),
     EditorView.lineWrapping,
     // base key bindings without tab indent; tab indent is added dynamically
     keymap.of([...chatKeymap(this, this.change$), ...defaultKeymap, ...historyKeymap]),
@@ -120,7 +122,7 @@ export class CodeEditorElement extends HTMLElement {
     const reconfig = dynamicTabIndent.reconfigure(ext);
     this.editorView?.dispatch({ effects: reconfig });
   }
-  
+
   /** Dynamically set the editor placeholder text via data-placeholder */
   updatePlaceholder(text: string | null) {
     // if no text, clear placeholder
