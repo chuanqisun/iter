@@ -125,7 +125,6 @@ export class AzureOpenAIProvider implements BaseProvider {
         ...(options.reasoningEffort
           ? { reasoning: { effort: (config.reasoningEffort ?? "medium") as ReasoningEffort } }
           : {}),
-        // @ts-ignore see: https://github.com/openai/openai-node/issues/1606
         text: {
           ...(options.verbosity ? { verbosity: config?.verbosity as "low" | "medium" | "high" } : {}),
         },

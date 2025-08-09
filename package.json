@@ -34,7 +34,7 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.58.0",
+    "@anthropic-ai/sdk": "^0.59.0",
     "@codemirror/commands": "^6.8.1",
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-markdown": "^6.3.4",
@@ -50,7 +50,7 @@
     "marked": "^16.1.2",
     "marked-shiki": "^1.2.1",
     "mermaid": "^11.9.0",
-    "openai": "^5.12.1",
+    "openai": "^5.12.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "rehype-parse": "^9.0.1",
