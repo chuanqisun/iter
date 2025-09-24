@@ -28,12 +28,12 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ GPT-5
   - ✅ GPT-5-mini
   - ✅ GPT-5-nano
+  - ✅ GPT-5-codex
   - ✅ codex-mini
   - ✅ o4-mini
   - ✅ o3-pro
   - ✅ o3
   - ✅ o3-mini
-  - ✅ GPT-4.5-preview
   - ✅ GPT-4.1
   - ✅ GPT-4.1-mini
   - ✅ GPT-4.1-nano
