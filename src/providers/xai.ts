@@ -37,7 +37,7 @@ export interface XAIConnection extends BaseConnection {
 
 export class XAIProvider implements BaseProvider {
   static type = "xai";
-  static defaultModels = ["grok-4", "grok-3-fast", "grok-3", "grok-3-mini-fast", "grok-3-mini"];
+  static defaultModels = ["grok-code-fast", "grok-4-fast", "grok-4-fast-non-reasoning", "grok-4"];
 
   parseNewCredentialForm(formData: FormData): XAICredential[] {
     const accountName = formData.get("newAccountName") as string;
@@ -85,7 +85,7 @@ export class XAIProvider implements BaseProvider {
     if (!this.isXaiConnection(connection)) throw new Error("Invalid connection type");
     const model = connection.model;
 
-    const isThinkingEffortSupported = model.startsWith("grok-3-mini");
+    const isThinkingEffortSupported = ["grok-4-fast", "grok-code-fast"].includes(model);
 
     return {
       temperature: { max: 2 },
@@ -107,8 +107,6 @@ export class XAIProvider implements BaseProvider {
 
       const options = that.getOptions(connection);
 
-      const isSystemMessageSupported = !connection.model.startsWith("o1-mini");
-
       const start = performance.now();
       const stream = await client.chat.completions.create(
         {
@@ -116,7 +114,7 @@ export class XAIProvider implements BaseProvider {
           stream_options: {
             include_usage: true,
           },
-          messages: that.getXAIMessages(messages, { isSystemMessageSupported }),
+          messages: that.getXAIMessages(messages, { isSystemMessageSupported: true }),
           model: connection.model,
           temperature: options.temperature !== undefined ? config?.temperature : undefined,
           ...(options.reasoningEffort

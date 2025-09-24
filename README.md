@@ -55,11 +55,10 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ Gemini 2.0 Flash Lite
   - ✅ Gemini 2.0 Flash Thinking
 - xAI\*\*
+  - ✅ Grok Code Fast 1
+  - ✅ Grok 4 Fast
+  - ✅ Grok 4 Fast Non-reasoning
   - ✅ Grok 4
-  - ✅ Grok 3
-  - ✅ Grok 3 Fast
-  - ✅ Grok 3 Mini
-  - ✅ Grok 3 Mini Fast
 - OpenRouter
   - All chat models
 
