@@ -30,9 +30,9 @@ export class GoogleGenAIProvider implements BaseProvider {
   static type = "google-gen-ai";
   static defaultModels = [
     "gemini-2.5-pro",
+    "gemini-flash-latest",
+    "gemini-flash-lite-latest",
     "gemini-2.5-flash",
-    "gemini-2.5-flash-preview-05-20",
-    "gemini-2.5-flash-lite-preview-06-17",
     "gemini-2.0-flash",
     "gemini-2.0-flash-lite",
     "gemini-2.0-flash-thinking-exp-01-21",
@@ -92,6 +92,7 @@ export class GoogleGenAIProvider implements BaseProvider {
 
   private getThinkingBugetConfig(model: string): undefined | { min: number; max: number } {
     if (model.startsWith("gemini-2.5-pro")) return { min: -100, max: 32768 };
+    if (model.endsWith("-latest")) return { min: -100, max: 24576 };
     if (model.startsWith("gemini-2.5-flash")) return { min: -100, max: 24576 };
     if (model.startsWith("gemini-2.5-flash-lite")) return { min: -100, max: 24576 };
     if (model.includes("thinking")) return { min: 0, max: 24576 };
