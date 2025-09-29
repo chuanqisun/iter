@@ -37,6 +37,7 @@ export interface AnthropicConnection extends BaseConnection {
 export class AnthropicProvider implements BaseProvider {
   static type = "anthropic";
   static defaultModels = [
+    "claude-sonnet-4-5",
     "claude-opus-4-1",
     "claude-opus-4-0",
     "claude-sonnet-4-0",
