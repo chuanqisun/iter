@@ -217,9 +217,9 @@ export async function respondReadFile(
   }
 }
 
-export function respondListFiles(getFiles: () => Promise<File[]>, event: MessageEvent) {
+export async function respondListFiles(getFiles: () => Promise<File[]>, event: MessageEvent) {
   if (event.data.type === "listFilesRequest") {
-    const files = getFiles();
+    const files = await getFiles();
     event.source?.postMessage({ type: "listFilesResponse", files });
   }
 }
