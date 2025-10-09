@@ -131,7 +131,7 @@ export class OpenAIProvider implements BaseProvider {
           },
           max_output_tokens: config?.maxTokens,
           top_p: config?.topP,
-          user: "iter", // HACK: this seems to significantly improve cache hit rate
+          prompt_cache_key: "iter",
         },
         {
           signal: abortSignal,
