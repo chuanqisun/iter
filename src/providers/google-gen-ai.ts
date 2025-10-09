@@ -35,7 +35,6 @@ export class GoogleGenAIProvider implements BaseProvider {
     "gemini-2.5-flash",
     "gemini-2.0-flash",
     "gemini-2.0-flash-lite",
-    "gemini-2.0-flash-thinking-exp-01-21",
   ];
 
   parseNewCredentialForm(formData: FormData): GoogleGenAICredential[] {
@@ -95,7 +94,6 @@ export class GoogleGenAIProvider implements BaseProvider {
     if (model.endsWith("-latest")) return { min: -100, max: 24576 };
     if (model.startsWith("gemini-2.5-flash")) return { min: -100, max: 24576 };
     if (model.startsWith("gemini-2.5-flash-lite")) return { min: -100, max: 24576 };
-    if (model.includes("thinking")) return { min: 0, max: 24576 };
     return undefined;
   }
 
@@ -103,12 +101,10 @@ export class GoogleGenAIProvider implements BaseProvider {
     if (inputBudget === undefined) return undefined;
     if (model.startsWith("gemini-2.5-pro"))
       return inputBudget < 0 ? this.clamp(inputBudget, -1, -1) : this.clamp(inputBudget, 128, 32768);
-    if (model.startsWith("gemini-2.5-flash"))
+    if (model.startsWith("gemini-2.5-flash") || model.endsWith("flash-latest"))
       return inputBudget < 0 ? this.clamp(inputBudget, -1, -1) : this.clamp(inputBudget, 0, 24576);
-    if (model.startsWith("gemini-2.5-flash-lite"))
+    if (model.startsWith("gemini-2.5-flash-lite") || model.endsWith("flash-lite-latest"))
       return inputBudget < 0 ? this.clamp(inputBudget, -1, -1) : this.clamp(inputBudget, 512, 24576);
-    if (model.includes("thinking"))
-      return inputBudget < 0 ? this.clamp(inputBudget, -1, -1) : this.clamp(inputBudget, 0, 24576);
     return undefined;
   }
 
