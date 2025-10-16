@@ -41,12 +41,8 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ GPT-4o-mini
 - Anthropic
   - ✅ Claude Opus 4.1
-  - ✅ Claude Opus 4
   - ✅ Claude Sonnet 4.5
-  - ✅ Claude Sonnet 4
-  - ✅ Claude 3.7 Sonnet
-  - ✅ Claude 3.5 Sonnet
-  - ✅ Claude 3.5 Haiku
+  - ✅ Claude Haiku 4.5
 - Google Generative AI
   - ✅ Gemini 2.5 Pro
   - ✅ Gemini 2.5 Flash
