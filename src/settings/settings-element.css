@@ -70,6 +70,12 @@ settings-element {
         display: none;
       }
     }
+
+    &:has([value="inception"]:checked) {
+      form:not([data-type="inception"]) {
+        display: none;
+      }
+    }
   }
 
   .radio-group {

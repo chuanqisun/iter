@@ -1,6 +1,7 @@
 import { AnthropicProvider } from "./anthropic";
 import { AzureOpenAIProvider } from "./aoai";
 import { GoogleGenAIProvider } from "./google-gen-ai";
+import { InceptionProvider } from "./inception";
 import { OpenAIProvider } from "./openai";
 import { OpenRouterProvider } from "./openrouter";
 import { XAIProvider } from "./xai";
@@ -19,6 +20,8 @@ export function createProvider(type: string) {
       return new XAIProvider();
     case OpenRouterProvider.type:
       return new OpenRouterProvider();
+    case InceptionProvider.type:
+      return new InceptionProvider();
     default:
       throw new Error(`Unknown provider type: ${type}`);
   }

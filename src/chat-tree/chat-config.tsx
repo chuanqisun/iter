@@ -49,7 +49,7 @@ function ChatConfig(props: ChatConfigProps) {
             Temperature
             <AutoWidthInput
               type="number"
-              min={0}
+              min={options.temperature.min ?? 0}
               max={options.temperature.max}
               value={props.temperature.value}
               step={0.05}
@@ -106,8 +106,8 @@ function ChatConfig(props: ChatConfigProps) {
           Max
           <AutoWidthInput
             type="number"
-            min={0}
-            max={128000}
+            min={options?.maxTokens?.min ?? 0}
+            max={options?.maxTokens?.max ?? 128000}
             step={100}
             value={props.maxTokens.value}
             onChange={(e) => props.maxTokens.replace((e.target as HTMLInputElement).valueAsNumber)}

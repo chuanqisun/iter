@@ -6,6 +6,7 @@
     <label><input name="newType" type="radio" value="anthropic" /> Anthropic</label>
     <label><input name="newType" type="radio" value="google-gen-ai" /> Google Gen AI</label>
     <label><input name="newType" type="radio" value="openrouter" /> OpenRouter</label>
+    <label><input name="newType" type="radio" value="inception" /> Inception</label>
   </div>
 
   <form data-type="openai">
@@ -136,6 +137,25 @@
         <div class="field">
           <label for="newGoogleGenAIAccountName">Account name (optional)</label>
           <input id="newGoogleGenAIAccountName" name="newAccountName" type="text" placeholder="personal" />
+        </div>
+
+        <button type="submit">Submit</button>
+      </div>
+    </fieldset>
+  </form>
+
+  <form data-type="inception">
+    <fieldset>
+      <legend>New</legend>
+      <div class="rows">
+        <div class="field">
+          <label for="newInceptionKey">API key</label>
+          <input id="newInceptionKey" name="newKey" type="password" required data-1p-ignore />
+        </div>
+
+        <div class="field">
+          <label for="newInceptionAccountName">Account name (optional)</label>
+          <input id="newInceptionAccountName" name="newAccountName" type="text" placeholder="personal" />
         </div>
 
         <button type="submit">Submit</button>

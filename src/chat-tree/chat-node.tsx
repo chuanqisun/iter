@@ -319,6 +319,7 @@ const MessageWithActions = styled.div`
 
 const ErrorMessage = styled.span`
   padding-block: 4px;
+  word-break: break-word;
   color: red;
 `;
 
