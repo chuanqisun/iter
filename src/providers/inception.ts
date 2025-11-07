@@ -45,6 +45,9 @@ interface InceptionChatCompletionRequest {
   temperature?: number;
   top_p?: number;
   stream?: boolean;
+  stream_options?: {
+    include_usage?: boolean;
+  };
 }
 
 interface InceptionStreamChunk {
@@ -147,6 +150,9 @@ export class InceptionProvider implements BaseProvider {
         temperature: resolvedTemperature,
         top_p: config?.topP,
         stream: true,
+        stream_options: {
+          include_usage: true,
+        },
       };
 
       const start = performance.now();
@@ -204,6 +210,10 @@ export class InceptionProvider implements BaseProvider {
 
                 if (chunk.usage?.completion_tokens) {
                   totalTokens = chunk.usage.completion_tokens;
+                  config.onMetadata?.({
+                    totalOutputTokens: totalTokens,
+                    durationMs: performance.now() - start,
+                  });
                 }
               } catch (e) {
                 console.warn("Failed to parse SSE chunk:", line, e);
@@ -223,16 +233,15 @@ export class InceptionProvider implements BaseProvider {
             }
             if (chunk.usage?.completion_tokens) {
               totalTokens = chunk.usage.completion_tokens;
+              config?.onMetadata?.({
+                totalOutputTokens: totalTokens,
+                durationMs: performance.now() - start,
+              });
             }
           } catch (e) {
             console.warn("Failed to parse final SSE chunk:", buffer, e);
           }
         }
-
-        config?.onMetadata?.({
-          totalOutputTokens: totalTokens,
-          durationMs: performance.now() - start,
-        });
       } finally {
         reader.releaseLock();
       }
