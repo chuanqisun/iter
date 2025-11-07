@@ -55,7 +55,7 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ Grok 4 Fast
   - ✅ Grok 4 Fast Non-reasoning
   - ✅ Grok 4
-- Inception
+- Inception\*\*\*
   - ✅ Mercury
   - ✅ Mercury Coder
 - OpenRouter
@@ -63,6 +63,7 @@ Recreate the UI of Airbnb with a single screenshot
 
 \*See detailed support matrix for [Azure OpenAI](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/responses?tabs=python-secure#responses-api)  
 \*\*xAI models do not support PDF document
+\*\*\*Inception models are text only
 
 ## Keyboard shortcuts
 
