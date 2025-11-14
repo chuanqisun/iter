@@ -38,20 +38,13 @@ export interface OpenAIConnection extends BaseConnection {
 export class OpenAIProvider implements BaseProvider {
   static type = "openai";
   static defaultModels = [
+    "gpt-5.1",
+    "gpt-5.1-codex",
+    "gpt-5.1-chat-latest",
     "gpt-5",
     "gpt-5-mini",
     "gpt-5-nano",
     "gpt-5-codex",
-    "codex-mini-latest",
-    "o4-mini",
-    "o3-pro",
-    "o3",
-    "o3-mini",
-    "gpt-4.1",
-    "gpt-4.1-mini",
-    "gpt-4.1-nano",
-    "gpt-4o",
-    "gpt-4o-mini",
   ];
 
   parseNewCredentialForm(formData: FormData): OpenAICredential[] {
@@ -115,12 +108,10 @@ export class OpenAIProvider implements BaseProvider {
 
       const options = that.getOptions(connection);
 
-      const isSystemMessageSupported = !connection.model.startsWith("o1-mini");
-
       const start = performance.now();
       const stream = client.responses.stream(
         {
-          input: that.getOpenAIMessages(messages, { isSystemMessageSupported }),
+          input: that.getOpenAIMessages(messages, { isSystemMessageSupported: true }),
           model: connection.model,
           temperature: options.temperature !== undefined ? config?.temperature : undefined,
           ...(options.reasoningEffort
