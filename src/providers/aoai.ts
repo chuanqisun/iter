@@ -115,11 +115,9 @@ export class AzureOpenAIProvider implements BaseProvider {
 
       const options = that.getOptions(connection);
 
-      const isSystemMessageSupported = !connection.deployment.startsWith("o1-mini");
-
       const start = performance.now();
       const stream = client.responses.stream({
-        input: that.getOpenAIMessages(messages, { isSystemMessageSupported }),
+        input: that.getOpenAIMessages(messages, { isSystemMessageSupported: true }),
         model: connection.deployment,
         temperature: options.temperature !== undefined ? config?.temperature : undefined,
         ...(options.reasoningEffort
