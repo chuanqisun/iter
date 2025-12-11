@@ -5,7 +5,7 @@ export function getOpenAIOptions(model: string): GenericOptions {
   const reasoningOptions = [];
   if (model.includes("codex")) {
     reasoningOptions.push("low", "medium", "high");
-  } else if (model.startsWith("gpt-5.1")) {
+  } else if (model.startsWith("gpt-5.1") || model.startsWith("gpt-5.2")) {
     reasoningOptions.push("none", "low", "medium", "high");
   } else if (model.startsWith("gpt-5")) {
     reasoningOptions.push("minimal", "low", "medium", "high");
