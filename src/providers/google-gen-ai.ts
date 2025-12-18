@@ -30,6 +30,7 @@ export class GoogleGenAIProvider implements BaseProvider {
   static type = "google-gen-ai";
   static defaultModels = [
     "gemini-3-pro-preview",
+    "gemini-3-flash-preview",
     "gemini-2.5-pro",
     "gemini-flash-latest",
     "gemini-flash-lite-latest",
@@ -89,7 +90,8 @@ export class GoogleGenAIProvider implements BaseProvider {
   }
 
   private getThinkingBugetConfig(model: string): undefined | { min: number; max: number } {
-    if (model.startsWith("gemini-3-pro") || model.startsWith("gemini-2.5-pro")) return { min: -100, max: 32768 };
+    if (model.startsWith("gemini-3-pro") || model.startsWith("gemini-3-flash") || model.startsWith("gemini-2.5-pro"))
+      return { min: -100, max: 32768 };
     if (model.endsWith("-latest")) return { min: -100, max: 24576 };
     if (model.startsWith("gemini-2.5-flash")) return { min: -100, max: 24576 };
     if (model.startsWith("gemini-2.5-flash-lite")) return { min: -100, max: 24576 };
@@ -98,7 +100,7 @@ export class GoogleGenAIProvider implements BaseProvider {
 
   private getFinalBudget(model: string, inputBudget?: number): number | undefined {
     if (inputBudget === undefined) return undefined;
-    if (model.startsWith("gemini-3-pro") || model.startsWith("gemini-2.5-pro"))
+    if (model.startsWith("gemini-3-pro") || model.startsWith("gemini-2.5-pro") || model.startsWith("gemini-3-flash"))
       return inputBudget < 0 ? this.clamp(inputBudget, -1, -1) : this.clamp(inputBudget, 128, 32768);
     if (model.startsWith("gemini-2.5-flash") || model.endsWith("flash-latest"))
       return inputBudget < 0 ? this.clamp(inputBudget, -1, -1) : this.clamp(inputBudget, 0, 24576);
