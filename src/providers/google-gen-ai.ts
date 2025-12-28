@@ -121,9 +121,11 @@ export class GoogleGenAIProvider implements BaseProvider {
   }
 
   private getFinalThinkingLevel(model: string, inputLevel?: string) {
-    if (inputLevel === undefined) return undefined;
     if (model.startsWith("gemini-3-pro") || model.startsWith("gemini-3-flash"))
-      return GoogleGenAIProvider.thinkingLevelMap[inputLevel as keyof typeof GoogleGenAIProvider.thinkingLevelMap];
+      return (
+        GoogleGenAIProvider.thinkingLevelMap[inputLevel as keyof typeof GoogleGenAIProvider.thinkingLevelMap] ??
+        this.getReasoningEffortConfig(model)?.at(0)
+      );
 
     return undefined;
   }

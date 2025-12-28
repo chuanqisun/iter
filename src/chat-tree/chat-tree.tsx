@@ -87,13 +87,13 @@ export function ChatTree() {
   });
   const reasoningEffort = useRouteParameter({
     name: "reasoning_effort",
-    initial: "medium" as string,
+    initial: undefined as string | undefined,
     encode: String,
     decode: String,
   });
   const verbosity = useRouteParameter({
     name: "verbosity",
-    initial: "medium" as string,
+    initial: undefined as string | undefined,
     encode: String,
     decode: String,
   });

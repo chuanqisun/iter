@@ -121,10 +121,12 @@ export class AzureOpenAIProvider implements BaseProvider {
         model: connection.deployment,
         temperature: options.temperature !== undefined ? config?.temperature : undefined,
         ...(options.reasoningEffort
-          ? { reasoning: { effort: (config.reasoningEffort ?? "medium") as ReasoningEffort } }
+          ? { reasoning: { effort: (config.reasoningEffort ?? options.reasoningEffort.at(0)) as ReasoningEffort } }
           : {}),
         text: {
-          ...(options.verbosity ? { verbosity: config?.verbosity as "low" | "medium" | "high" } : {}),
+          ...(options.verbosity
+            ? { verbosity: (config?.verbosity as "low" | "medium" | "high") ?? options.verbosity.at(0) }
+            : {}),
         },
         max_output_tokens: config?.maxTokens,
         top_p: config?.topP,
