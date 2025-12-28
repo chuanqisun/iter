@@ -1,4 +1,4 @@
-import type { Content, Part } from "@google/genai";
+import { ThinkingLevel, type Content, type Part } from "@google/genai";
 import { dataUrlToText, tryDecodeDataUrlAsText } from "../storage/codec";
 import type {
   BaseConnection,
@@ -32,10 +32,16 @@ export class GoogleGenAIProvider implements BaseProvider {
     "gemini-3-pro-preview",
     "gemini-3-flash-preview",
     "gemini-2.5-pro",
-    "gemini-flash-latest",
-    "gemini-flash-lite-latest",
     "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
   ];
+
+  static thinkingLevelMap: Record<string, ThinkingLevel> = {
+    minimal: ThinkingLevel.MINIMAL,
+    low: ThinkingLevel.LOW,
+    medium: ThinkingLevel.MEDIUM,
+    high: ThinkingLevel.HIGH,
+  };
 
   parseNewCredentialForm(formData: FormData): GoogleGenAICredential[] {
     const accountName = formData.get("newAccountName") as string;
@@ -85,27 +91,40 @@ export class GoogleGenAIProvider implements BaseProvider {
     // ref: https://ai.google.dev/gemini-api/docs/thinking
     return {
       thinkingBudget: this.getThinkingBugetConfig(connection.model),
+      reasoningEffort: this.getReasoningEffortConfig(connection.model),
       temperature: { max: 2 },
     };
   }
 
   private getThinkingBugetConfig(model: string): undefined | { min: number; max: number } {
-    if (model.startsWith("gemini-3-pro") || model.startsWith("gemini-3-flash") || model.startsWith("gemini-2.5-pro"))
-      return { min: -100, max: 32768 };
-    if (model.endsWith("-latest")) return { min: -100, max: 24576 };
+    if (model.startsWith("gemini-2.5-pro")) return { min: -100, max: 32768 };
     if (model.startsWith("gemini-2.5-flash")) return { min: -100, max: 24576 };
     if (model.startsWith("gemini-2.5-flash-lite")) return { min: -100, max: 24576 };
     return undefined;
   }
 
+  private getReasoningEffortConfig(model: string): string[] | undefined {
+    if (model.startsWith("gemini-3-pro")) return ["low", "high"];
+    if (model.startsWith("gemini-3-flash")) return ["minimal", "low", "medium", "high"];
+    return undefined;
+  }
+
   private getFinalBudget(model: string, inputBudget?: number): number | undefined {
     if (inputBudget === undefined) return undefined;
-    if (model.startsWith("gemini-3-pro") || model.startsWith("gemini-2.5-pro") || model.startsWith("gemini-3-flash"))
+    if (model.startsWith("gemini-2.5-pro"))
       return inputBudget < 0 ? this.clamp(inputBudget, -1, -1) : this.clamp(inputBudget, 128, 32768);
-    if (model.startsWith("gemini-2.5-flash") || model.endsWith("flash-latest"))
+    if (model.startsWith("gemini-2.5-flash"))
       return inputBudget < 0 ? this.clamp(inputBudget, -1, -1) : this.clamp(inputBudget, 0, 24576);
-    if (model.startsWith("gemini-2.5-flash-lite") || model.endsWith("flash-lite-latest"))
+    if (model.startsWith("gemini-2.5-flash-lite"))
       return inputBudget < 0 ? this.clamp(inputBudget, -1, -1) : this.clamp(inputBudget, 512, 24576);
+    return undefined;
+  }
+
+  private getFinalThinkingLevel(model: string, inputLevel?: string) {
+    if (inputLevel === undefined) return undefined;
+    if (model.startsWith("gemini-3-pro") || model.startsWith("gemini-3-flash"))
+      return GoogleGenAIProvider.thinkingLevelMap[inputLevel as keyof typeof GoogleGenAIProvider.thinkingLevelMap];
+
     return undefined;
   }
 
@@ -140,6 +159,7 @@ export class GoogleGenAIProvider implements BaseProvider {
           maxOutputTokens: config?.maxTokens,
           thinkingConfig: {
             thinkingBudget: that.getFinalBudget(connection.model, thinkingBudget),
+            thinkingLevel: that.getFinalThinkingLevel(connection.model, config.reasoningEffort),
           },
         },
       });
