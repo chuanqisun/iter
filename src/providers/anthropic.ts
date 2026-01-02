@@ -154,20 +154,13 @@ export class AnthropicProvider implements BaseProvider {
   }
 
   private extractCitations(message: Message): Citation[] {
-    const citations: Citation[] = [];
-    for (const block of message.content) {
-      if (block.type === "text" && block.citations) {
-        for (const citation of block.citations) {
-          if (citation.type === "web_search_result_location") {
-            citations.push({
-              url: citation.url,
-              title: citation.title ?? undefined,
-            });
-          }
-        }
-      }
-    }
-    return citations;
+    return message.content
+      .flatMap((block) => (block.type === "text" ? (block.citations ?? []) : []))
+      .filter((citation) => citation.type === "web_search_result_location")
+      .map((citation) => ({
+        url: citation.url,
+        title: citation.title ?? undefined,
+      }));
   }
 
   private isAnthropicCredential(credential: BaseCredential): credential is AnthropicCredential {

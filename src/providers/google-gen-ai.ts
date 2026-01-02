@@ -105,18 +105,9 @@ export class GoogleGenAIProvider implements BaseProvider {
   }
 
   private extractCitations(metadata: GroundingMetadata): Citation[] {
-    const citations: Citation[] = [];
-    if (metadata.groundingChunks) {
-      for (const chunk of metadata.groundingChunks) {
-        if (chunk.web?.uri) {
-          citations.push({
-            url: chunk.web.uri,
-            title: chunk.web.title,
-          });
-        }
-      }
-    }
-    return citations;
+    return (metadata.groundingChunks ?? []).flatMap((chunk) =>
+      chunk.web?.uri ? [{ url: chunk.web.uri, title: chunk.web.title }] : [],
+    );
   }
 
   private getReasoningEffortConfig(model: string): string[] | undefined {

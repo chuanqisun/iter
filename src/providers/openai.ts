@@ -159,24 +159,11 @@ export class OpenAIProvider implements BaseProvider {
   }
 
   private extractCitations(response: Response): Citation[] {
-    const citations: Citation[] = [];
-    for (const item of response.output) {
-      if (item.type === "message") {
-        for (const content of item.content) {
-          if (content.type === "output_text" && content.annotations) {
-            for (const annotation of content.annotations) {
-              if (annotation.type === "url_citation") {
-                citations.push({
-                  url: annotation.url,
-                  title: annotation.title,
-                });
-              }
-            }
-          }
-        }
-      }
-    }
-    return citations;
+    return response.output
+      .flatMap((item) => (item.type === "message" ? item.content : []))
+      .flatMap((content) => (content.type === "output_text" ? (content.annotations ?? []) : []))
+      .filter((annotation) => annotation.type === "url_citation")
+      .map((annotation) => ({ url: annotation.url, title: annotation.title }));
   }
 
   private getOpenAIMessages(
