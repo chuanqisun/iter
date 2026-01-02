@@ -1,5 +1,6 @@
 import type {
   EasyInputMessage,
+  Response,
   ResponseInputFile,
   ResponseInputImage,
   ResponseInputItem,
@@ -17,6 +18,7 @@ import type {
   GenericMessage,
   GenericOptions,
 } from "./base";
+import { formatReferences, type Citation } from "./citation";
 import { getOpenAIOptions } from "./shared";
 
 export interface OpenAICredential extends BaseCredential {
@@ -139,7 +141,14 @@ export class OpenAIProvider implements BaseProvider {
         }
       }
 
-      const finalUsage = (await stream.finalResponse()).usage;
+      const finalResponse = await stream.finalResponse();
+      const citations = that.extractCitations(finalResponse);
+      const references = formatReferences(citations);
+      if (references) {
+        yield references;
+      }
+
+      const finalUsage = finalResponse.usage;
       if (finalUsage) {
         config?.onMetadata?.({
           totalOutputTokens: finalUsage.output_tokens,
@@ -147,6 +156,27 @@ export class OpenAIProvider implements BaseProvider {
         });
       }
     };
+  }
+
+  private extractCitations(response: Response): Citation[] {
+    const citations: Citation[] = [];
+    for (const item of response.output) {
+      if (item.type === "message") {
+        for (const content of item.content) {
+          if (content.type === "output_text" && content.annotations) {
+            for (const annotation of content.annotations) {
+              if (annotation.type === "url_citation") {
+                citations.push({
+                  url: annotation.url,
+                  title: annotation.title,
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+    return citations;
   }
 
   private getOpenAIMessages(

@@ -1,4 +1,4 @@
-import { ThinkingLevel, type Content, type Part } from "@google/genai";
+import { ThinkingLevel, type Content, type GroundingMetadata, type Part } from "@google/genai";
 import { dataUrlToText, tryDecodeDataUrlAsText } from "../storage/codec";
 import type {
   BaseConnection,
@@ -9,6 +9,7 @@ import type {
   GenericMessage,
   GenericOptions,
 } from "./base";
+import { formatReferences, type Citation } from "./citation";
 
 export interface GoogleGenAICredential extends BaseCredential {
   id: string;
@@ -103,6 +104,21 @@ export class GoogleGenAIProvider implements BaseProvider {
     return undefined;
   }
 
+  private extractCitations(metadata: GroundingMetadata): Citation[] {
+    const citations: Citation[] = [];
+    if (metadata.groundingChunks) {
+      for (const chunk of metadata.groundingChunks) {
+        if (chunk.web?.uri) {
+          citations.push({
+            url: chunk.web.uri,
+            title: chunk.web.title,
+          });
+        }
+      }
+    }
+    return citations;
+  }
+
   private getReasoningEffortConfig(model: string): string[] | undefined {
     if (model.startsWith("gemini-3-pro")) return ["low", "high"];
     if (model.startsWith("gemini-3-flash")) return ["minimal", "low", "medium", "high"];
@@ -167,14 +183,25 @@ export class GoogleGenAIProvider implements BaseProvider {
         },
       });
 
+      let citations: Citation[] = [];
       for await (const message of result) {
         const chunk = message.text;
+        const metadata = message.candidates?.at(0)?.groundingMetadata;
+        if (metadata) {
+          citations = that.extractCitations(metadata);
+        }
+
         if (message.usageMetadata)
           config.onMetadata?.({
             totalOutputTokens: message.usageMetadata.candidatesTokenCount,
             durationMs: performance.now() - start,
           });
         if (chunk) yield chunk;
+      }
+
+      const references = formatReferences(citations);
+      if (references) {
+        yield references;
       }
     };
   }

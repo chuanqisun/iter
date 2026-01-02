@@ -6,6 +6,7 @@ import type {
   MessageParam,
   TextBlockParam,
 } from "@anthropic-ai/sdk/resources/index.mjs";
+import type { Message } from "@anthropic-ai/sdk/resources/messages/messages.mjs";
 import { dataUrlToText, tryDecodeDataUrlAsText } from "../storage/codec";
 import type {
   BaseConnection,
@@ -16,6 +17,7 @@ import type {
   GenericMessage,
   GenericOptions,
 } from "./base";
+import { formatReferences, type Citation } from "./citation";
 
 export interface AnthropicCredential extends BaseCredential {
   id: string;
@@ -136,12 +138,36 @@ export class AnthropicProvider implements BaseProvider {
         }
       }
 
-      const finalUsage = (await stream.finalMessage()).usage;
+      const finalMessage = await stream.finalMessage();
+      const citations = that.extractCitations(finalMessage);
+      const references = formatReferences(citations);
+      if (references) {
+        yield references;
+      }
+
+      const finalUsage = finalMessage.usage;
       config?.onMetadata?.({
         totalOutputTokens: finalUsage.output_tokens,
         durationMs: performance.now() - start,
       });
     };
+  }
+
+  private extractCitations(message: Message): Citation[] {
+    const citations: Citation[] = [];
+    for (const block of message.content) {
+      if (block.type === "text" && block.citations) {
+        for (const citation of block.citations) {
+          if (citation.type === "web_search_result_location") {
+            citations.push({
+              url: citation.url,
+              title: citation.title ?? undefined,
+            });
+          }
+        }
+      }
+    }
+    return citations;
   }
 
   private isAnthropicCredential(credential: BaseCredential): credential is AnthropicCredential {
