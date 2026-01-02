@@ -1,6 +1,5 @@
 # TODO
 
-- Add search grounding from major providers
 - Edit existing connection
 - Bug: abort error lingers after role switch
 - When user pastes html partial text, convert it to markdown
@@ -25,6 +24,7 @@
 
 # DONE
 
+- Add search grounding from major providers
 - Use code editor for all chat messages input: handle paste, abort, hint text, focus management
 - Triple tick `run` block with `edit` macro that exposes file type specific hooks for efficient edit
 - Closing artifact while it is compiling left iframe on main thread
