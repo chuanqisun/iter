@@ -159,6 +159,7 @@ export class GoogleGenAIProvider implements BaseProvider {
           temperature: config?.temperature,
           topP: config?.topP,
           maxOutputTokens: config?.maxTokens,
+          tools: config.search ? [{ googleSearch: {} }] : undefined,
           thinkingConfig: {
             thinkingBudget: that.getFinalBudget(connection.model, thinkingBudget),
             thinkingLevel: that.getFinalThinkingLevel(connection.model, config.reasoningEffort),

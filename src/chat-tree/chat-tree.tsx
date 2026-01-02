@@ -108,7 +108,12 @@ export function ChatTree() {
   useRouteCache({ parameters: ["connection", "temperature", "max_tokens", "reasoning_effort", "thinking_budget"] });
 
   const chat = useCallback(
-    (messages: GenericMessage[], abortSignal?: AbortSignal, onMetadata?: (metadata: GenericMetadata) => void) => {
+    (
+      messages: GenericMessage[],
+      abortSignal?: AbortSignal,
+      onMetadata?: (metadata: GenericMetadata) => void,
+      search?: boolean,
+    ) => {
       const chatStreamProxy = getChatStreamProxy?.(connectionKey.value ?? "");
       if (!chatStreamProxy) throw new Error(`API connection is not set up`);
 
@@ -118,6 +123,7 @@ export function ChatTree() {
         reasoningEffort: reasoningEffort.value,
         thinkingBudget: thinkingBudget.value,
         verbosity: verbosity.value,
+        search,
         messages,
         abortSignal,
         onMetadata,
@@ -423,9 +429,12 @@ export function ChatTree() {
       if (event.data.type === "llmPromptRequest") {
         const abortController = new AbortController();
         const prompt = event.data.prompt;
+        const search = parseDirectives(prompt).search;
         promptAPIAbortControllersRef.current.push(abortController);
         try {
-          const response = await streamToText(chat([{ role: "user", content: prompt }], abortController.signal));
+          const response = await streamToText(
+            chat([{ role: "user", content: prompt }], abortController.signal, undefined, search),
+          );
           event.source?.postMessage({ type: "llmPromptResponse", requestId: event.data.requestId, response });
         } finally {
           promptAPIAbortControllersRef.current = promptAPIAbortControllersRef.current.filter(
@@ -646,8 +655,11 @@ export function ChatTree() {
       const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
       if (!targetNode) return;
 
-      const activeUserNodeId = getActiveUserNodeId(treeNodes$.value.find((node) => node.id === nodeId));
+      const activeUserNodeId = getActiveUserNodeId(targetNode);
       if (!activeUserNodeId) return;
+
+      const activeUserNode = treeNodes$.value.find((node) => node.id === activeUserNodeId);
+      const search = activeUserNode ? parseDirectives(activeUserNode.content).search : false;
 
       const messages = getMessageChain(activeUserNodeId);
 
@@ -682,7 +694,7 @@ export function ChatTree() {
       };
 
       try {
-        const stream = chat(messages, abortController.signal, patchMetadata);
+        const stream = chat(messages, abortController.signal, patchMetadata, search);
         const writer = createWriter(newAssistantNode.id);
 
         try {

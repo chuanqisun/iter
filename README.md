@@ -77,7 +77,7 @@ Mac users, please use <kbd>⌘</kbd> instead of <kbd>Ctrl</kbd>
 
 ## Directives
 
-Directives force the LLM to generate code that performs specific tasks. The code will take effect after manually run in the editor.
+Directives are special code blocks that change how the LLM behaves or enable additional capabilities like code execution or web search.
 
 ### `Run` directive
 
@@ -106,6 +106,16 @@ Include an `edit` block in the user message to force the LLM to generate code th
 ````
 ```edit
 <editorial goals or instructions>
+```
+````
+
+### `Search` directive
+
+Include a `search` block in the user message to enable web search for the model. This allows the model to access real-time information from the internet.
+
+````
+```search
+<your search query or instructions that require real-time information>
 ```
 ````
 

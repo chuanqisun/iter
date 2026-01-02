@@ -3,6 +3,7 @@ import "./chat-panel.css";
 import { isolateHistory } from "@codemirror/commands";
 import { EditorState, StateEffect, StateField, type Extension } from "@codemirror/state";
 import { EditorView, keymap, showPanel, type KeyBinding } from "@codemirror/view";
+import { parseDirectives } from "../artifact/lib/directives";
 import { getChatInstance } from "../chat-tree/chat-instance";
 import { getCombo } from "../chat-tree/keyboard";
 import { getTaggedStream } from "./get-tagged-stream";
@@ -116,6 +117,7 @@ export function chatPanel(): Extension[] {
     const chunks = chat({
       messages: getCursorChatMessages({ prompt, lang, fullTextWithCursor }),
       abortSignal: params.chatInterrupt,
+      search: parseDirectives(prompt).search,
     });
 
     const newCursorContent = getTaggedStream(chunks, "cursor-new");

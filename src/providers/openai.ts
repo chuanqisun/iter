@@ -114,6 +114,7 @@ export class OpenAIProvider implements BaseProvider {
         {
           input: that.getOpenAIMessages(messages, { isSystemMessageSupported: true }),
           model: connection.model,
+          tools: config.search ? [{ type: "web_search" }] : undefined,
           temperature: options.temperature !== undefined ? config?.temperature : undefined,
           ...(options.reasoningEffort
             ? { reasoning: { effort: (config.reasoningEffort ?? options.reasoningEffort.at(0)) as ReasoningEffort } }

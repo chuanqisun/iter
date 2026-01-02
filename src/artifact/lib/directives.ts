@@ -10,19 +10,25 @@ export interface ParsedDirective {
   run?: boolean;
   llm?: boolean;
   edit?: boolean;
+  search?: boolean;
 }
 export function parseDirectives(text: string): ParsedDirective {
   // ```run -> run = true
   // ```run llm -> run = true, llm = true
   // ```edit -> edit = true
-  const directiveLines = text.split("\n").filter((line) => line.startsWith("```run") || line.startsWith("```edit"));
+  // ```search -> search = true
+  const directiveLines = text
+    .split("\n")
+    .filter((line) => line.startsWith("```run") || line.startsWith("```edit") || line.startsWith("```search"));
   const run = directiveLines.some((line) => line.includes("```run"));
   const llm = run && directiveLines.some((line) => line.includes(" llm"));
   const edit = directiveLines.some((line) => line.includes("```edit"));
+  const search = directiveLines.some((line) => line.includes("```search"));
   return {
     run,
     llm,
     edit,
+    search,
   };
 }
 

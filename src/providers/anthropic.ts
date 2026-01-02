@@ -123,6 +123,7 @@ export class AnthropicProvider implements BaseProvider {
           thinking: resolvedThinkingBudget ? { type: "enabled", budget_tokens: resolvedThinkingBudget } : undefined,
           messages: anthropicMessages,
           model: connection.model,
+          tools: config.search ? [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }] : undefined,
         },
         {
           signal: abortSignal,
