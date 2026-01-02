@@ -25,7 +25,7 @@ Recreate the UI of Airbnb with a single screenshot
 ## Supported model providers
 
 - OpenAI\*
-  - ✅ GPT-5.1
+  - ✅ GPT-5.2
   - ✅ GPT-5.1-codex
   - ✅ GPT-5.1-chat-latest
   - ✅ GPT-5
@@ -38,15 +38,13 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ Claude Haiku 4.5
 - Google Generative AI
   - ✅ Gemini 3 Pro Preview
+  - ✅ Gemini 3 Flash Preview
   - ✅ Gemini 2.5 Pro
   - ✅ Gemini 2.5 Flash
-  - ✅ Gemini 2.5 Flash Preview
   - ✅ Gemini 2.5 Flash Lite
 - xAI\*\*
-  - ✅ Grok Code Fast 1
-  - ✅ Grok 4 Fast
-  - ✅ Grok 4 Fast Non-reasoning
-  - ✅ Grok 4
+  - ✅ Grok 4.1 Fast
+  - ✅ Grok 4.1 Fast Non-reasoning
 - Inception\*\*\*
   - ✅ Mercury
   - ✅ Mercury Coder
