@@ -41,7 +41,7 @@
     "@codemirror/language": "^6.12.1",
     "@codemirror/language-data": "^6.5.2",
     "@codemirror/state": "^6.5.3",
-    "@codemirror/view": "^6.39.7",
+    "@codemirror/view": "^6.39.8",
     "@google/genai": "^1.34.0",
     "@uiw/codemirror-theme-github": "^4.25.4",
     "gpt-tokenizer": "^3.4.0",
