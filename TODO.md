@@ -1,5 +1,6 @@
 # TODO
 
+- Add URL context for all models. Pending API stablization
 - Edit existing connection
 - Bug: abort error lingers after role switch
 - When user pastes html partial text, convert it to markdown
