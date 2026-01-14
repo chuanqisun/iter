@@ -128,11 +128,17 @@ export class GoogleGenAIProvider implements BaseProvider {
   }
 
   private getFinalThinkingLevel(model: string, inputLevel?: string) {
-    if (model.startsWith("gemini-3-pro") || model.startsWith("gemini-3-flash"))
-      return (
-        GoogleGenAIProvider.thinkingLevelMap[inputLevel as keyof typeof GoogleGenAIProvider.thinkingLevelMap] ??
-        this.getReasoningEffortConfig(model)?.at(0)
-      );
+    if (model.startsWith("gemini-3-pro")) {
+      const supported = ["low", "high"];
+      const level = supported.includes(inputLevel!) ? inputLevel : "low";
+      return GoogleGenAIProvider.thinkingLevelMap[level as keyof typeof GoogleGenAIProvider.thinkingLevelMap];
+    }
+
+    if (model.startsWith("gemini-3-flash")) {
+      const supported = ["minimal", "low", "medium", "high"];
+      const level = supported.includes(inputLevel!) ? inputLevel : "minimal";
+      return GoogleGenAIProvider.thinkingLevelMap[level as keyof typeof GoogleGenAIProvider.thinkingLevelMap];
+    }
 
     return undefined;
   }
