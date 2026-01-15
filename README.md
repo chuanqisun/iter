@@ -26,12 +26,11 @@ Recreate the UI of Airbnb with a single screenshot
 
 - OpenAI\*
   - ✅ GPT-5.2
-  - ✅ GPT-5.1-codex
+  - ✅ GPT-5.2-codex
   - ✅ GPT-5.1-chat-latest
   - ✅ GPT-5
   - ✅ GPT-5-mini
   - ✅ GPT-5-nano
-  - ✅ GPT-5-codex
 - Anthropic
   - ✅ Claude Opus 4.5
   - ✅ Claude Sonnet 4.5
