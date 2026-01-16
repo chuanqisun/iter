@@ -292,7 +292,7 @@ const MessageActions = styled.span`
   align-items: center;
   gap: 0 4px;
   position: sticky;
-  top: 0;
+  top: var(--app-header-height, 0px);
   background-color: var(--body-background);
   z-index: var(--action-bar-z-index);
 
@@ -351,7 +351,7 @@ const AvatarIcon = styled.span`
   width: 28px;
   text-align: center;
   position: sticky;
-  top: 30px;
+  top: calc(var(--app-header-height, 0px) + 30px);
 `;
 
 const AttachmentList = styled.div`
