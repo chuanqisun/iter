@@ -28,6 +28,7 @@
   --button-border-hover-color: #000;
 
   --action-bar-z-index: 1;
+  --app-header-z-index: 2;
   --artifact-editor-z-index: 2;
   --toast-z-index: 1000;
 }
