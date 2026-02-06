@@ -38,7 +38,7 @@ export interface AnthropicConnection extends BaseConnection {
 
 export class AnthropicProvider implements BaseProvider {
   static type = "anthropic";
-  static defaultModels = ["claude-opus-4-5", "claude-sonnet-4-5", "claude-haiku-4-5"];
+  static defaultModels = ["claude-opus-4-6", "claude-sonnet-4-5", "claude-haiku-4-5"];
 
   parseNewCredentialForm(formData: FormData): AnthropicCredential[] {
     const accountName = formData.get("newAccountName") as string;
