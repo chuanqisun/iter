@@ -58,6 +58,7 @@ export interface GenericChatParams {
   reasoningEffort?: string;
   thinkingBudget?: number;
   search?: boolean;
+  fetch?: boolean;
   onMetadata?: (metadata: GenericMetadata) => void;
 }
 

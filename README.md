@@ -76,7 +76,7 @@ Mac users, please use <kbd>⌘</kbd> instead of <kbd>Ctrl</kbd>
 
 ## Directives
 
-Directives are special code blocks that change how the LLM behaves or enable additional capabilities like code execution or web search.
+Directives are special code blocks that change how the LLM behaves or enable additional capabilities like code execution, web search, and URL/page fetching.
 
 ### `Run` directive
 
@@ -115,6 +115,20 @@ Include a `search` block in the user message to enable web search for the model.
 ````
 ```search
 <your search query or instructions that require real-time information>
+```
+````
+
+### `Fetch` directive
+
+Include a `fetch` block in the user message to enable URL/page fetching tools for the model.
+
+- **Anthropic**: uses the `web_fetch` tool.
+- **Google Generative AI**: uses the URL context tool.
+- **OpenAI**: uses the `web_search` tool (same behavior as `search`).
+
+````
+```fetch
+<your instructions that require fetching and analyzing specific URLs>
 ```
 ````
 

@@ -119,6 +119,7 @@ export function ChatTree() {
       abortSignal?: AbortSignal,
       onMetadata?: (metadata: GenericMetadata) => void,
       search?: boolean,
+      fetch?: boolean,
     ) => {
       const chatStreamProxy = getChatStreamProxy?.(connectionKey.value ?? "");
       if (!chatStreamProxy) throw new Error(`API connection is not set up`);
@@ -130,6 +131,7 @@ export function ChatTree() {
         thinkingBudget: thinkingBudget.value,
         verbosity: verbosity.value,
         search,
+        fetch,
         messages,
         abortSignal,
         onMetadata,
@@ -435,11 +437,13 @@ export function ChatTree() {
       if (event.data.type === "llmPromptRequest") {
         const abortController = new AbortController();
         const prompt = event.data.prompt;
-        const search = parseDirectives(prompt).search;
+        const directives = parseDirectives(prompt);
+        const search = directives.search;
+        const fetch = directives.fetch;
         promptAPIAbortControllersRef.current.push(abortController);
         try {
           const response = await streamToText(
-            chat([{ role: "user", content: prompt }], abortController.signal, undefined, search),
+            chat([{ role: "user", content: prompt }], abortController.signal, undefined, search, fetch),
           );
           event.source?.postMessage({ type: "llmPromptResponse", requestId: event.data.requestId, response });
         } finally {
@@ -701,7 +705,9 @@ export function ChatTree() {
       if (!activeUserNodeId) return;
 
       const activeUserNode = treeNodes$.value.find((node) => node.id === activeUserNodeId);
-      const search = activeUserNode ? parseDirectives(activeUserNode.content).search : false;
+      const directives = activeUserNode ? parseDirectives(activeUserNode.content) : undefined;
+      const search = directives?.search;
+      const fetch = directives?.fetch;
 
       const messages = getMessageChain(activeUserNodeId);
 
@@ -736,7 +742,7 @@ export function ChatTree() {
       };
 
       try {
-        const stream = chat(messages, abortController.signal, patchMetadata, search);
+        const stream = chat(messages, abortController.signal, patchMetadata, search, fetch);
         const writer = createWriter(newAssistantNode.id);
 
         try {

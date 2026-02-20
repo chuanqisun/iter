@@ -161,6 +161,10 @@ export class GoogleGenAIProvider implements BaseProvider {
       const thinkingBudget = options.thinkingBudget
         ? that.getFinalBudget(connection.model, config.thinkingBudget)
         : undefined;
+      const tools = [
+        ...(config.search ? ([{ googleSearch: {} }] as const) : []),
+        ...(config.fetch ? ([{ urlContext: {} }] as const) : []),
+      ];
 
       const start = performance.now();
       const result = await client.models.generateContentStream({
@@ -172,7 +176,7 @@ export class GoogleGenAIProvider implements BaseProvider {
           temperature: config?.temperature,
           topP: config?.topP,
           maxOutputTokens: config?.maxTokens,
-          tools: config.search ? [{ googleSearch: {} }] : undefined,
+          tools: tools.length ? [...tools] : undefined,
           thinkingConfig: {
             thinkingBudget: that.getFinalBudget(connection.model, thinkingBudget),
             thinkingLevel: that.getFinalThinkingLevel(connection.model, config.reasoningEffort),

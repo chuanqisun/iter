@@ -114,10 +114,12 @@ export function chatPanel(): Extension[] {
     });
 
     const chat = getChatInstance();
+    const directives = parseDirectives(prompt);
     const chunks = chat({
       messages: getCursorChatMessages({ prompt, lang, fullTextWithCursor }),
       abortSignal: params.chatInterrupt,
-      search: parseDirectives(prompt).search,
+      search: directives.search,
+      fetch: directives.fetch,
     });
 
     const newCursorContent = getTaggedStream(chunks, "cursor-new");

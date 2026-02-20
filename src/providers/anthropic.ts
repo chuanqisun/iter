@@ -117,6 +117,21 @@ export class AnthropicProvider implements BaseProvider {
       const resolvedTemperature = resolvedThinkingBudget === undefined ? Math.min(config?.temperature ?? 0.7, 1) : 1;
 
       const start = performance.now();
+      const tools = [
+        ...(config.search ? ([{ type: "web_search_20250305", name: "web_search", max_uses: 5 }] as const) : []),
+        ...(config.fetch
+          ? ([
+              {
+                type: "web_fetch_20250910",
+                name: "web_fetch",
+                max_content_tokens: 100_000,
+                citations: {
+                  enabled: true,
+                },
+              },
+            ] as const)
+          : []),
+      ];
       const stream = client.messages.stream(
         {
           max_tokens: config?.maxTokens ?? 200,
@@ -125,7 +140,7 @@ export class AnthropicProvider implements BaseProvider {
           thinking: resolvedThinkingBudget ? { type: "enabled", budget_tokens: resolvedThinkingBudget } : undefined,
           messages: anthropicMessages,
           model: connection.model,
-          tools: config.search ? [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }] : undefined,
+          tools: tools.length ? [...tools] : undefined,
         },
         {
           signal: abortSignal,
