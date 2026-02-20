@@ -30,7 +30,7 @@ export interface GoogleGenAIConnection extends BaseConnection {
 export class GoogleGenAIProvider implements BaseProvider {
   static type = "google-gen-ai";
   static defaultModels = [
-    "gemini-3-pro-preview",
+    "gemini-3.1-pro-preview",
     "gemini-3-flash-preview",
     "gemini-2.5-pro",
     "gemini-2.5-flash",
@@ -111,7 +111,7 @@ export class GoogleGenAIProvider implements BaseProvider {
   }
 
   private getReasoningEffortConfig(model: string): string[] | undefined {
-    if (model.startsWith("gemini-3-pro")) return ["low", "high"];
+    if (model.startsWith("gemini-3.1-pro")) return ["low", "high"];
     if (model.startsWith("gemini-3-flash")) return ["minimal", "low", "medium", "high"];
     return undefined;
   }
