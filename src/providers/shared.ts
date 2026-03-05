@@ -3,7 +3,9 @@ import type { GenericOptions } from "./base";
 export function getOpenAIOptions(model: string): GenericOptions {
   const isTemperatureSupported = model.startsWith("gpt") && !model.startsWith("gpt-5");
   const reasoningOptions = [];
-  if (model.startsWith("gpt-5.2") || model.startsWith("gpt-5.3")) {
+  if (model.endsWith("gpt-5.4-pro")) {
+    reasoningOptions.push("medium", "high", "xhigh");
+  } else if (model.startsWith("gpt-5.2") || model.startsWith("gpt-5.3") || model.startsWith("gpt-5.4")) {
     reasoningOptions.push("none", "low", "medium", "high", "xhigh");
   } else if (model.startsWith("gpt-5.1")) {
     reasoningOptions.push("none", "low", "medium", "high");
