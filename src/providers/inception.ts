@@ -65,7 +65,7 @@ interface InceptionStreamChunk {
 
 export class InceptionProvider implements BaseProvider {
   static type = "inception";
-  static defaultModels = ["mercury", "mercury-coder"];
+  static defaultModels = ["mercury-2", "mercury-coder"];
 
   parseNewCredentialForm(formData: FormData): InceptionCredential[] {
     const accountName = formData.get("newAccountName") as string;
@@ -92,7 +92,7 @@ export class InceptionProvider implements BaseProvider {
           id: `${model}:${credential.id}`,
           type: "inception",
           displayGroup: credential.accountName,
-          displayName: model === "mercury" ? "Mercury" : "Mercury Coder",
+          displayName: model === "mercury-2" ? "Mercury 2" : "Mercury Coder",
           model,
           apiKey: credential.apiKey,
         }) satisfies InceptionConnection,

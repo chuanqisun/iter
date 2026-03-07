@@ -48,7 +48,7 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ Grok 4.1 Fast
   - ✅ Grok 4.1 Fast Non-reasoning
 - Inception\*\*\*
-  - ✅ Mercury
+  - ✅ Mercury 2
   - ✅ Mercury Coder
 - OpenRouter
   - All chat models
