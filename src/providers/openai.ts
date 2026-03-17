@@ -40,8 +40,10 @@ export interface OpenAIConnection extends BaseConnection {
 export class OpenAIProvider implements BaseProvider {
   static type = "openai";
   static defaultModels = [
-    "gpt-5.4-pro",
     "gpt-5.4",
+    "gpt-5.4-pro",
+    "gpt-5.4-mini",
+    "gpt-5.4-nano",
     "gpt-5.3-codex",
     "gpt-5.3-chat-latest",
     "gpt-5.2",

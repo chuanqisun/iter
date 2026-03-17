@@ -27,6 +27,8 @@ Recreate the UI of Airbnb with a single screenshot
 - OpenAI\*
   - ✅ GPT-5.4-pro
   - ✅ GPT-5.4
+  - ✅ GPT-5.4-mini
+  - ✅ GPT-5.4-nano
   - ✅ GPT-5.3-codex
   - ✅ GPT-5.3-chat-latest
   - ✅ GPT-5.2
