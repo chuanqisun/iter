@@ -76,12 +76,12 @@ function autoCloseCodeBlock({ state, dispatch }: EditorView) {
   const { from, to } = state.selection.main;
   const line = state.doc.lineAt(from);
   const lineText = line.text;
+  const textAfterCursor = state.doc.sliceString(to);
 
   // Check if the line starts with ```run
-  if (/^```\w+/.test(lineText)) {
+  if (/^```\w+/.test(lineText) && textAfterCursor.length === 0) {
     // Check if there's already a closing ``` somewhere after current position
-    const remainingDoc = state.doc.sliceString(to);
-    const hasClosingTicks = /\n```(?:\n|$)/.test(remainingDoc);
+    const hasClosingTicks = /\n```(?:\n|$)/.test(textAfterCursor);
 
     if (hasClosingTicks) {
       // Just insert a new line, don't add closing ticks
