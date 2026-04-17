@@ -38,7 +38,8 @@ export interface AnthropicConnection extends BaseConnection {
 
 export class AnthropicProvider implements BaseProvider {
   static type = "anthropic";
-  static defaultModels = ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5"];
+  static defaultModels = ["claude-opus-4-7", "claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5"];
+  static adaptiveThinkingEfforts = ["none", "low", "medium", "high", "xhigh", "max"] as const;
 
   parseNewCredentialForm(formData: FormData): AnthropicCredential[] {
     const accountName = formData.get("newAccountName") as string;
@@ -86,9 +87,12 @@ export class AnthropicProvider implements BaseProvider {
   getOptions(connection: BaseConnection): GenericOptions {
     if (!this.isAnthropicConnection(connection)) throw new Error("Invalid connection type");
 
+    const supportsAdaptiveThinking = this.supportsAdaptiveThinking(connection.model);
+
     return {
-      temperature: { max: 1 },
-      thinkingBudget: { max: 32000 },
+      temperature: this.supportsSampling(connection.model) ? { max: 1 } : undefined,
+      reasoningEffort: supportsAdaptiveThinking ? [...AnthropicProvider.adaptiveThinkingEfforts] : undefined,
+      thinkingBudget: supportsAdaptiveThinking ? undefined : { max: 32000 },
     };
   }
 
@@ -106,6 +110,11 @@ export class AnthropicProvider implements BaseProvider {
       const options = that.getOptions(connection);
 
       const { system, messages: anthropicMessages } = that.getAnthropicMessages(messages);
+      const supportsAdaptiveThinking = that.supportsAdaptiveThinking(connection.model);
+      const resolvedReasoningEffort = options.reasoningEffort
+        ? (config.reasoningEffort ?? options.reasoningEffort.at(0))
+        : undefined;
+      const isAdaptiveThinkingEnabled = resolvedReasoningEffort !== undefined && resolvedReasoningEffort !== "none";
 
       // ref: https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking#important-considerations-when-using-extended-thinking
       const resolvedThinkingBudget = options.thinkingBudget
@@ -114,7 +123,11 @@ export class AnthropicProvider implements BaseProvider {
           : undefined
         : undefined;
 
-      const resolvedTemperature = resolvedThinkingBudget === undefined ? Math.min(config?.temperature ?? 0.7, 1) : 1;
+      const resolvedTemperature = options.temperature
+        ? resolvedThinkingBudget === undefined
+          ? Math.min(config?.temperature ?? 0.7, options.temperature.max)
+          : 1
+        : undefined;
 
       const start = performance.now();
       const tools = [
@@ -137,7 +150,18 @@ export class AnthropicProvider implements BaseProvider {
           max_tokens: config?.maxTokens ?? 200,
           temperature: resolvedTemperature,
           system,
-          thinking: resolvedThinkingBudget ? { type: "enabled", budget_tokens: resolvedThinkingBudget } : undefined,
+          thinking: supportsAdaptiveThinking
+            ? isAdaptiveThinkingEnabled
+              ? { type: "adaptive", display: null }
+              : { type: "disabled" }
+            : resolvedThinkingBudget
+              ? { type: "enabled", budget_tokens: resolvedThinkingBudget }
+              : undefined,
+          output_config: supportsAdaptiveThinking
+            ? isAdaptiveThinkingEnabled
+              ? ({ effort: resolvedReasoningEffort } as never)
+              : undefined
+            : undefined,
           messages: anthropicMessages,
           model: connection.model,
           tools: tools.length ? [...tools] : undefined,
@@ -184,6 +208,14 @@ export class AnthropicProvider implements BaseProvider {
 
   private isAnthropicConnection(connection: BaseConnection): connection is AnthropicConnection {
     return connection.type === "anthropic";
+  }
+
+  private supportsAdaptiveThinking(model: string) {
+    return model === "claude-opus-4-7";
+  }
+
+  private supportsSampling(model: string) {
+    return !this.supportsAdaptiveThinking(model);
   }
 
   private getAnthropicMessages(messages: GenericMessage[]): {
