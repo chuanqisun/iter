@@ -47,7 +47,7 @@
     "gpt-tokenizer": "^3.4.0",
     "hast-util-to-string": "^3.0.1",
     "idb-keyval": "^6.2.2",
-    "marked": "^18.0.0",
+    "marked": "^18.0.1",
     "marked-shiki": "^1.2.1",
     "mermaid": "^11.14.0",
     "openai": "^6.34.0",
