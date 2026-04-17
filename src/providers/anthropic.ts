@@ -148,6 +148,9 @@ export class AnthropicProvider implements BaseProvider {
       const stream = client.messages.stream(
         {
           max_tokens: config?.maxTokens ?? 200,
+          cache_control: {
+            type: "ephemeral",
+          },
           temperature: resolvedTemperature,
           system,
           thinking: supportsAdaptiveThinking
