@@ -3,9 +3,14 @@ import type { GenericOptions } from "./base";
 export function getOpenAIOptions(model: string): GenericOptions {
   const isTemperatureSupported = model.startsWith("gpt") && !model.startsWith("gpt-5");
   const reasoningOptions = [];
-  if (model.endsWith("gpt-5.4-pro")) {
+  if (model.endsWith("gpt-5.4-pro") || model.endsWith("gpt-5.5-pro")) {
     reasoningOptions.push("medium", "high", "xhigh");
-  } else if (model.startsWith("gpt-5.2") || model.startsWith("gpt-5.3") || model.startsWith("gpt-5.4")) {
+  } else if (
+    model.startsWith("gpt-5.2") ||
+    model.startsWith("gpt-5.3") ||
+    model.startsWith("gpt-5.4") ||
+    model.startsWith("gpt-5.5")
+  ) {
     reasoningOptions.push("none", "low", "medium", "high", "xhigh");
   } else if (model.startsWith("gpt-5.1")) {
     reasoningOptions.push("none", "low", "medium", "high");
