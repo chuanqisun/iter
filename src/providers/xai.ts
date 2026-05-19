@@ -37,7 +37,7 @@ export interface XAIConnection extends BaseConnection {
 
 export class XAIProvider implements BaseProvider {
   static type = "xai";
-  static defaultModels = ["grok-4-1-fast-reasoning", "grok-4-1-fast-non-reasoning"];
+  static defaultModels = ["grok-4.3", "grok-4-1-fast-reasoning", "grok-4-1-fast-non-reasoning"];
 
   parseNewCredentialForm(formData: FormData): XAICredential[] {
     const accountName = formData.get("newAccountName") as string;
