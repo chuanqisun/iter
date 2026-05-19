@@ -30,6 +30,7 @@ export interface GoogleGenAIConnection extends BaseConnection {
 export class GoogleGenAIProvider implements BaseProvider {
   static type = "google-gen-ai";
   static defaultModels = [
+    "gemini-3.5-flash",
     "gemini-3.1-pro-preview",
     "gemini-3.1-flash-lite-preview",
     "gemini-3-flash-preview",
@@ -94,8 +95,12 @@ export class GoogleGenAIProvider implements BaseProvider {
     return {
       thinkingBudget: this.getThinkingBugetConfig(connection.model),
       reasoningEffort: this.getReasoningEffortConfig(connection.model),
-      temperature: { max: 2 },
+      temperature: this.supportsTemperature(connection.model) ? { max: 2 } : undefined,
     };
+  }
+
+  private supportsTemperature(model: string): boolean {
+    return !model.startsWith("gemini-3");
   }
 
   private getThinkingBugetConfig(model: string): undefined | { min: number; max: number } {
@@ -174,7 +179,7 @@ export class GoogleGenAIProvider implements BaseProvider {
         config: {
           systemInstruction: system,
           abortSignal,
-          temperature: config?.temperature,
+          temperature: options.temperature !== undefined ? config?.temperature : undefined,
           topP: config?.topP,
           maxOutputTokens: config?.maxTokens,
           tools: tools.length ? [...tools] : undefined,
