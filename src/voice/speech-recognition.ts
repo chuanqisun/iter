@@ -9,24 +9,26 @@ export interface WebSpeechResult {
 export class WebSpeechRecognitionNode extends EventTarget {
   // Prevent starting multiple sessions
   public isStarted = false;
-  private recognition = new SpeechRecognition();
+  private recognition = SpeechRecognition && new SpeechRecognition();
   private interim = "";
 
   constructor() {
     super();
-    this.recognition.interimResults = true;
+    this.recognition && (this.recognition.interimResults = true);
   }
 
   private initSession() {
+    const recognition = this.recognition!;
+
     this.isStarted = true;
-    this.recognition.continuous = true;
-    this.recognition.lang = "en-US";
+    recognition.continuous = true;
+    recognition.lang = "en-US";
 
     console.log("[recognition] will start");
-    this.recognition.onstart = () => {
+    recognition.onstart = () => {
       console.log("[recognition] session stated");
     };
-    this.recognition.onresult = (e) => {
+    recognition.onresult = (e) => {
       const latestItem = [...e.results].at(-1);
       if (!latestItem) return;
 
@@ -56,42 +58,42 @@ export class WebSpeechRecognitionNode extends EventTarget {
       }
     };
 
-    this.recognition.onerror = (e) => {
+    recognition.onerror = (e) => {
       console.error(`[recognition] sliently omit error`, e);
       this.isStarted = false;
-      if (this.recognition.continuous) {
+      if (recognition.continuous) {
         this.initSession();
         this.start();
       }
     };
 
-    this.recognition.onend = () => {
+    recognition.onend = () => {
       this.isStarted = false;
-      this.recognition.stop();
+      recognition.stop();
       console.log("[recognition] session ended");
-      if (this.recognition.continuous) {
+      if (recognition.continuous) {
         this.initSession();
-        this.recognition.start();
+        recognition.start();
       }
     };
   }
 
   public start() {
-    if (this.isStarted) return false;
+    if (this.isStarted || !this.recognition) return false;
     this.initSession();
-    this.recognition.start();
+    this.recognition?.start();
     return true;
   }
 
   public stop() {
-    this.recognition.continuous = false;
+    this.recognition && (this.recognition.continuous = false);
     console.log(`[recognition] stop requested`);
-    this.recognition.stop();
+    this.recognition?.stop();
   }
 
   public abort() {
-    this.recognition.continuous = false;
-    this.recognition.abort();
+    this.recognition && (this.recognition.continuous = false);
+    this.recognition?.abort();
   }
 }
 
