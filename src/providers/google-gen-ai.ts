@@ -34,9 +34,6 @@ export class GoogleGenAIProvider implements BaseProvider {
     "gemini-3.1-pro-preview",
     "gemini-3.1-flash-lite-preview",
     "gemini-3-flash-preview",
-    "gemini-2.5-pro",
-    "gemini-2.5-flash",
-    "gemini-2.5-flash-lite",
   ];
 
   static thinkingLevelMap: Record<string, ThinkingLevel> = {
@@ -93,7 +90,6 @@ export class GoogleGenAIProvider implements BaseProvider {
 
     // ref: https://ai.google.dev/gemini-api/docs/thinking
     return {
-      thinkingBudget: this.getThinkingBugetConfig(connection.model),
       reasoningEffort: this.getReasoningEffortConfig(connection.model),
       temperature: this.supportsTemperature(connection.model) ? { max: 2 } : undefined,
     };
@@ -101,13 +97,6 @@ export class GoogleGenAIProvider implements BaseProvider {
 
   private supportsTemperature(model: string): boolean {
     return !model.startsWith("gemini-3");
-  }
-
-  private getThinkingBugetConfig(model: string): undefined | { min: number; max: number } {
-    if (model.startsWith("gemini-2.5-pro")) return { min: -100, max: 32768 };
-    if (model.startsWith("gemini-2.5-flash")) return { min: -100, max: 24576 };
-    if (model.startsWith("gemini-2.5-flash-lite")) return { min: -100, max: 24576 };
-    return undefined;
   }
 
   private extractCitations(metadata: GroundingMetadata): Citation[] {
@@ -119,17 +108,6 @@ export class GoogleGenAIProvider implements BaseProvider {
   private getReasoningEffortConfig(model: string): string[] | undefined {
     if (model.startsWith("gemini-3.1-pro")) return ["low", "medium", "high"];
     if (model.startsWith("gemini-3")) return ["minimal", "low", "medium", "high"];
-    return undefined;
-  }
-
-  private getFinalBudget(model: string, inputBudget?: number): number | undefined {
-    if (inputBudget === undefined) return undefined;
-    if (model.startsWith("gemini-2.5-pro"))
-      return inputBudget < 0 ? this.clamp(inputBudget, -1, -1) : this.clamp(inputBudget, 128, 32768);
-    if (model.startsWith("gemini-2.5-flash"))
-      return inputBudget < 0 ? this.clamp(inputBudget, -1, -1) : this.clamp(inputBudget, 0, 24576);
-    if (model.startsWith("gemini-2.5-flash-lite"))
-      return inputBudget < 0 ? this.clamp(inputBudget, -1, -1) : this.clamp(inputBudget, 512, 24576);
     return undefined;
   }
 
@@ -149,10 +127,6 @@ export class GoogleGenAIProvider implements BaseProvider {
     return undefined;
   }
 
-  private clamp(value: number, min: number, max: number): number {
-    return Math.max(min, Math.min(max, value));
-  }
-
   getChatStreamProxy(connection: BaseConnection): ChatStreamProxy {
     if (!this.isGoogleGenAIConnection(connection)) throw new Error("Invalid connection type");
     const that = this;
@@ -164,9 +138,6 @@ export class GoogleGenAIProvider implements BaseProvider {
       const { system, messages: googleMessages } = that.getGoogleGenAIMessages(messages);
 
       const options = that.getOptions(connection);
-      const thinkingBudget = options.thinkingBudget
-        ? that.getFinalBudget(connection.model, config.thinkingBudget)
-        : undefined;
       const tools = [
         ...(config.search ? ([{ googleSearch: {} }] as const) : []),
         ...(config.fetch ? ([{ urlContext: {} }] as const) : []),
@@ -184,7 +155,6 @@ export class GoogleGenAIProvider implements BaseProvider {
           maxOutputTokens: config?.maxTokens,
           tools: tools.length ? [...tools] : undefined,
           thinkingConfig: {
-            thinkingBudget: that.getFinalBudget(connection.model, thinkingBudget),
             thinkingLevel: that.getFinalThinkingLevel(connection.model, config.reasoningEffort),
           },
         },
