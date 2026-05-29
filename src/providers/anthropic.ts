@@ -38,7 +38,7 @@ export interface AnthropicConnection extends BaseConnection {
 
 export class AnthropicProvider implements BaseProvider {
   static type = "anthropic";
-  static defaultModels = ["claude-opus-4-7", "claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5"];
+  static defaultModels = ["claude-opus-4-8", "claude-opus-4-7", "claude-sonnet-4-6", "claude-haiku-4-5"];
   static adaptiveThinkingEfforts = ["none", "low", "medium", "high", "xhigh", "max"] as const;
 
   parseNewCredentialForm(formData: FormData): AnthropicCredential[] {
@@ -214,7 +214,7 @@ export class AnthropicProvider implements BaseProvider {
   }
 
   private supportsAdaptiveThinking(model: string) {
-    return model === "claude-opus-4-7";
+    return model === "claude-opus-4-7" || model === "claude-opus-4-8";
   }
 
   private supportsSampling(model: string) {
