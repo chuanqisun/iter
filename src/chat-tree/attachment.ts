@@ -81,6 +81,12 @@ export function replaceAttachment(attachmentId: string, newAttachment: Attachmen
   };
 }
 
+export function renameAttachment(attachmentId: string, newAttachment: Attachment) {
+  return (node: ChatNode) => ({
+    attachments: node.attachments?.map((attachment) => (attachment.id === attachmentId ? newAttachment : attachment)),
+  });
+}
+
 export async function getToggledAttachment(node: ChatNode, attachmentId: string): Promise<Attachment | undefined> {
   const attachment = findAttachment(node, attachmentId);
   if (!attachment) return undefined;

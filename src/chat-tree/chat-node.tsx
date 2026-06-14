@@ -35,6 +35,7 @@ export interface ChatNodeProps {
   onDelete: (id: string) => void;
   onDeleteBelow: (id: string) => void;
   onDownloadAttachment: (id: string, attachmentId: string) => void;
+  onRenameAttachment: (id: string, attachmentId: string) => void;
   onCopyAttachment: (id: string, attachmentId: string) => void;
   onNavigatePrevious: (id: string) => void;
   onNavigateNext: (id: string) => void;
@@ -62,6 +63,7 @@ export function ChatNodeInternal(props: ChatNodeProps) {
     onDelete,
     onDeleteBelow,
     onDownloadAttachment,
+    onRenameAttachment,
     onCopyAttachment,
     onNavigatePrevious,
     onNavigateNext,
@@ -260,6 +262,7 @@ export function ChatNodeInternal(props: ChatNodeProps) {
                       nodeId={node.id}
                       attachment={attachment}
                       onDownloadAttachment={onDownloadAttachment}
+                      onRenameAttachment={onRenameAttachment}
                       onToggleAttachmentType={onToggleAttachmentType}
                       onCopyAttachment={onCopyAttachment}
                       onRemoveAttachment={onRemoveAttachment}

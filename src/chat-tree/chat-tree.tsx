@@ -34,11 +34,13 @@ import {
   createAttachmentFromChatPart,
   createAttacchmentFromFile as createAttachmentFromFile,
   downloadAttachment,
+  findAttachment,
   getAttachmentEmbeddedFiles,
   getAttachmentExternalFiles,
   getAttachmentTextContent,
   getToggledAttachment,
   getValidAttachmentFileName,
+  renameAttachment,
   removeAttachment,
   replaceAttachment,
   upsertAttachments,
@@ -54,7 +56,7 @@ import { autoFocusNthInput } from "./focus";
 import { InputTokenizer } from "./input-tokenizer";
 import { getCombo } from "./keyboard";
 import { getAssistantNode, getNextId, getPrevId, getUserNode, INITIAL_NODES, patchNode } from "./tree-helper";
-import { useTreeNodes, type ChatNode } from "./tree-store";
+import { useTreeNodes, type ChatNode, type EmbeddedFile } from "./tree-store";
 
 const HEADER_INTERSECTION_OPTIONS = { rootMargin: "0px", threshold: 0 };
 
@@ -239,6 +241,29 @@ export function ChatTree() {
             .then(() => autoFocusNthInput(0))
             .catch((e) => showToast(`❌ Error ${e?.message}`));
           break;
+        case "ctrl+shift+v": {
+          e.preventDefault();
+          const text = await navigator.clipboard.readText();
+          if (!text) break;
+          const activeEl = document.activeElement as HTMLElement;
+          const focusedNodeEl = activeEl?.closest("[data-node-id]");
+          const focusedNodeId = focusedNodeEl?.getAttribute("data-node-id") ?? null;
+          const nodeId = focusedNodeId ?? treeNodes$.value.filter((node) => node.role === "user").at(-1)?.id;
+          if (!nodeId) break;
+          const activeUserNodeId = getActiveUserNodeId(treeNodes$.value.find((node) => node.id === nodeId));
+          if (!activeUserNodeId) break;
+          const file: EmbeddedFile = {
+            name: "pasted.txt",
+            type: "text/plain",
+            url: textToDataUrl(text),
+            size: new Blob([text]).size,
+          };
+          const attachment = createAttachmentFromChatPart(file);
+          setTreeNodes((nodes) =>
+            nodes.map(patchNode((node) => node.id === activeUserNodeId, upsertAttachments(attachment))),
+          );
+          break;
+        }
 
         // Hold Shift + Space to talk
         case "shift+space":
@@ -846,6 +871,30 @@ export function ChatTree() {
     downloadAttachment(targetNode, attachmentId);
   }, []);
 
+  const handleRenameAttachment = useCallback(async (nodeId: string, attachmentId: string) => {
+    const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
+    if (!targetNode) return;
+    const attachment = findAttachment(targetNode, attachmentId);
+    if (!attachment) return;
+
+    const pickedFilename = await getFilename({ placeholder: "filename.ext", initalValue: attachment.file.name });
+    if (!pickedFilename) return;
+
+    const validFilename = getValidAttachmentFileName(pickedFilename);
+
+    let renamedAttachment;
+    if (attachment.type === "embedded") {
+      renamedAttachment = { ...attachment, file: { ...attachment.file, name: validFilename } };
+    } else {
+      const renamed = new File([attachment.file], validFilename, { type: attachment.file.type });
+      renamedAttachment = { ...attachment, file: renamed };
+    }
+
+    setTreeNodes((nodes) =>
+      nodes.map(patchNode((node) => node.id === nodeId, renameAttachment(attachmentId, renamedAttachment))),
+    );
+  }, []);
+
   const handleCopyAttachment = useCallback(async (nodeId: string, attachmentId: string) => {
     const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
     if (!targetNode) return;
@@ -990,6 +1039,7 @@ export function ChatTree() {
               onDelete={handleDelete}
               onDeleteBelow={handleDeleteBelow}
               onDownloadAttachment={handleDownloadAttachment}
+              onRenameAttachment={handleRenameAttachment}
               onCopyAttachment={handleCopyAttachment}
               onNavigatePrevious={handleNavigatePrevious}
               onNavigateNext={handleNavigateNext}

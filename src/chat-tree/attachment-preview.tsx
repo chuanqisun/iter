@@ -8,6 +8,7 @@ export interface AttachmentPreviewProps {
   nodeId: string;
   attachment: Attachment;
   onDownloadAttachment: (nodeId: string, attachmentId: string) => void;
+  onRenameAttachment: (nodeId: string, attachmentId: string) => void;
   onToggleAttachmentType: (nodeId: string, attachmentId: string) => void;
   onCopyAttachment: (nodeId: string, attachmentId: string) => void;
   onRemoveAttachment: (nodeId: string, attachmentId: string) => void;
@@ -43,8 +44,8 @@ export function AttachmentPreviewInternal(props: AttachmentPreviewProps) {
       ) : null}
       <AttachmentHeading>
         <AttachmentFileName
-          title={`Download ${file.name}${file.type ? ` (${file.type})` : ""}`}
-          onClick={() => props.onDownloadAttachment(nodeId, attachment.id)}
+          title={`Rename ${file.name}`}
+          onClick={() => props.onRenameAttachment(nodeId, attachment.id)}
         >
           {file.name}
         </AttachmentFileName>
@@ -57,6 +58,10 @@ export function AttachmentPreviewInternal(props: AttachmentPreviewProps) {
         <span> · </span>
         <AttachmentAction title="Delete file" onClick={() => props.onRemoveAttachment(nodeId, attachment.id)}>
           Delete
+        </AttachmentAction>
+        <span> · </span>
+        <AttachmentAction title="Download file" onClick={() => props.onDownloadAttachment(nodeId, attachment.id)}>
+          Download
         </AttachmentAction>
         <span> · </span>
         <AttachmentAction title="Copy as message part" onClick={handleCopy}>
