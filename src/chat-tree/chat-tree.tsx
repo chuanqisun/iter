@@ -31,14 +31,13 @@ import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import {
   castToFile,
+  createAttachmentFromChatPart,
   createAttacchmentFromFile as createAttachmentFromFile,
   downloadAttachment,
   findAttachment,
   getAttachmentEmbeddedFiles,
   getAttachmentExternalFiles,
   getAttachmentTextContent,
-  getPastedAttachmentsFromClipboard,
-  getPastedAttachmentsFromParts,
   getToggledAttachment,
   getValidAttachmentFileName,
   removeAttachment,
@@ -242,25 +241,6 @@ export function ChatTree() {
             .then(() => autoFocusNthInput(0))
             .catch((e) => showToast(`❌ Error ${e?.message}`));
           break;
-        case "ctrl+shift+v": {
-          e.preventDefault();
-          const activeEl = document.activeElement as HTMLElement;
-          const focusedNodeEl = activeEl?.closest("[data-node-id]");
-          const focusedNodeId = focusedNodeEl?.getAttribute("data-node-id") ?? null;
-          const nodeId = focusedNodeId ?? treeNodes$.value.filter((node) => node.role === "user").at(-1)?.id;
-          if (!nodeId) break;
-          const activeUserNodeId = getActiveUserNodeId(treeNodes$.value.find((node) => node.id === nodeId));
-          if (!activeUserNodeId) break;
-
-          const activeUserNode = treeNodes$.value.find((node) => node.id === activeUserNodeId);
-          const pastedAttachments = await getPastedAttachmentsFromClipboard(activeUserNode?.attachments);
-          if (pastedAttachments.length === 0) break;
-
-          setTreeNodes((nodes) =>
-            nodes.map(patchNode((node) => node.id === activeUserNodeId, upsertAttachments(...pastedAttachments))),
-          );
-          break;
-        }
 
         // Hold Shift + Space to talk
         case "shift+space":
@@ -838,8 +818,7 @@ export function ChatTree() {
       const parts = e.clipboardData ? await getParts(e.clipboardData) : [];
       if (!parts.length) return;
 
-      const activeUserNode = treeNodes$.value.find((node) => node.id === activeUserNodeId);
-      const pastedAttachments = getPastedAttachmentsFromParts(parts, activeUserNode?.attachments);
+      const pastedAttachments = parts.map(createAttachmentFromChatPart);
 
       setTreeNodes((nodes) =>
         nodes.map(patchNode((node) => node.id === activeUserNodeId, upsertAttachments(...pastedAttachments))),

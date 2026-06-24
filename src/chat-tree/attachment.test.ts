@@ -1,6 +1,6 @@
 import { BehaviorSubject } from "rxjs";
 import { describe, expect, it } from "vitest";
-import { getUniqueFilename, renameAttachment, replaceAttachment } from "./attachment";
+import { renameAttachment, replaceAttachment } from "./attachment";
 import type { AttachmentEmbedded, ChatNode } from "./tree-store";
 
 function createUserNode(attachments: AttachmentEmbedded[]): ChatNode {
@@ -66,27 +66,5 @@ describe("renameAttachment", () => {
     )(createUserNode([originalAttachment]));
 
     expect(updatedNode.attachments).toEqual([originalAttachment]);
-  });
-});
-
-describe("getUniqueFilename", () => {
-  it("returns the original name if there are no duplicates", () => {
-    expect(getUniqueFilename("pasted.txt", new Set())).toBe("pasted.txt");
-    expect(getUniqueFilename("pasted.txt", new Set(["other.txt"]))).toBe("pasted.txt");
-  });
-
-  it("appends a numeric suffix if name is already in the set", () => {
-    expect(getUniqueFilename("pasted.txt", new Set(["pasted.txt"]))).toBe("pasted (1).txt");
-    expect(getUniqueFilename("pasted.txt", new Set(["pasted.txt", "pasted (1).txt"]))).toBe("pasted (2).txt");
-  });
-
-  it("handles filenames without extensions", () => {
-    expect(getUniqueFilename("pasted", new Set(["pasted"]))).toBe("pasted (1)");
-    expect(getUniqueFilename("pasted", new Set(["pasted", "pasted (1)"]))).toBe("pasted (2)");
-  });
-
-  it("increments already-suffixed filenames correctly", () => {
-    expect(getUniqueFilename("pasted (1).txt", new Set(["pasted (1).txt"]))).toBe("pasted (2).txt");
-    expect(getUniqueFilename("pasted (1).txt", new Set(["pasted (1).txt", "pasted (2).txt"]))).toBe("pasted (3).txt");
   });
 });
