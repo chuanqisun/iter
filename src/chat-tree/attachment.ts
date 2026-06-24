@@ -29,19 +29,74 @@ export async function castToFile(maybeFile?: File | EmbeddedFile | null): Promis
   return dataUrlToFile(maybeFile.url, maybeFile.name);
 }
 
+function renameAttachmentObject(attachment: Attachment, newName: string): Attachment {
+  if (attachment.type === "embedded") {
+    return {
+      ...attachment,
+      file: {
+        ...attachment.file,
+        name: newName,
+      },
+    };
+  } else {
+    const originalFile = attachment.file;
+    const renamedFile = new File([originalFile], newName, {
+      type: originalFile.type,
+      lastModified: originalFile.lastModified,
+    });
+    return {
+      ...attachment,
+      file: renamedFile,
+    };
+  }
+}
+
 /**
- * Assuming new attachments are unique by type and file name already
+ * Always creates new attachments and appends numeric suffixes to ensure unique naming
  */
 export function upsertAttachments(...newAttachments: Attachment[]) {
   return (node: ChatNode) => {
     const existingAttachments = node.attachments ?? [];
-    const remaining = existingAttachments.filter(
-      (attachment) =>
-        !newAttachments.some(
-          (newAttachment) => newAttachment.type === attachment.type && newAttachment.file.name === attachment.file.name,
-        ),
-    );
-    return { attachments: [...remaining, ...newAttachments] };
+    const occupiedNames = new Set(existingAttachments.map((att) => att.file.name));
+    const processedAttachments: Attachment[] = [];
+
+    for (const attachment of newAttachments) {
+      const originalName = attachment.file.name;
+      let uniqueName = originalName;
+
+      if (occupiedNames.has(originalName)) {
+        const lastDotIndex = originalName.lastIndexOf(".");
+        let baseName = originalName;
+        let extension = "";
+        if (lastDotIndex !== -1) {
+          baseName = originalName.slice(0, lastDotIndex);
+          extension = originalName.slice(lastDotIndex);
+        }
+
+        let startCounter = 0;
+        const match = baseName.match(/ \((\d+)\)$/);
+        if (match) {
+          startCounter = parseInt(match[1], 10);
+          baseName = baseName.slice(0, match.index);
+        }
+
+        let counter = startCounter === 0 ? 1 : startCounter + 1;
+        while (occupiedNames.has(`${baseName} (${counter})${extension}`)) {
+          counter++;
+        }
+        uniqueName = `${baseName} (${counter})${extension}`;
+      }
+
+      occupiedNames.add(uniqueName);
+
+      if (uniqueName !== originalName) {
+        processedAttachments.push(renameAttachmentObject(attachment, uniqueName));
+      } else {
+        processedAttachments.push(attachment);
+      }
+    }
+
+    return { attachments: [...existingAttachments, ...processedAttachments] };
   };
 }
 
@@ -79,6 +134,12 @@ export function replaceAttachment(attachmentId: string, newAttachment: Attachmen
 
     return { attachments: updatedAttachments };
   };
+}
+
+export function renameAttachment(attachmentId: string, newAttachment: Attachment) {
+  return (node: ChatNode) => ({
+    attachments: node.attachments?.map((attachment) => (attachment.id === attachmentId ? newAttachment : attachment)),
+  });
 }
 
 export async function getToggledAttachment(node: ChatNode, attachmentId: string): Promise<Attachment | undefined> {

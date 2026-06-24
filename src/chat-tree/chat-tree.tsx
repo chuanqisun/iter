@@ -34,12 +34,14 @@ import {
   createAttachmentFromChatPart,
   createAttacchmentFromFile as createAttachmentFromFile,
   downloadAttachment,
+  findAttachment,
   getAttachmentEmbeddedFiles,
   getAttachmentExternalFiles,
   getAttachmentTextContent,
   getToggledAttachment,
   getValidAttachmentFileName,
   removeAttachment,
+  renameAttachment,
   replaceAttachment,
   upsertAttachments,
 } from "./attachment";
@@ -846,6 +848,30 @@ export function ChatTree() {
     downloadAttachment(targetNode, attachmentId);
   }, []);
 
+  const handleRenameAttachment = useCallback(async (nodeId: string, attachmentId: string) => {
+    const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
+    if (!targetNode) return;
+    const attachment = findAttachment(targetNode, attachmentId);
+    if (!attachment) return;
+
+    const pickedFilename = await getFilename({ placeholder: "filename.ext", initalValue: attachment.file.name });
+    if (!pickedFilename) return;
+
+    const validFilename = getValidAttachmentFileName(pickedFilename);
+
+    let renamedAttachment;
+    if (attachment.type === "embedded") {
+      renamedAttachment = { ...attachment, file: { ...attachment.file, name: validFilename } };
+    } else {
+      const renamed = new File([attachment.file], validFilename, { type: attachment.file.type });
+      renamedAttachment = { ...attachment, file: renamed };
+    }
+
+    setTreeNodes((nodes) =>
+      nodes.map(patchNode((node) => node.id === nodeId, renameAttachment(attachmentId, renamedAttachment))),
+    );
+  }, []);
+
   const handleCopyAttachment = useCallback(async (nodeId: string, attachmentId: string) => {
     const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
     if (!targetNode) return;
@@ -990,6 +1016,7 @@ export function ChatTree() {
               onDelete={handleDelete}
               onDeleteBelow={handleDeleteBelow}
               onDownloadAttachment={handleDownloadAttachment}
+              onRenameAttachment={handleRenameAttachment}
               onCopyAttachment={handleCopyAttachment}
               onNavigatePrevious={handleNavigatePrevious}
               onNavigateNext={handleNavigateNext}
