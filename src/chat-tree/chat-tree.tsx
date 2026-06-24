@@ -31,17 +31,18 @@ import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import {
   castToFile,
-  createAttachmentFromChatPart,
   createAttacchmentFromFile as createAttachmentFromFile,
   downloadAttachment,
   findAttachment,
   getAttachmentEmbeddedFiles,
   getAttachmentExternalFiles,
   getAttachmentTextContent,
+  getPastedAttachmentsFromClipboard,
+  getPastedAttachmentsFromParts,
   getToggledAttachment,
   getValidAttachmentFileName,
-  renameAttachment,
   removeAttachment,
+  renameAttachment,
   replaceAttachment,
   upsertAttachments,
 } from "./attachment";
@@ -56,7 +57,7 @@ import { autoFocusNthInput } from "./focus";
 import { InputTokenizer } from "./input-tokenizer";
 import { getCombo } from "./keyboard";
 import { getAssistantNode, getNextId, getPrevId, getUserNode, INITIAL_NODES, patchNode } from "./tree-helper";
-import { useTreeNodes, type ChatNode, type EmbeddedFile } from "./tree-store";
+import { useTreeNodes, type ChatNode } from "./tree-store";
 
 const HEADER_INTERSECTION_OPTIONS = { rootMargin: "0px", threshold: 0 };
 
@@ -243,8 +244,6 @@ export function ChatTree() {
           break;
         case "ctrl+shift+v": {
           e.preventDefault();
-          const text = await navigator.clipboard.readText();
-          if (!text) break;
           const activeEl = document.activeElement as HTMLElement;
           const focusedNodeEl = activeEl?.closest("[data-node-id]");
           const focusedNodeId = focusedNodeEl?.getAttribute("data-node-id") ?? null;
@@ -252,15 +251,13 @@ export function ChatTree() {
           if (!nodeId) break;
           const activeUserNodeId = getActiveUserNodeId(treeNodes$.value.find((node) => node.id === nodeId));
           if (!activeUserNodeId) break;
-          const file: EmbeddedFile = {
-            name: "pasted.txt",
-            type: "text/plain",
-            url: textToDataUrl(text),
-            size: new Blob([text]).size,
-          };
-          const attachment = createAttachmentFromChatPart(file);
+
+          const activeUserNode = treeNodes$.value.find((node) => node.id === activeUserNodeId);
+          const pastedAttachments = await getPastedAttachmentsFromClipboard(activeUserNode?.attachments);
+          if (pastedAttachments.length === 0) break;
+
           setTreeNodes((nodes) =>
-            nodes.map(patchNode((node) => node.id === activeUserNodeId, upsertAttachments(attachment))),
+            nodes.map(patchNode((node) => node.id === activeUserNodeId, upsertAttachments(...pastedAttachments))),
           );
           break;
         }
@@ -841,7 +838,8 @@ export function ChatTree() {
       const parts = e.clipboardData ? await getParts(e.clipboardData) : [];
       if (!parts.length) return;
 
-      const pastedAttachments = parts.map(createAttachmentFromChatPart);
+      const activeUserNode = treeNodes$.value.find((node) => node.id === activeUserNodeId);
+      const pastedAttachments = getPastedAttachmentsFromParts(parts, activeUserNode?.attachments);
 
       setTreeNodes((nodes) =>
         nodes.map(patchNode((node) => node.id === activeUserNodeId, upsertAttachments(...pastedAttachments))),

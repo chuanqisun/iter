@@ -1,4 +1,5 @@
 import { dataUrlToFile, dataUrlToText, fileToDataUrl, isTextEncodable } from "../storage/codec";
+import { getSystemClipboardParts } from "./clipboard";
 import { downloadUrl } from "./download";
 import { getReadableFileSize } from "./file-size";
 import type { Attachment, AttachmentEmbedded, AttachmentExternal, ChatNode, EmbeddedFile } from "./tree-store";
@@ -153,4 +154,54 @@ export function getValidAttachmentFileName(name: string): string {
     return `file${ext}`;
   }
   return `${baseName}${ext}`;
+}
+
+export function getUniqueFilename(name: string, existingNames: Set<string>): string {
+  if (!existingNames.has(name)) return name;
+  const lastDot = name.lastIndexOf(".");
+  let base: string;
+  let ext: string;
+  if (lastDot === -1) {
+    base = name;
+    ext = "";
+  } else {
+    base = name.slice(0, lastDot);
+    ext = name.slice(lastDot);
+  }
+
+  const match = base.match(/(.*)\s\((\d+)\)$/);
+  let prefix = base;
+  let counter = 1;
+  if (match) {
+    prefix = match[1];
+    counter = parseInt(match[2], 10);
+  }
+
+  let newName = name;
+  while (existingNames.has(newName)) {
+    newName = `${prefix} (${counter})${ext}`;
+    counter++;
+  }
+  return newName;
+}
+
+export function getPastedAttachmentsFromParts(
+  parts: EmbeddedFile[],
+  existingAttachments?: Attachment[],
+): AttachmentEmbedded[] {
+  const existingNames = new Set(existingAttachments?.map((att) => att.file.name) ?? []);
+
+  return parts.map((part) => {
+    const uniqueName = getUniqueFilename(part.name, existingNames);
+    existingNames.add(uniqueName);
+    const uniquePart = { ...part, name: uniqueName };
+    return createAttachmentFromChatPart(uniquePart);
+  });
+}
+
+export async function getPastedAttachmentsFromClipboard(
+  existingAttachments?: Attachment[],
+): Promise<AttachmentEmbedded[]> {
+  const embeddedFiles = await getSystemClipboardParts();
+  return getPastedAttachmentsFromParts(embeddedFiles, existingAttachments);
 }
