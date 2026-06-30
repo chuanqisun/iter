@@ -39,6 +39,7 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ GPT-5-nano
 - Anthropic
   - ✅ Claude Fable 5
+  - ✅ Claude Sonnet 5
   - ✅ Claude Opus 4.8
   - ✅ Claude Opus 4.7
   - ✅ Claude Sonnet 4.6
