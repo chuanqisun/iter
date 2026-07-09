@@ -43,8 +43,7 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ Gemini 3.1 Flash-Lite Preview
   - ✅ Gemini 3 Flash Preview
 - xAI\*\*
-  - ✅ Grok 4.1 Fast
-  - ✅ Grok 4.1 Fast Non-reasoning
+  - ✅ Grok 4.5
 - Inception\*\*\*
   - ✅ Mercury 2
   - ✅ Mercury Coder

@@ -37,7 +37,7 @@ export interface XAIConnection extends BaseConnection {
 
 export class XAIProvider implements BaseProvider {
   static type = "xai";
-  static defaultModels = ["grok-4.3", "grok-4-1-fast-reasoning", "grok-4-1-fast-non-reasoning"];
+  static defaultModels = ["grok-4.5"];
 
   parseNewCredentialForm(formData: FormData): XAICredential[] {
     const accountName = formData.get("newAccountName") as string;
@@ -83,13 +83,9 @@ export class XAIProvider implements BaseProvider {
 
   getOptions(connection: BaseConnection): GenericOptions {
     if (!this.isXaiConnection(connection)) throw new Error("Invalid connection type");
-    const model = connection.model;
-
-    const isThinkingEffortSupported = ["grok-4-1-fast-reasoning"].includes(model);
-
     return {
       temperature: { max: 2 },
-      reasoningEffort: isThinkingEffortSupported ? ["low", "high"] : undefined,
+      reasoningEffort: ["low", "medium", "high"],
     };
   }
 
@@ -240,8 +236,7 @@ ${maybeTextFile.text}
           }
           if (typeof message.content === "string") {
             return { role: finalRole, content: message.content } satisfies
-              | ChatCompletionSystemMessageParam
-              | ChatCompletionUserMessageParam;
+              ChatCompletionSystemMessageParam | ChatCompletionUserMessageParam;
           } else {
             return {
               role: finalRole,
