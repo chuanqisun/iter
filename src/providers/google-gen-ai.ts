@@ -1,4 +1,4 @@
-import { ThinkingLevel, type Content, type GroundingMetadata, type Part } from "@google/genai";
+import type { Content, GroundingMetadata, Part, ThinkingLevel } from "@google/genai";
 import { dataUrlToText, tryDecodeDataUrlAsText } from "../storage/codec";
 import type {
   BaseConnection,
@@ -37,10 +37,10 @@ export class GoogleGenAIProvider implements BaseProvider {
   ];
 
   static thinkingLevelMap: Record<string, ThinkingLevel> = {
-    minimal: ThinkingLevel.MINIMAL,
-    low: ThinkingLevel.LOW,
-    medium: ThinkingLevel.MEDIUM,
-    high: ThinkingLevel.HIGH,
+    minimal: "MINIMAL" as ThinkingLevel.MINIMAL,
+    low: "LOW" as ThinkingLevel.LOW,
+    medium: "MEDIUM" as ThinkingLevel.MEDIUM,
+    high: "HIGH" as ThinkingLevel.HIGH,
   };
 
   parseNewCredentialForm(formData: FormData): GoogleGenAICredential[] {
