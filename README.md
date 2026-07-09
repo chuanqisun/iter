@@ -25,18 +25,11 @@ Recreate the UI of Airbnb with a single screenshot
 ## Supported model providers
 
 - OpenAI\*
+  - ✅ GPT-5.6 Sol
+  - ✅ GPT-5.6 Terra
+  - ✅ GPT-5.6 Luna
   - ✅ GPT-5.5-pro
   - ✅ GPT-5.5
-  - ✅ GPT-5.4-pro
-  - ✅ GPT-5.4
-  - ✅ GPT-5.4-mini
-  - ✅ GPT-5.4-nano
-  - ✅ GPT-5.3-codex
-  - ✅ GPT-5.3-chat-latest
-  - ✅ GPT-5.2
-  - ✅ GPT-5
-  - ✅ GPT-5-mini
-  - ✅ GPT-5-nano
 - Anthropic
   - ✅ Claude Fable 5
   - ✅ Claude Sonnet 5
