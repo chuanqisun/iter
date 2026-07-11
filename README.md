@@ -40,7 +40,7 @@ Recreate the UI of Airbnb with a single screenshot
 - Google Generative AI
   - ✅ Gemini 3.5 Flash
   - ✅ Gemini 3.1 Pro Preview
-  - ✅ Gemini 3.1 Flash-Lite Preview
+  - ✅ Gemini 3.1 Flash-Lite
   - ✅ Gemini 3 Flash Preview
 - xAI\*\*
   - ✅ Grok 4.5

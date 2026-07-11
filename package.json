@@ -34,7 +34,7 @@
         "vitest": "^4.1.10"
     },
     "dependencies": {
-        "@anthropic-ai/sdk": "^0.110.0",
+        "@anthropic-ai/sdk": "^0.111.0",
         "@codemirror/commands": "^6.10.4",
         "@codemirror/lang-javascript": "^6.2.5",
         "@codemirror/lang-markdown": "^6.5.0",
@@ -42,7 +42,7 @@
         "@codemirror/language-data": "^6.5.2",
         "@codemirror/state": "^6.7.1",
         "@codemirror/view": "^6.43.6",
-        "@google/genai": "^2.10.0",
+        "@google/genai": "^2.11.0",
         "@uiw/codemirror-theme-github": "^4.25.11",
         "gpt-tokenizer": "^3.4.0",
         "hast-util-to-string": "^3.0.1",
