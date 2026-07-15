@@ -2,12 +2,16 @@ artifact-editor-element {
   display: grid;
   height: 100%;
   grid-template:
-    "menu menu" auto
-    "code preview" 1fr / 1fr 1fr;
+    "menu menu menu" auto
+    "code divider preview" 1fr / minmax(0, var(--artifact-code-width, 1fr)) 0 minmax(0, 1fr);
 
-  /* once user has resized the editor, left pane should fit content */
-  &:has(.cm-editor[style]) {
-    grid-template-columns: auto 1fr;
+  &[data-resizing] {
+    cursor: col-resize;
+    user-select: none;
+
+    iframe {
+      pointer-events: none;
+    }
   }
 
   .artifact-menu {
@@ -48,6 +52,30 @@ artifact-editor-element {
     min-height: 0;
   }
 
+  .artifact-divider {
+    grid-area: divider;
+    position: relative;
+    z-index: 1;
+    touch-action: none;
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset-block: 0;
+      left: 50%;
+      width: 5px;
+      translate: -50% 0;
+      cursor: col-resize;
+      background-color: transparent;
+    }
+
+    &:hover::before,
+    &[data-dragging]::before {
+      width: 10px;
+      background-color: var(--button-border-rest-color);
+    }
+  }
+
   artifact-preview {
     grid-area: preview;
 
@@ -71,7 +99,6 @@ artifact-editor-element {
   .cm-editor {
     padding: 0;
     border: none;
-    resize: horizontal;
 
     /* prevent nested edit */
     [data-action="edit"] {
