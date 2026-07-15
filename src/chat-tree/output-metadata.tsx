@@ -34,7 +34,7 @@ export function OutputMetadata(props: OutputMetadataProps) {
 
   return (
     <span className="c-usage-metadata" ref={dataViewRef}>
-      <span className="c-usage-metric" title="total output tokens">
+      <span className="c-usage-metric" title="total output tokens / cache read">
         <span data-total></span>
       </span>
       <span> · </span>
