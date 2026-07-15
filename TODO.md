@@ -9,7 +9,6 @@
 - Language override for editor
 - Reference pinned code blocks
 - Migrate from styled components to CSS
-- Investigate initial script loading size
 - Auto scroll to bottom
 - Handle markdown table horizontal overflow
 - Code block change tracking should use precise positions rather than regex matching
@@ -23,6 +22,9 @@
 
 # DONE
 
+- Bug: Shiki language lazy loading isn't effective
+- Bug: Live preview editor resizer broken
+- LaTeX support
 - When user pastes html partial text, convert it to markdown
 - Bug: abort error lingers after role switch (no repro)
 - Add search grounding from major providers
