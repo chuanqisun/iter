@@ -104,6 +104,7 @@ export class XAIProvider implements BaseProvider {
       const options = that.getOptions(connection);
 
       const start = performance.now();
+      let latencyMs: number | undefined;
       const stream = await client.chat.completions.create(
         {
           stream: true,
@@ -127,12 +128,16 @@ export class XAIProvider implements BaseProvider {
 
       for await (const chunk of stream) {
         const content = chunk.choices.at(0)?.delta?.content;
-        if (content) yield content;
+        if (content) {
+          latencyMs ??= performance.now() - start;
+          yield content;
+        }
         if (chunk.usage) {
           config?.onMetadata?.({
             cachedInputTokens: chunk.usage.prompt_tokens_details?.cached_tokens,
             totalOutputTokens:
               (chunk.usage.completion_tokens_details?.reasoning_tokens ?? 0) + chunk.usage.completion_tokens,
+            latencyMs,
             durationMs: performance.now() - start,
           });
         }

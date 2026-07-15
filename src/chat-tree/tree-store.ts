@@ -24,6 +24,7 @@ export interface ChatNodeMetadata {
   totalInputTokens?: number;
   totalOutputTokens?: number;
   tokensPerSecond?: number;
+  latencyMs?: number;
 }
 
 export type Attachment = AttachmentEmbedded | AttachmentExternal;

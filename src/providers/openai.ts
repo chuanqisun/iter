@@ -103,6 +103,7 @@ export class OpenAIProvider implements BaseProvider {
       const options = that.getOptions(connection);
 
       const start = performance.now();
+      let latencyMs: number | undefined;
       const stream = client.responses.stream(
         {
           input: that.getOpenAIMessages(messages, { isSystemMessageSupported: true }),
@@ -128,6 +129,7 @@ export class OpenAIProvider implements BaseProvider {
 
       for await (const message of stream) {
         if (message.type === "response.output_text.delta" && message.delta) {
+          latencyMs ??= performance.now() - start;
           yield message.delta;
         }
       }
@@ -144,6 +146,7 @@ export class OpenAIProvider implements BaseProvider {
         config?.onMetadata?.({
           cachedInputTokens: finalUsage.input_tokens_details.cached_tokens,
           totalOutputTokens: finalUsage.output_tokens,
+          latencyMs,
           durationMs: performance.now() - start,
         });
       }

@@ -116,6 +116,7 @@ export class OpenRouterProvider implements BaseProvider {
       const isSystemMessageSupported = !connection.model.startsWith("o1-mini");
 
       const start = performance.now();
+      let latencyMs: number | undefined;
       const stream = await client.chat.completions.create(
         {
           stream: true,
@@ -139,11 +140,16 @@ export class OpenRouterProvider implements BaseProvider {
 
       for await (const chunk of stream) {
         const content = chunk.choices.at(0)?.delta?.content;
-        if (content) yield content;
+        if (content) {
+          latencyMs ??= performance.now() - start;
+          yield content;
+        }
         if (chunk.usage) {
           config?.onMetadata?.({
+            cachedInputTokens: chunk.usage.prompt_tokens_details?.cached_tokens,
             totalOutputTokens:
               (chunk.usage.completion_tokens_details?.reasoning_tokens ?? 0) + chunk.usage.completion_tokens,
+            latencyMs,
             durationMs: performance.now() - start,
           });
         }
@@ -248,8 +254,7 @@ ${maybeTextFile.text}
           }
           if (typeof message.content === "string") {
             return { role: finalRole, content: message.content } satisfies
-              | ChatCompletionSystemMessageParam
-              | ChatCompletionUserMessageParam;
+              ChatCompletionSystemMessageParam | ChatCompletionUserMessageParam;
           } else {
             return {
               role: finalRole,

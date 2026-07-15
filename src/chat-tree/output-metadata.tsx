@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { BehaviorSubject } from "rxjs";
-import { getReadableNumber } from "./get-readable-number";
+import { getReadableLatency, getReadableNumber } from "./get-readable-number";
 import type { ChatNodeMetadata } from "./tree-store";
 
 export interface OutputMetadataProps {
@@ -20,8 +20,9 @@ export function OutputMetadata(props: OutputMetadataProps) {
 
       if (hasData) {
         const cacheSuffix = metadata.cachedInputTokens ? ` · ${metadata.cachedInputTokens} cache` : "";
+        const latencySuffix = metadata.latencyMs !== undefined ? ` · ${getReadableLatency(metadata.latencyMs)}` : "";
 
-        dataViewRef.current.querySelector("[data-tps]")!.textContent = `${tps}/s`;
+        dataViewRef.current.querySelector("[data-tps]")!.textContent = `${tps}/s ${latencySuffix}`;
         dataViewRef.current.querySelector("[data-total]")!.textContent =
           `${getReadableNumber(totalOutputTokens) ?? "0"} ${totalOutputTokens === 1 ? "token" : "tokens"}${cacheSuffix}`;
       }

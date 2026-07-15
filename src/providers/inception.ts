@@ -156,6 +156,7 @@ export class InceptionProvider implements BaseProvider {
       };
 
       const start = performance.now();
+      let latencyMs: number | undefined;
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -205,6 +206,7 @@ export class InceptionProvider implements BaseProvider {
 
                 const content = chunk.choices?.[0]?.delta?.content;
                 if (content) {
+                  latencyMs ??= performance.now() - start;
                   yield content;
                 }
 
@@ -212,6 +214,7 @@ export class InceptionProvider implements BaseProvider {
                   totalTokens = chunk.usage.completion_tokens;
                   config.onMetadata?.({
                     totalOutputTokens: totalTokens,
+                    latencyMs,
                     durationMs: performance.now() - start,
                   });
                 }
@@ -229,12 +232,14 @@ export class InceptionProvider implements BaseProvider {
             const chunk: InceptionStreamChunk = JSON.parse(jsonStr);
             const content = chunk.choices?.[0]?.delta?.content;
             if (content) {
+              latencyMs ??= performance.now() - start;
               yield content;
             }
             if (chunk.usage?.completion_tokens) {
               totalTokens = chunk.usage.completion_tokens;
               config?.onMetadata?.({
                 totalOutputTokens: totalTokens,
+                latencyMs,
                 durationMs: performance.now() - start,
               });
             }

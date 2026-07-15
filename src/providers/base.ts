@@ -66,6 +66,7 @@ export interface GenericMetadata {
   totalOutputTokens?: number;
   cachedInputTokens?: number;
   durationMs?: number;
+  latencyMs?: number;
 }
 
 export type ChatStreamProxy = (params: GenericChatParams) => AsyncGenerator<string>;

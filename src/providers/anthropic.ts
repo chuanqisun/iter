@@ -137,6 +137,7 @@ export class AnthropicProvider implements BaseProvider {
         : undefined;
 
       const start = performance.now();
+      let latencyMs: number | undefined;
       const tools = [
         ...(config.search ? ([{ type: "web_search_20250305", name: "web_search", max_uses: 5 }] as const) : []),
         ...(config.fetch
@@ -183,6 +184,7 @@ export class AnthropicProvider implements BaseProvider {
 
       for await (const message of stream) {
         if (message.type === "content_block_delta" && message.delta.type === "text_delta" && message.delta.text) {
+          latencyMs ??= performance.now() - start;
           yield message.delta.text;
         }
       }
@@ -198,6 +200,7 @@ export class AnthropicProvider implements BaseProvider {
       config?.onMetadata?.({
         cachedInputTokens: finalUsage.cache_read_input_tokens ?? undefined,
         totalOutputTokens: finalUsage.output_tokens,
+        latencyMs,
         durationMs: performance.now() - start,
       });
     };

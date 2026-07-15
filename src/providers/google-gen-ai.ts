@@ -144,6 +144,7 @@ export class GoogleGenAIProvider implements BaseProvider {
       ];
 
       const start = performance.now();
+      let latencyMs: number | undefined;
       const result = await client.models.generateContentStream({
         model: connection.model,
         contents: googleMessages,
@@ -168,13 +169,17 @@ export class GoogleGenAIProvider implements BaseProvider {
           citations = that.extractCitations(metadata);
         }
 
+        if (chunk) {
+          latencyMs ??= performance.now() - start;
+          yield chunk;
+        }
         if (message.usageMetadata)
           config.onMetadata?.({
             cachedInputTokens: message.usageMetadata.cachedContentTokenCount,
             totalOutputTokens: message.usageMetadata.candidatesTokenCount,
+            latencyMs,
             durationMs: performance.now() - start,
           });
-        if (chunk) yield chunk;
       }
 
       const references = formatReferences(citations);
