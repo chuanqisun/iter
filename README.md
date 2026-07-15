@@ -8,6 +8,7 @@ A minimalist frontend for Gen AI Chat models, optimized for rapid prompt iterati
 - **💅 Markdown parser**: Built-in syntax highlight and copy button for code blocks
 - **📋 Smart paste**: HTML pastes as markdown, images as input, and files as attachments
 - **🧭 Artifacts**: Live edit and preview code blocks for SVG, HTML, Mermaid, TypeScript, and React
+- **🪶 Math output**: Elegant rendering of LaTeX within Markdown
 - **💻 Interpreter**: Process uploaded files with TypeScript, with access to NPM registry, a virtual File System, and an LLM prompt API.
 - **🖱️ Cursor chat**: Precisely edit the selected text
 - **📸 Vision input**: Handle visual inputs with multi-modal models

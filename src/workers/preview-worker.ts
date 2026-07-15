@@ -5,6 +5,7 @@ import markedShiki from "marked-shiki";
 import { bundledLanguages, createHighlighter } from "shiki/bundle/web";
 import xss, { escapeAttrValue, whiteList } from "xss";
 import { runnableArtifactLanguages } from "../artifact/languages/runnable-languages";
+import { markedMathML, mathMLWhiteList } from "./math";
 
 const supportedLanguages = Object.keys(bundledLanguages);
 const editorLanguages = runnableArtifactLanguages.union(new Set(supportedLanguages));
@@ -16,20 +17,21 @@ async function initializeMarked() {
     themes: ["dark-plus"],
   });
 
-  const marked = await new Marked().use(
-    markedShiki({
-      highlight(code, lang, props) {
-        const highlightableLanguage = supportedLanguages.includes(lang) ? lang : "text";
-        const editorLanguage = editorLanguages.has(lang) ? lang : "text";
+  const marked = await new Marked()
+    .use(
+      markedShiki({
+        highlight(code, lang, props) {
+          const highlightableLanguage = supportedLanguages.includes(lang) ? lang : "text";
+          const editorLanguage = editorLanguages.has(lang) ? lang : "text";
 
-        const highlightedHtml = highlighter.codeToHtml(code, {
-          lang: highlightableLanguage,
-          theme: "dark-plus",
-        });
+          const highlightedHtml = highlighter.codeToHtml(code, {
+            lang: highlightableLanguage,
+            theme: "dark-plus",
+          });
 
-        const attrStr = props.join(" ");
+          const attrStr = props.join(" ");
 
-        return `
+          return `
         <artifact-element lang="${editorLanguage}" ${attrStr}>  
           <artifact-source>${highlightedHtml}</artifact-source>  
             <artifact-action>
@@ -42,9 +44,10 @@ async function initializeMarked() {
               <button data-action="save">Download</button>
             </artifact-action>
         </artifact-element>`;
-      },
-    }),
-  );
+        },
+      }),
+    )
+    .use(markedMathML());
   return marked;
 }
 
@@ -57,6 +60,7 @@ export async function main() {
     const cleanHtml = xss(dirtyHtml, {
       whiteList: {
         ...whiteList,
+        ...mathMLWhiteList,
         button: ["data-action", "class"],
         div: ["class"],
         span: ["class"],
