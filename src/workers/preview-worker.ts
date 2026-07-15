@@ -2,7 +2,7 @@
 
 import { Marked } from "marked";
 import markedShiki from "marked-shiki";
-import { bundledLanguages, createHighlighter } from "shiki/bundle/web";
+import { bundledLanguages, codeToHtml } from "shiki/bundle/web";
 import xss, { escapeAttrValue, whiteList } from "xss";
 import { runnableArtifactLanguages } from "../artifact/languages/runnable-languages";
 import { markedMathML, mathMLWhiteList } from "../markdown/math";
@@ -10,21 +10,16 @@ import { markedMathML, mathMLWhiteList } from "../markdown/math";
 const supportedLanguages = Object.keys(bundledLanguages);
 const editorLanguages = runnableArtifactLanguages.union(new Set(supportedLanguages));
 
-const markedAsync = initializeMarked();
-async function initializeMarked() {
-  const highlighter = await createHighlighter({
-    langs: supportedLanguages,
-    themes: ["dark-plus"],
-  });
-
-  const marked = await new Marked()
+const marked = initializeMarked();
+function initializeMarked() {
+  return new Marked()
     .use(
       markedShiki({
-        highlight(code, lang, props) {
+        async highlight(code, lang, props) {
           const highlightableLanguage = supportedLanguages.includes(lang) ? lang : "text";
           const editorLanguage = editorLanguages.has(lang) ? lang : "text";
 
-          const highlightedHtml = highlighter.codeToHtml(code, {
+          const highlightedHtml = await codeToHtml(code, {
             lang: highlightableLanguage,
             theme: "dark-plus",
           });
@@ -48,14 +43,13 @@ async function initializeMarked() {
       }),
     )
     .use(markedMathML());
-  return marked;
 }
 
 export async function main() {
   self.onmessage = async (event) => {
     const markdown = event.data?.markdown;
     if (markdown === undefined) return;
-    const dirtyHtml = await (await markedAsync).parse(markdown);
+    const dirtyHtml = await marked.parse(markdown);
 
     const cleanHtml = xss(dirtyHtml, {
       whiteList: {
