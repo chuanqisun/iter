@@ -2,7 +2,7 @@
 
 import { Marked } from "marked";
 import markedShiki from "marked-shiki";
-import { bundledLanguages, codeToHtml } from "shiki/bundle/web";
+import { bundledLanguages, codeToHtml } from "shiki/bundle/full";
 import xss, { escapeAttrValue, whiteList } from "xss";
 import { runnableArtifactLanguages } from "../artifact/languages/runnable-languages";
 import { markedMathML, mathMLWhiteList } from "../markdown/math";
