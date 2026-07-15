@@ -76,6 +76,24 @@ export const mathMLWhiteList = Object.fromEntries(
   ].map((tag) => [tag, mathMLAttributes]),
 );
 
+// Block math: $$...$$ or \[...\]
+const blockDollarStartRegex = /^\s*\$\$/m;
+const blockDollarRegex = /^\s*\$\$[ \t]*\n?([\s\S]*?)\n?[ \t]*\$\$(?:\n|$)/;
+const blockBracketStartRegex = /^\s*\\\[/m;
+const blockBracketRegex = /^\s*\\\[[ \t]*\n?([\s\S]*?)\n?[ \t]*\\\](?:\n|$)/;
+
+// Inline math: $...$ or \(...\)
+// Opening $ must not be followed by whitespace. Closing $ must not be preceded by whitespace.
+const inlineDollarRegex = /^\$(?!\$|\s)((?:\\.|[^\\$\n])+?)(?<!\s)\$(?!\$)/;
+const inlineParenRegex = /^\\\(((?:\\.|[^\\\n])+?)\\\)/;
+const inlineStartRegex = /\$|\\\(/;
+
+// Masking regexes used to hide math spans from Markdown's emphasis (_ and *) parsing.
+const maskBlockDollarRegex = /\$\$[\s\S]*?\$\$/g;
+const maskBlockBracketRegex = /\\\[[\s\S]*?\\\]/g;
+const maskInlineDollarRegex = /\$(?!\$|\s)(?:\\.|[^\\$\n])+?(?<!\s)\$/g;
+const maskInlineParenRegex = /\\\((?:\\.|[^\\\n])+?\\\)/g;
+
 export function markedMathML(options: KatexOptions = {}): MarkedExtension {
   const macros = options.macros ?? {};
 
@@ -95,11 +113,17 @@ export function markedMathML(options: KatexOptions = {}): MarkedExtension {
     level: "block",
 
     start(src) {
-      return src.match(/^\s*\$\$/m)?.index;
+      const dollarIndex = src.match(blockDollarStartRegex)?.index;
+      const bracketIndex = src.match(blockBracketStartRegex)?.index;
+
+      if (dollarIndex === undefined) return bracketIndex;
+      if (bracketIndex === undefined) return dollarIndex;
+
+      return Math.min(dollarIndex, bracketIndex);
     },
 
     tokenizer(src) {
-      const match = /^\s*\$\$[ \t]*\n?([\s\S]*?)\n?[ \t]*\$\$(?:\n|$)/.exec(src);
+      const match = blockDollarRegex.exec(src) ?? blockBracketRegex.exec(src);
 
       if (!match) return;
 
@@ -120,13 +144,11 @@ export function markedMathML(options: KatexOptions = {}): MarkedExtension {
     level: "inline",
 
     start(src) {
-      return src.indexOf("$");
+      return src.match(inlineStartRegex)?.index;
     },
 
     tokenizer(src) {
-      // Opening $ must not be followed by whitespace.
-      // Closing $ must not be preceded by whitespace.
-      const match = /^\$(?!\$|\s)((?:\\.|[^\\$\n])+?)(?<!\s)\$(?!\$)/.exec(src);
+      const match = inlineDollarRegex.exec(src) ?? inlineParenRegex.exec(src);
 
       if (!match) return;
 
@@ -148,7 +170,11 @@ export function markedMathML(options: KatexOptions = {}): MarkedExtension {
     // Prevent _ and * inside math from being treated as Markdown emphasis.
     hooks: {
       emStrongMask(src) {
-        return src.replace(/\$\$[\s\S]*?\$\$/g, mask).replace(/\$(?!\$|\s)(?:\\.|[^\\$\n])+?(?<!\s)\$/g, mask);
+        return src
+          .replace(maskBlockDollarRegex, mask)
+          .replace(maskBlockBracketRegex, mask)
+          .replace(maskInlineDollarRegex, mask)
+          .replace(maskInlineParenRegex, mask);
       },
     },
   };
