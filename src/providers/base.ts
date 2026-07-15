@@ -64,6 +64,7 @@ export interface GenericChatParams {
 
 export interface GenericMetadata {
   totalOutputTokens?: number;
+  cachedInputTokens?: number;
   durationMs?: number;
 }
 

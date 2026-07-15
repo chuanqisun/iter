@@ -142,6 +142,7 @@ export class AzureOpenAIProvider implements BaseProvider {
       const finalUsage = (await stream.finalResponse()).usage;
       if (finalUsage) {
         config?.onMetadata?.({
+          cachedInputTokens: finalUsage.input_tokens_details.cached_tokens,
           totalOutputTokens: finalUsage.output_tokens,
           durationMs: performance.now() - start,
         });

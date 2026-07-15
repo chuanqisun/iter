@@ -20,6 +20,7 @@ export interface ChatNode {
 }
 
 export interface ChatNodeMetadata {
+  cachedInputTokens?: number;
   totalInputTokens?: number;
   totalOutputTokens?: number;
   tokensPerSecond?: number;

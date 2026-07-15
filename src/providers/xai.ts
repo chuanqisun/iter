@@ -130,6 +130,7 @@ export class XAIProvider implements BaseProvider {
         if (content) yield content;
         if (chunk.usage) {
           config?.onMetadata?.({
+            cachedInputTokens: chunk.usage.prompt_tokens_details?.cached_tokens,
             totalOutputTokens:
               (chunk.usage.completion_tokens_details?.reasoning_tokens ?? 0) + chunk.usage.completion_tokens,
             durationMs: performance.now() - start,

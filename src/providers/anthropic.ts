@@ -196,6 +196,7 @@ export class AnthropicProvider implements BaseProvider {
 
       const finalUsage = finalMessage.usage;
       config?.onMetadata?.({
+        cachedInputTokens: finalUsage.cache_read_input_tokens ?? undefined,
         totalOutputTokens: finalUsage.output_tokens,
         durationMs: performance.now() - start,
       });

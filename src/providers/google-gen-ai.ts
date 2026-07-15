@@ -170,6 +170,7 @@ export class GoogleGenAIProvider implements BaseProvider {
 
         if (message.usageMetadata)
           config.onMetadata?.({
+            cachedInputTokens: message.usageMetadata.cachedContentTokenCount,
             totalOutputTokens: message.usageMetadata.candidatesTokenCount,
             durationMs: performance.now() - start,
           });

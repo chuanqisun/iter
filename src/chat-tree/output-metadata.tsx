@@ -19,9 +19,11 @@ export function OutputMetadata(props: OutputMetadataProps) {
       dataViewRef.current.toggleAttribute("data-active", hasData);
 
       if (hasData) {
+        const cacheSuffix = metadata.cachedInputTokens ? ` · ${metadata.cachedInputTokens} cache` : "";
+
         dataViewRef.current.querySelector("[data-tps]")!.textContent = `${tps}/s`;
         dataViewRef.current.querySelector("[data-total]")!.textContent =
-          `${getReadableNumber(totalOutputTokens) ?? "0"} ${totalOutputTokens === 1 ? "token" : "tokens"}`;
+          `${getReadableNumber(totalOutputTokens) ?? "0"} ${totalOutputTokens === 1 ? "token" : "tokens"}${cacheSuffix}`;
       }
     });
 

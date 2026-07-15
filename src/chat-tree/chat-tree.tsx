@@ -738,6 +738,7 @@ export function ChatTree() {
 
         metadata$.next({
           ...metadata$.value,
+          cachedInputTokens: metadata.cachedInputTokens,
           totalOutputTokens: metadata.totalOutputTokens,
           tokensPerSecond: (1000 * (metadata.totalOutputTokens ?? 0)) / (metadata.durationMs ?? 1),
         });
