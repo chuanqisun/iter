@@ -6,6 +6,7 @@
     <label><input name="newType" type="radio" value="anthropic" /> Anthropic</label>
     <label><input name="newType" type="radio" value="google-gen-ai" /> Google Gen AI</label>
     <label><input name="newType" type="radio" value="openrouter" /> OpenRouter</label>
+    <label><input name="newType" type="radio" value="cerebras" /> Cerebras</label>
     <label><input name="newType" type="radio" value="inception" /> Inception</label>
   </div>
 
@@ -99,6 +100,25 @@
             type="text"
             placeholder="moonshotai/kimi-k2:free,qwen/qwen3-coder:free"
           />
+        </div>
+
+        <button type="submit">Submit</button>
+      </div>
+    </fieldset>
+  </form>
+
+  <form data-type="cerebras">
+    <fieldset>
+      <legend>New</legend>
+      <div class="rows">
+        <div class="field">
+          <label for="newCerebrasKey">API key</label>
+          <input id="newCerebrasKey" name="newKey" type="password" required data-1p-ignore />
+        </div>
+
+        <div class="field">
+          <label for="newCerebrasAccountName">Account name (optional)</label>
+          <input id="newCerebrasAccountName" name="newAccountName" type="text" placeholder="personal" />
         </div>
 
         <button type="submit">Submit</button>

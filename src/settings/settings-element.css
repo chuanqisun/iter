@@ -71,6 +71,12 @@ settings-element {
       }
     }
 
+    &:has([value="cerebras"]:checked) {
+      form:not([data-type="cerebras"]) {
+        display: none;
+      }
+    }
+
     &:has([value="inception"]:checked) {
       form:not([data-type="inception"]) {
         display: none;

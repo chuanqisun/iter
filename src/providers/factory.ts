@@ -1,5 +1,6 @@
 import { AnthropicProvider } from "./anthropic";
 import { AzureOpenAIProvider } from "./aoai";
+import { CerebrasProvider } from "./cerebras";
 import { GoogleGenAIProvider } from "./google-gen-ai";
 import { InceptionProvider } from "./inception";
 import { OpenAIProvider } from "./openai";
@@ -14,6 +15,8 @@ export function createProvider(type: string) {
       return new AzureOpenAIProvider();
     case AnthropicProvider.type:
       return new AnthropicProvider();
+    case CerebrasProvider.type:
+      return new CerebrasProvider();
     case GoogleGenAIProvider.type:
       return new GoogleGenAIProvider();
     case XAIProvider.type:

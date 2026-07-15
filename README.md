@@ -45,6 +45,10 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ Gemini 3 Flash Preview
 - xAI\*\*
   - ✅ Grok 4.5
+- Cerebras
+  - ✅ Gemma 4 31B
+  - ✅ GPT OSS 120B
+  - ✅ GLM 4.7
 - Inception\*\*\*
   - ✅ Mercury 2
   - ✅ Mercury Coder
