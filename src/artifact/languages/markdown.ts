@@ -20,8 +20,12 @@ export class MarkdownArtifact extends GenericArtifact {
   }
 
   async markdownToHtml(code: string) {
-    const { marked } = await import("marked");
-    const coreHTML = marked.parse(code);
+    const [marked, markedMathML] = await Promise.all([
+      import("marked").then((pkg) => pkg.marked),
+      import("../../markdown/math").then((pkg) => pkg.markedMathML),
+    ]);
+
+    const coreHTML = marked.use(markedMathML()).parse(code);
     return `
 <!DOCTYPE html>
 <html lang="en">

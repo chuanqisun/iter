@@ -5,7 +5,7 @@ import markedShiki from "marked-shiki";
 import { bundledLanguages, createHighlighter } from "shiki/bundle/web";
 import xss, { escapeAttrValue, whiteList } from "xss";
 import { runnableArtifactLanguages } from "../artifact/languages/runnable-languages";
-import { markedMathML, mathMLWhiteList } from "./math";
+import { markedMathML, mathMLWhiteList } from "../markdown/math";
 
 const supportedLanguages = Object.keys(bundledLanguages);
 const editorLanguages = runnableArtifactLanguages.union(new Set(supportedLanguages));
