@@ -1,0 +1,28 @@
+artifact-divider-element {
+  grid-area: divider;
+  position: relative;
+  z-index: 1;
+  touch-action: none;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: 50%;
+    width: 5px;
+    translate: -50% 0;
+    cursor: col-resize;
+    background-color: transparent;
+  }
+
+  &:hover::before,
+  &[data-resizing]::before {
+    width: 10px;
+    background-color: var(--button-border-rest-color);
+  }
+}
+
+artifact-editor-element:has(artifact-divider-element[data-resizing]) {
+  cursor: col-resize;
+  user-select: none;
+}

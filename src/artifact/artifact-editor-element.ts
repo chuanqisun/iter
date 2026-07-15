@@ -1,4 +1,5 @@
 import { CodeEditorElement } from "../code-editor/code-editor-element";
+import type { ArtifactDividerElement } from "./artifact-divider-element";
 import "./artifact-editor-element.css";
 import { supportedArtifacts } from "./languages";
 import type { ArtifactContext, ArtifactSupport } from "./languages/type";
@@ -33,7 +34,7 @@ export class ArtifactEditorElement extends HTMLElement {
     const artifact = supportedArtifacts.find((art) => art.onResolveLanguage(props.lang));
     const actionMenu = this.querySelector("#artifact-menu")!;
     const preview = this.querySelector<HTMLElement>("artifact-preview") ?? undefined;
-    this.setupColumnResizer(abortController.signal);
+    this.setupColumnResizeIntent(abortController.signal);
     const nodeId = trigger?.closest("[data-node-id]")?.getAttribute("data-node-id") ?? undefined;
 
     // TODO some code still depends on reaching data-node-id. We should remove this
@@ -114,70 +115,25 @@ export class ArtifactEditorElement extends HTMLElement {
     return result.promise;
   }
 
-  private setupColumnResizer(signal: AbortSignal) {
-    const divider = this.querySelector<HTMLElement>(".artifact-divider");
+  private setupColumnResizeIntent(signal: AbortSignal) {
+    const divider = this.querySelector<ArtifactDividerElement>("artifact-divider-element");
     if (!divider) return;
 
-    let activePointerId: number | undefined;
-    let pointerOffset = 0;
-
-    const resize = (clientX: number) => {
-      const bounds = this.getBoundingClientRect();
-      if (bounds.width === 0) return;
-
-      const minimumColumnWidth = Math.min(160, bounds.width / 2);
-      const position = Math.min(
-        bounds.width - minimumColumnWidth,
-        Math.max(minimumColumnWidth, clientX - pointerOffset - bounds.left),
-      );
-      this.style.setProperty("--artifact-code-width", `${(position / bounds.width) * 100}%`);
-    };
-
-    const stopResizing = (pointerId = activePointerId) => {
-      if (pointerId === undefined || pointerId !== activePointerId) return;
-
-      activePointerId = undefined;
-      divider.removeAttribute("data-dragging");
-      this.removeAttribute("data-resizing");
-
-      if (divider.hasPointerCapture(pointerId)) {
-        divider.releasePointerCapture(pointerId);
-      }
-    };
-
     divider.addEventListener(
-      "pointerdown",
+      "artifact-divider-resize",
       (event) => {
-        if (event.button !== 0 || !event.isPrimary || activePointerId !== undefined) return;
+        const bounds = this.getBoundingClientRect();
+        if (bounds.width === 0) return;
 
-        event.preventDefault();
-        activePointerId = event.pointerId;
-        pointerOffset = event.clientX - divider.getBoundingClientRect().left;
-        divider.setPointerCapture(event.pointerId);
-        divider.setAttribute("data-dragging", "");
-        this.setAttribute("data-resizing", "");
+        const minimumColumnWidth = Math.min(160, bounds.width / 2);
+        const position = Math.min(
+          bounds.width - minimumColumnWidth,
+          Math.max(minimumColumnWidth, event.detail.clientX - bounds.left),
+        );
+        this.style.setProperty("--artifact-code-width", `${(position / bounds.width) * 100}%`);
       },
       { signal },
     );
-
-    divider.addEventListener(
-      "pointermove",
-      (event) => {
-        if (event.pointerId !== activePointerId) return;
-        if (event.pointerType === "mouse" && (event.buttons & 1) === 0) {
-          stopResizing(event.pointerId);
-          return;
-        }
-        resize(event.clientX);
-      },
-      { signal },
-    );
-
-    divider.addEventListener("pointerup", (event) => stopResizing(event.pointerId), { signal });
-    divider.addEventListener("pointercancel", (event) => stopResizing(event.pointerId), { signal });
-    divider.addEventListener("lostpointercapture", (event) => stopResizing(event.pointerId), { signal });
-    window.addEventListener("blur", () => stopResizing(), { signal });
-    signal.addEventListener("abort", () => stopResizing(), { once: true });
   }
 
   private handleArtifactAction(
