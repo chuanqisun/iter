@@ -67,3 +67,8 @@
     color: var(--action-button-hover-color);
   }
 }
+
+.c-usage-metric:empty,
+.c-usage-separator:has(+ .c-usage-metric:empty) {
+  display: none;
+}

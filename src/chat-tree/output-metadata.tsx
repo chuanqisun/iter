@@ -7,24 +7,24 @@ export interface OutputMetadataProps {
   metadata$: BehaviorSubject<ChatNodeMetadata>;
 }
 export function OutputMetadata(props: OutputMetadataProps) {
-  const dataViewRef = useRef<HTMLDivElement>(null);
+  const dataViewRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     const subscription = props.metadata$.subscribe((metadata) => {
       if (!dataViewRef.current) return;
       const { tokensPerSecond, totalOutputTokens } = metadata;
-      const tps = tokensPerSecond ? getReadableNumber(tokensPerSecond) : "";
+      const values = {
+        total: totalOutputTokens
+          ? `${getReadableNumber(totalOutputTokens)} ${totalOutputTokens === 1 ? "token" : "tokens"}`
+          : "",
+        cache: metadata.cachedInputTokens ? `${getReadableNumber(metadata.cachedInputTokens)} cache` : "",
+        tps: tokensPerSecond ? `${getReadableNumber(tokensPerSecond)}/s` : "",
+        latency: metadata.latencyMs !== undefined ? getReadableLatency(metadata.latencyMs) : "",
+      };
 
-      const hasData = !!tokensPerSecond && !!totalOutputTokens;
-      dataViewRef.current.toggleAttribute("data-active", hasData);
-
-      if (hasData) {
-        const cacheSuffix = metadata.cachedInputTokens ? ` · ${metadata.cachedInputTokens} cache` : "";
-        const latencySuffix = metadata.latencyMs !== undefined ? ` · ${getReadableLatency(metadata.latencyMs)}` : "";
-
-        dataViewRef.current.querySelector("[data-tps]")!.textContent = `${tps}/s ${latencySuffix}`;
-        dataViewRef.current.querySelector("[data-total]")!.textContent =
-          `${getReadableNumber(totalOutputTokens) ?? "0"} ${totalOutputTokens === 1 ? "token" : "tokens"}${cacheSuffix}`;
+      dataViewRef.current.toggleAttribute("data-active", Object.values(values).some(Boolean));
+      for (const [field, value] of Object.entries(values)) {
+        dataViewRef.current.querySelector(`[data-${field}]`)!.textContent = value;
       }
     });
 
@@ -35,13 +35,13 @@ export function OutputMetadata(props: OutputMetadataProps) {
 
   return (
     <span className="c-usage-metadata" ref={dataViewRef}>
-      <span className="c-usage-metric" title="total output tokens / cache read">
-        <span data-total></span>
-      </span>
-      <span> · </span>
-      <span className="c-usage-metric" title="tokens per second">
-        <span data-tps></span>
-      </span>
+      <span className="c-usage-metric" data-total title="total output tokens"></span>
+      <span className="c-usage-separator"> · </span>
+      <span className="c-usage-metric" data-cache title="cache read"></span>
+      <span className="c-usage-separator"> · </span>
+      <span className="c-usage-metric" data-tps title="tokens per second"></span>
+      <span className="c-usage-separator"> · </span>
+      <span className="c-usage-metric" data-latency title="latency"></span>
     </span>
   );
 }
