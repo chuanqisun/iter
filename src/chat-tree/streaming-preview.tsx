@@ -80,6 +80,7 @@ export function StreamingPreviewInternal(props: StreamingPreviewProps) {
 
         // Enter a code block
         if ((e.target as HTMLElement).closest("artifact-source")) {
+          if ((e.target as HTMLElement).closest(`[data-action="toggle-source"]`)) return;
           e.preventDefault(); // Otherwise, the dialog will immediately close
 
           (e.target as HTMLElement)
@@ -105,6 +106,7 @@ export function StreamingPreviewInternal(props: StreamingPreviewProps) {
     <MarkdownPreview
       tabIndex={0}
       className="js-focusable"
+      data-streaming={props.node.content$ ? "" : undefined}
       onKeyDown={handleKeyDown}
       onDoubleClick={(e) => props.onDoubleClick(e)}
       id={props.node.id}

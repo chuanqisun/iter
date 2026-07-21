@@ -25,7 +25,7 @@ const roleDislayName: Record<string, string> = {
   tool: "Tool",
 };
 
-const COLLAPSED_HEIGHT = 72;
+const COLLAPSED_HEIGHT = 144;
 
 export interface ChatNodeProps {
   node: ChatNode;

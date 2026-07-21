@@ -1002,6 +1002,7 @@ export function ChatTree() {
     const artifactElement = (e.target as HTMLElement)?.closest("artifact-element");
     if (artifactElement) {
       if (!(e.target as HTMLElement)?.closest("artifact-source")) return;
+      if ((e.target as HTMLElement)?.closest(`[data-action="toggle-source"]`)) return;
       artifactElement.querySelector<HTMLButtonElement>(`[data-action="edit"]`)?.click();
     } else {
       handleToggleViewFormat(nodeId);
