@@ -41,6 +41,7 @@ export interface ChatNodeProps {
   onNavigateNext: (id: string) => void;
   onOnly: (id: string) => void;
   onPaste: (id: string, e: ClipboardEvent) => void;
+  onPasteTextAsAttachment: (id: string) => void;
   onPreviewDoubleClick: (id: string, e: React.MouseEvent) => void;
   onRemoveAttachment: (id: string, attachmentId: string) => void;
   onRunNode: (id: string) => void;
@@ -69,6 +70,7 @@ export function ChatNodeInternal(props: ChatNodeProps) {
     onNavigateNext,
     onOnly,
     onPaste,
+    onPasteTextAsAttachment,
     onPreviewDoubleClick,
     onRemoveAttachment,
     onRunNode,
@@ -225,6 +227,7 @@ export function ChatNodeInternal(props: ChatNodeProps) {
                 onescape={onAbortAll}
                 oncontentchange={(e) => onTextChange(node.id, e.detail)}
                 onpaste={(e) => onPaste(node.id, e)}
+                onpastetextasattachment={() => onPasteTextAsAttachment(node.id)}
                 onnavigateprevious={() => onNavigatePrevious(node.id)}
                 onnavigatenext={() => onNavigateNext(node.id)}
                 onrun={(e) => {

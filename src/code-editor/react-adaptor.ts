@@ -16,6 +16,7 @@ declare module "react" {
         onenterreadonly?: (event: Event) => void;
         onnavigateprevious?: (event: Event) => void;
         onnavigatenext?: (event: Event) => void;
+        onpastetextasattachment?: (event: Event) => void;
         oncontentchange?: (event: CustomEvent<string>) => void;
         onrun?: (event: CustomEvent<string>) => void;
         ref?: RefObject<CodeEditorElement | null>;

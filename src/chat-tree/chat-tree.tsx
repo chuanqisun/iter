@@ -33,22 +33,22 @@ import {
   castToFile,
   createAttachmentFromChatPart,
   createAttacchmentFromFile as createAttachmentFromFile,
+  createEmbeddedTextAttachment,
   downloadAttachment,
-  findAttachment,
   getAttachmentEmbeddedFiles,
   getAttachmentExternalFiles,
   getAttachmentTextContent,
   getToggledAttachment,
   getValidAttachmentFileName,
+  promptRenameAttachment,
   removeAttachment,
-  renameAttachment,
   replaceAttachment,
   upsertAttachments,
 } from "./attachment";
 import { ChatConfigMemo } from "./chat-config";
 import { setChatInstance } from "./chat-instance";
 import { ChatNodeMemo } from "./chat-node";
-import { getParts } from "./clipboard";
+import { getParts, readClipboardTextAttachment } from "./clipboard";
 import { dictateToTextarea } from "./dictation";
 import { getReadableFileSize } from "./file-size";
 import { getFilename } from "./filename-dialog";
@@ -829,6 +829,47 @@ export function ChatTree() {
     [],
   );
 
+  const handleRenameAttachment = useCallback(async (nodeId: string, attachmentId: string) => {
+    const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
+    if (!targetNode) return;
+
+    const attachmentPatch = await promptRenameAttachment(targetNode, attachmentId);
+    if (!attachmentPatch) return;
+
+    setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, attachmentPatch)));
+  }, []);
+
+  const handlePasteTextAsAttachment = useCallback(async (nodeId: string) => {
+    const activeUserNodeId = getActiveUserNodeId(treeNodes$.value.find((node) => node.id === nodeId));
+    if (!activeUserNodeId) return;
+
+    const originatingEditor = document.getElementById(nodeId) as CodeEditorElement | null;
+
+    try {
+      const clipboardText = await readClipboardTextAttachment();
+      if (!clipboardText) return;
+
+      const attachment = createEmbeddedTextAttachment(clipboardText.text, clipboardText.filename);
+      setTreeNodes((nodes) =>
+        nodes.map(patchNode((node) => node.id === activeUserNodeId, upsertAttachments(attachment))),
+      );
+
+      const targetNode = treeNodes$.value.find((node) => node.id === activeUserNodeId);
+      if (!targetNode) return;
+
+      try {
+        const attachmentPatch = await promptRenameAttachment(targetNode, attachment.id);
+        if (!attachmentPatch) return;
+
+        setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === activeUserNodeId, attachmentPatch)));
+      } finally {
+        originatingEditor?.focus();
+      }
+    } catch (error: any) {
+      showToast(`❌ Error ${error?.message}`);
+    }
+  }, []);
+
   const handleRemoveAttachment = useCallback((nodeId: string, attachmentId: string) => {
     setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, removeAttachment(attachmentId))));
   }, []);
@@ -848,30 +889,6 @@ export function ChatTree() {
     if (!targetNode) return;
 
     downloadAttachment(targetNode, attachmentId);
-  }, []);
-
-  const handleRenameAttachment = useCallback(async (nodeId: string, attachmentId: string) => {
-    const targetNode = treeNodes$.value.find((node) => node.id === nodeId);
-    if (!targetNode) return;
-    const attachment = findAttachment(targetNode, attachmentId);
-    if (!attachment) return;
-
-    const pickedFilename = await getFilename({ placeholder: "filename.ext", initalValue: attachment.file.name });
-    if (!pickedFilename) return;
-
-    const validFilename = getValidAttachmentFileName(pickedFilename);
-
-    let renamedAttachment;
-    if (attachment.type === "embedded") {
-      renamedAttachment = { ...attachment, file: { ...attachment.file, name: validFilename } };
-    } else {
-      const renamed = new File([attachment.file], validFilename, { type: attachment.file.type });
-      renamedAttachment = { ...attachment, file: renamed };
-    }
-
-    setTreeNodes((nodes) =>
-      nodes.map(patchNode((node) => node.id === nodeId, renameAttachment(attachmentId, renamedAttachment))),
-    );
   }, []);
 
   const handleCopyAttachment = useCallback(async (nodeId: string, attachmentId: string) => {
@@ -1024,6 +1041,7 @@ export function ChatTree() {
               onNavigateNext={handleNavigateNext}
               onOnly={handleOnly}
               onPaste={handlePaste}
+              onPasteTextAsAttachment={handlePasteTextAsAttachment}
               onPreviewDoubleClick={handlePreviewDoubleClick}
               onRemoveAttachment={handleRemoveAttachment}
               onRunNode={handleRunNode}
