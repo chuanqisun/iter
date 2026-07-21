@@ -66,6 +66,7 @@ Mac users, please use <kbd>⌘</kbd> instead of <kbd>Ctrl</kbd>
 | -------------------- | --------------------------------------------------------------- |
 | Send message         | <kbd>Ctrl</kbd> + <kbd>Enter</kbd> (in any textarea)            |
 | Abort action         | <kbd>Escape</kbd> (when streaming response)                     |
+| Paste as attachment  | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd>               |
 | Dictate              | <kbd>Shift</kbd> + <kbd>Space</kbd> (hold to talk)              |
 | Open response editor | <kbd>Enter</kbd> or double click (when focusing response block) |
 | Open artifact editor | <kbd>Enter</kbd> or double click (when focusing artifact block) |
