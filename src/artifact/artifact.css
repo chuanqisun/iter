@@ -31,7 +31,7 @@ artifact-source {
     justify-content: flex-start;
   }
 
-  [data-streaming] &[data-state="collapsed"] .shiki {
+  [data-streaming] artifact-element:not(:has(~ *)) > &[data-state="collapsed"] .shiki {
     justify-content: flex-end;
   }
 }
