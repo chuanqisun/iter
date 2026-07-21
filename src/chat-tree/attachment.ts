@@ -1,10 +1,24 @@
-import { dataUrlToFile, dataUrlToText, fileToDataUrl, isTextEncodable } from "../storage/codec";
+import { dataUrlToFile, dataUrlToText, fileToDataUrl, isTextEncodable, textToDataUrl } from "../storage/codec";
 import { downloadUrl } from "./download";
 import { getReadableFileSize } from "./file-size";
+import { getFilename } from "./filename-dialog";
 import type { Attachment, AttachmentEmbedded, AttachmentExternal, ChatNode, EmbeddedFile } from "./tree-store";
 
 export function createAttachmentFromChatPart(part: EmbeddedFile): AttachmentEmbedded {
   return { id: crypto.randomUUID(), type: "embedded", file: part };
+}
+
+export function createEmbeddedTextAttachment(text: string, filename = "filename.txt"): AttachmentEmbedded {
+  return {
+    id: crypto.randomUUID(),
+    type: "embedded",
+    file: {
+      name: getValidAttachmentFileName(filename),
+      type: "text/plain",
+      size: new Blob([text]).size,
+      url: textToDataUrl(text),
+    },
+  };
 }
 
 export function createAttacchmentFromFile(file: File): AttachmentExternal {
@@ -29,7 +43,7 @@ export async function castToFile(maybeFile?: File | EmbeddedFile | null): Promis
   return dataUrlToFile(maybeFile.url, maybeFile.name);
 }
 
-function renameAttachmentObject(attachment: Attachment, newName: string): Attachment {
+export function renameAttachmentFile<T extends Attachment>(attachment: T, newName: string): T {
   if (attachment.type === "embedded") {
     return {
       ...attachment,
@@ -37,7 +51,7 @@ function renameAttachmentObject(attachment: Attachment, newName: string): Attach
         ...attachment.file,
         name: newName,
       },
-    };
+    } as T;
   } else {
     const originalFile = attachment.file;
     const renamedFile = new File([originalFile], newName, {
@@ -47,8 +61,22 @@ function renameAttachmentObject(attachment: Attachment, newName: string): Attach
     return {
       ...attachment,
       file: renamedFile,
-    };
+    } as T;
   }
+}
+
+export async function promptRenameAttachment(
+  node: ChatNode,
+  attachmentId: string,
+): Promise<Partial<ChatNode> | undefined> {
+  const attachment = findAttachment(node, attachmentId);
+  if (!attachment) return;
+
+  const pickedFilename = await getFilename({ placeholder: "filename.ext", initalValue: attachment.file.name });
+  if (!pickedFilename) return;
+
+  const renamedAttachment = renameAttachmentFile(attachment, getValidAttachmentFileName(pickedFilename));
+  return renameAttachment(attachmentId, renamedAttachment)(node);
 }
 
 /**
@@ -90,7 +118,7 @@ export function upsertAttachments(...newAttachments: Attachment[]) {
       occupiedNames.add(uniqueName);
 
       if (uniqueName !== originalName) {
-        processedAttachments.push(renameAttachmentObject(attachment, uniqueName));
+        processedAttachments.push(renameAttachmentFile(attachment, uniqueName));
       } else {
         processedAttachments.push(attachment);
       }

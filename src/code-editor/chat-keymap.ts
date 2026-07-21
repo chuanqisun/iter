@@ -10,6 +10,20 @@ export interface CommandEventDetails {
 export const chatKeymap = (eventTarget: CodeEditorElement, change$: Subject<string>) =>
   [
     {
+      key: "Ctrl-Shift-v",
+      mac: "Meta-Shift-v",
+      any: (_view, event) =>
+        event.repeat &&
+        (event.ctrlKey || event.metaKey) &&
+        event.shiftKey &&
+        !event.altKey &&
+        event.key.toLowerCase() === "v",
+      run: () => {
+        eventTarget.dispatchEvent(new Event("pastetextasattachment"));
+        return true;
+      },
+    },
+    {
       key: "Ctrl-Enter",
       mac: "Meta-Enter",
       run: (view) => {
