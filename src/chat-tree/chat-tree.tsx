@@ -45,6 +45,7 @@ import {
   replaceAttachment,
   upsertAttachments,
 } from "./attachment";
+import { useKeepBodyScrolledToBottom } from "./auto-scroll";
 import { ChatConfigMemo } from "./chat-config";
 import { setChatInstance } from "./chat-instance";
 import { ChatNodeMemo } from "./chat-node";
@@ -69,6 +70,8 @@ export function ChatTree() {
   const [isHeaderFloating, setIsHeaderFloating] = useState(false);
   const { connections, getChatStreamProxy } = useConnections();
   const { saveChat, exportChat, loadChat, importChat } = useFileHooks(treeNodes, setTreeNodes);
+
+  useKeepBodyScrolledToBottom(treeRootRef);
 
   const handleConnectionsButtonClick = useCallback(
     () => document.querySelector("settings-element")?.closest("dialog")?.showModal(),
