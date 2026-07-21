@@ -29,12 +29,7 @@ export interface GoogleGenAIConnection extends BaseConnection {
 
 export class GoogleGenAIProvider implements BaseProvider {
   static type = "google-gen-ai";
-  static defaultModels = [
-    "gemini-3.5-flash",
-    "gemini-3.1-pro-preview",
-    "gemini-3.1-flash-lite",
-    "gemini-3-flash-preview",
-  ];
+  static defaultModels = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-pro-preview"];
 
   static thinkingLevelMap: Record<string, ThinkingLevel> = {
     minimal: "MINIMAL" as ThinkingLevel.MINIMAL,
