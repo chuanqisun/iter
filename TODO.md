@@ -19,6 +19,7 @@
 - Preserve cursor position when switching between edit and view mode
 - Pin nodes from trim
 - Refactor: replace `onCopy` hook with `onGetCopyText` so host can manage copy lifecycle
+- Handle nested markdown code blocks with four back ticks
 
 # DONE
 
