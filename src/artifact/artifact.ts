@@ -29,9 +29,16 @@ export function handleArtifactActions(event: MouseEvent) {
     if (!source) return;
 
     const isExpanded = source.getAttribute("data-state") === "expanded";
-    source.setAttribute("data-state", isExpanded ? "collapsed" : "expanded");
-    trigger.setAttribute("aria-expanded", String(!isExpanded));
-    trigger.setAttribute("aria-label", isExpanded ? "Expand code preview" : "Collapse code preview");
+    const sources = event.ctrlKey
+      ? [...(source.closest("[data-node-id]")?.querySelectorAll("artifact-source") ?? [source])]
+      : [source];
+
+    sources.forEach((targetSource) => {
+      targetSource.setAttribute("data-state", isExpanded ? "collapsed" : "expanded");
+      const targetTrigger = targetSource.querySelector<HTMLElement>(`[data-action="toggle-source"]`);
+      targetTrigger?.setAttribute("aria-expanded", String(!isExpanded));
+      targetTrigger?.setAttribute("aria-label", isExpanded ? "Expand code preview" : "Collapse code preview");
+    });
     return;
   }
 
