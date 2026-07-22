@@ -1,6 +1,6 @@
 import { memo, useRef, useState } from "react";
-import styled from "styled-components";
 import { getDisplayType } from "./attachment";
+import "./attachment-preview.css";
 import { getReadableFileSize } from "./file-size";
 import type { Attachment } from "./tree-store";
 
@@ -38,127 +38,45 @@ export function AttachmentPreviewInternal(props: AttachmentPreviewProps) {
   };
 
   return (
-    <StyledAttachmentPreview key={attachment.id}>
+    <div className="c-attachment-preview" key={attachment.id}>
       {attachment.type === "embedded" && file.type?.startsWith("image/") ? (
-        <AttachmentMedia src={attachment.file.url} />
+        <img className="media" src={attachment.file.url} />
       ) : null}
-      <AttachmentHeading>
-        <AttachmentFileName
+      <div className="heading">
+        <button
+          className="file-name"
           title={`Rename ${file.name}`}
           onClick={() => props.onRenameAttachment(nodeId, attachment.id)}
         >
           {file.name}
-        </AttachmentFileName>
-        <AttachmentFileSize>{getReadableFileSize(file.size)}</AttachmentFileSize>
-      </AttachmentHeading>
-      <AttachmentFooter>
-        <AttachmentAction title="Toggle file mode" onClick={() => props.onToggleAttachmentType(nodeId, attachment.id)}>
+        </button>
+        <div className="file-size">{getReadableFileSize(file.size)}</div>
+      </div>
+      <div className="footer">
+        <button
+          className="action"
+          title="Toggle file mode"
+          onClick={() => props.onToggleAttachmentType(nodeId, attachment.id)}
+        >
           {getDisplayType(attachment)}
-        </AttachmentAction>
+        </button>
         <span> · </span>
-        <AttachmentAction title="Delete file" onClick={() => props.onRemoveAttachment(nodeId, attachment.id)}>
+        <button className="action" title="Delete file" onClick={() => props.onRemoveAttachment(nodeId, attachment.id)}>
           Delete
-        </AttachmentAction>
+        </button>
         <span> · </span>
-        <AttachmentAction title="Download file" onClick={() => props.onDownloadAttachment(nodeId, attachment.id)}>
+        <button
+          className="action"
+          title="Download file"
+          onClick={() => props.onDownloadAttachment(nodeId, attachment.id)}
+        >
           Download
-        </AttachmentAction>
+        </button>
         <span> · </span>
-        <AttachmentAction title="Copy as message part" onClick={handleCopy}>
+        <button className="action" title="Copy as message part" onClick={handleCopy}>
           {isCopying ? "✅ Copied!" : "Copy"}
-        </AttachmentAction>
-      </AttachmentFooter>
-    </StyledAttachmentPreview>
+        </button>
+      </div>
+    </div>
   );
 }
-
-const StyledAttachmentPreview = styled.div`
-  display: grid;
-  grid-template:
-    "media heading" auto
-    "media footer" auto / auto 1fr;
-  text-align: start;
-  align-content: center;
-  height: 48px;
-  padding: 0px 8px;
-  border: 1px solid var(--button-border-rest-color);
-  background-color: var(--button-background-rest-color);
-  border-radius: var(--button-border-radius);
-
-  &:hover {
-    border: 1px solid var(--button-border-hover-color);
-    background-color: var(--button-background-hover-color);
-  }
-
-  img {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
-    margin-right: 8px;
-  }
-`;
-
-const AttachmentHeading = styled.div`
-  display: grid;
-  grid-area: heading;
-  justify-content: start;
-  gap: 4px;
-  grid-auto-flow: column;
-  grid-auto-columns: auto;
-  align-items: baseline;
-`;
-
-const AttachmentFooter = styled.div`
-  display: grid;
-  grid-area: footer;
-  gap: 0px;
-  justify-content: start;
-  white-space: pre-wrap;
-  grid-auto-flow: column;
-  grid-auto-columns: auto;
-  color: var(--action-button-rest-color);
-  font-size: 12px;
-`;
-
-const AttachmentMedia = styled.img`
-  grid-area: media;
-`;
-
-const AttachmentFileName = styled.button`
-  font-size: 14px;
-  border: none;
-  background: none;
-  padding: 0;
-
-  // text longer than 100px will show ...
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 120px;
-  cursor: pointer;
-
-  &:focus-visible,
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
-const AttachmentFileSize = styled.div`
-  opacity: 0.625;
-  font-size: 12px;
-`;
-
-const AttachmentAction = styled.button`
-  border: none;
-  background: none;
-  padding: 0;
-  display: inline;
-  cursor: pointer;
-  color: var(--action-button-rest-color);
-
-  &:focus-visible,
-  &:hover {
-    text-decoration: underline;
-    color: var(--action-button-hover-color);
-  }
-`;

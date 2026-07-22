@@ -1,9 +1,8 @@
 import { memo } from "react";
-import styled from "styled-components";
-import { BasicFormButton, BasicFormInput, BasicSelect } from "../dom/form";
 import type { BaseConnection } from "../providers/base";
 import type { RouteParameter } from "../router/use-route-parameter";
 import { useOptions } from "../settings/use-options";
+import "./chat-config.css";
 
 export interface ChatConfigProps {
   onConnectionsButtonClick: () => void;
@@ -23,12 +22,15 @@ function ChatConfig(props: ChatConfigProps) {
 
   return (
     <div>
-      <ConfigMenu>
-        <BasicFormButton onClick={props.onConnectionsButtonClick}>Menu</BasicFormButton>
+      <menu className="c-chat-config">
+        <button className="button" onClick={props.onConnectionsButtonClick}>
+          Menu
+        </button>
         {props.groupedConnections?.length ? (
           <label>
             Model
-            <BasicSelect
+            <select
+              className="select"
               value={props.connectionKey.value ?? ""}
               onChange={(e) => props.connectionKey.replace(e.target.value)}
             >
@@ -41,13 +43,14 @@ function ChatConfig(props: ChatConfigProps) {
                   ))}
                 </optgroup>
               ))}
-            </BasicSelect>
+            </select>
           </label>
         ) : null}
         {options?.temperature ? (
           <label>
             Temperature
-            <AutoWidthInput
+            <input
+              className="input auto-width-input"
               type="number"
               min={options.temperature.min ?? 0}
               max={options.temperature.max}
@@ -60,7 +63,8 @@ function ChatConfig(props: ChatConfigProps) {
         {options?.reasoningEffort ? (
           <label>
             Reasoning
-            <BasicSelect
+            <select
+              className="select"
               value={props.reasoningEffort.value ?? options.reasoningEffort.at(0)}
               onChange={(e) => props.reasoningEffort.replace(e.target.value)}
             >
@@ -69,14 +73,15 @@ function ChatConfig(props: ChatConfigProps) {
                   {effort}
                 </option>
               ))}
-            </BasicSelect>
+            </select>
           </label>
         ) : null}
 
         {options?.verbosity ? (
           <label>
             Verbosity
-            <BasicSelect
+            <select
+              className="select"
               value={props.verbosity.value ?? options.verbosity.at(0)}
               onChange={(e) => props.verbosity.replace(e.target.value)}
             >
@@ -85,14 +90,15 @@ function ChatConfig(props: ChatConfigProps) {
                   {level}
                 </option>
               ))}
-            </BasicSelect>
+            </select>
           </label>
         ) : null}
 
         {options?.thinkingBudget ? (
           <label>
             Thinking
-            <AutoWidthInput
+            <input
+              className="input auto-width-input"
               type="number"
               min={options.thinkingBudget.min ?? 0}
               max={options.thinkingBudget.max}
@@ -104,7 +110,8 @@ function ChatConfig(props: ChatConfigProps) {
         ) : null}
         <label>
           Max
-          <AutoWidthInput
+          <input
+            className="input auto-width-input"
             type="number"
             min={options?.maxTokens?.min ?? 0}
             max={options?.maxTokens?.max ?? 128000}
@@ -116,27 +123,7 @@ function ChatConfig(props: ChatConfigProps) {
         <a href="https://github.com/chuanqisun/iter" target="_blank">
           GitHub
         </a>
-      </ConfigMenu>
+      </menu>
     </div>
   );
 }
-
-const ConfigMenu = styled.menu`
-  padding: 0;
-  display: flex;
-  gap: 12px;
-  padding-left: 32px;
-  flex-wrap: wrap;
-  align-items: center;
-
-  label {
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-`;
-const AutoWidthInput = styled(BasicFormInput)`
-  min-width: 72px;
-  field-sizing: content;
-`;

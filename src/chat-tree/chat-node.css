@@ -24,6 +24,91 @@
 .c-chat-node {
   --chat-node-collapsed-height: 144px;
   --code-block-collapsed-height: 120px;
+
+  display: grid;
+  gap: 8px;
+  margin-left: 0;
+  padding-left: 0;
+  border-left: none;
+
+  .message-layout {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px;
+  }
+
+  .avatar {
+    padding-top: 30px;
+    font-size: 22px;
+    line-height: 30px;
+    width: 28px;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    border-radius: 2px;
+
+    &:hover {
+      background-color: var(--ghost-button-hover-background);
+    }
+  }
+
+  .avatar-icon {
+    width: 28px;
+    text-align: center;
+    position: sticky;
+    top: calc(var(--app-header-height, 0px) + 30px);
+  }
+
+  .message-with-actions {
+    display: grid;
+    align-content: start;
+  }
+
+  .message-actions {
+    min-height: 30px;
+    line-height: 30px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 4px;
+    position: sticky;
+    top: var(--app-header-height, 0px);
+    background-color: var(--body-background);
+    z-index: var(--action-bar-z-index);
+
+    > * {
+      color: var(--action-button-rest-color);
+    }
+
+    button {
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+
+      &:focus-visible,
+      &:hover {
+        color: var(--action-button-hover-color);
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .attachment-list {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .error-message {
+    padding-block: 4px;
+    word-break: break-word;
+    color: red;
+  }
 }
 
 @keyframes braille-spin {

@@ -1,0 +1,30 @@
+.c-chat-config {
+  padding: 0;
+  display: flex;
+  gap: 12px;
+  padding-left: 32px;
+  flex-wrap: wrap;
+  align-items: center;
+
+  label {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .button,
+  .input,
+  .select {
+    padding: var(--input-padding-block) var(--input-padding-inline);
+  }
+
+  .select,
+  .auto-width-input {
+    field-sizing: content;
+  }
+
+  .auto-width-input {
+    min-width: 72px;
+  }
+}

@@ -1,5 +1,4 @@
 import { memo, useEffect, useRef } from "react";
-import styled from "styled-components";
 import { AttachmentPreview } from "./attachment-preview";
 import "./chat-node.css";
 import { InputMetadata } from "./input-metadata";
@@ -125,19 +124,23 @@ export function ChatNodeInternal(props: ChatNodeProps) {
   }, []);
 
   return (
-    <Thread key={node.id} data-node-id={node.id} className="c-chat-node">
-      <MessageLayout className="js-message" ref={tabCyclingContainer}>
-        <Avatar
+    <div key={node.id} data-node-id={node.id} className="c-chat-node">
+      <div className="message-layout js-message" ref={tabCyclingContainer}>
+        <button
+          className="avatar"
           data-managed-focus="message-action"
           onClick={(e) => onToggleShowMore(node.id, e.ctrlKey ? { toggleAll: true } : undefined)}
         >
-          <AvatarIcon title={`${node.isCollapsed ? "Expand" : "Collapse"} ${roleDislayName[node.role]} message`}>
+          <span
+            className="avatar-icon"
+            title={`${node.isCollapsed ? "Expand" : "Collapse"} ${roleDislayName[node.role]} message`}
+          >
             {roleIcon[node.role]}
-          </AvatarIcon>
-        </Avatar>
-        <MessageWithActions>
+          </span>
+        </button>
+        <div className="message-with-actions">
           {node.role === "system" ? (
-            <MessageActions>
+            <span className="message-actions">
               <button data-managed-focus="message-action">{roleDislayName[node.role]}</button>
               <span> · </span>
               <button data-managed-focus="message-action" onClick={() => onDelete(node.id)}>
@@ -150,10 +153,10 @@ export function ChatNodeInternal(props: ChatNodeProps) {
               <span className="c-far-group">
                 <InputMetadata metadata$={node.metadata$} />
               </span>
-            </MessageActions>
+            </span>
           ) : null}
           {node.role === "user" || node.role === "assistant" ? (
-            <MessageActions>
+            <span className="message-actions">
               <button data-managed-focus="message-action" onClick={() => onToggleRole(node.id)}>
                 {roleDislayName[node.role]}
               </button>
@@ -198,7 +201,7 @@ export function ChatNodeInternal(props: ChatNodeProps) {
                 {node.role === "assistant" ? <OutputMetadata metadata$={node.metadata$} /> : null}
                 {node.abortController ? <span className="c-spinner" /> : null}
               </span>
-            </MessageActions>
+            </span>
           ) : null}
 
           <code-block-events
@@ -249,7 +252,7 @@ export function ChatNodeInternal(props: ChatNodeProps) {
             )}
 
             {node.attachments?.length ? (
-              <AttachmentList>
+              <div className="attachment-list">
                 {node.attachments.map((attachment) => {
                   return (
                     <AttachmentPreview
@@ -264,97 +267,12 @@ export function ChatNodeInternal(props: ChatNodeProps) {
                     ></AttachmentPreview>
                   );
                 })}
-              </AttachmentList>
+              </div>
             ) : null}
-            {node.errorMessage ? <ErrorMessage>❌ {node.errorMessage}</ErrorMessage> : null}
+            {node.errorMessage ? <span className="error-message">❌ {node.errorMessage}</span> : null}
           </>
-        </MessageWithActions>
-      </MessageLayout>
-    </Thread>
+        </div>
+      </div>
+    </div>
   );
 }
-
-const Thread = styled.div`
-  display: grid;
-  gap: 8px;
-  margin-left: 0;
-  padding-left: 0;
-  border-left: none;
-`;
-
-const MessageActions = styled.span`
-  min-height: 30px;
-  line-height: 30px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0 4px;
-  position: sticky;
-  top: var(--app-header-height, 0px);
-  background-color: var(--body-background);
-  z-index: var(--action-bar-z-index);
-
-  > * {
-    color: var(--action-button-rest-color);
-  }
-  button {
-    cursor: pointer;
-    background: none;
-    border: none;
-    padding: 0;
-    &:focus-visible,
-    &:hover {
-      color: var(--action-button-hover-color);
-      text-decoration: underline;
-    }
-  }
-`;
-
-const MessageWithActions = styled.div`
-  display: grid;
-  align-content: start;
-`;
-
-const ErrorMessage = styled.span`
-  padding-block: 4px;
-  word-break: break-word;
-  color: red;
-`;
-
-const MessageLayout = styled.div`
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px;
-`;
-
-const Avatar = styled.button`
-  padding-top: 30px;
-  font-size: 22px;
-  line-height: 30px;
-  width: 28px;
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  background: none;
-  border: none;
-  cursor: pointer;
-  border-radius: 2px;
-
-  &:hover {
-    background-color: var(--ghost-button-hover-background);
-  }
-`;
-
-const AvatarIcon = styled.span`
-  width: 28px;
-  text-align: center;
-  position: sticky;
-  top: calc(var(--app-header-height, 0px) + 30px);
-`;
-
-const AttachmentList = styled.div`
-  margin-top: 8px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-`;

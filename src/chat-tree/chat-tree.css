@@ -1,0 +1,19 @@
+.c-chat-tree {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  --app-header-height: 0px;
+
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: var(--app-header-z-index);
+    background-color: var(--body-background);
+    padding-block: 8px 4px;
+  }
+
+  .message-list {
+    display: grid;
+    gap: 16px;
+  }
+}

@@ -1,5 +1,4 @@
-import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import styled from "styled-components";
+import React, { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 import { useArtifactActions } from "../artifact/artifact";
 import type { ArtifactEvents } from "../artifact/languages/generic";
 import {
@@ -49,6 +48,7 @@ import { useKeepBodyScrolledToBottom } from "./auto-scroll";
 import { ChatConfigMemo } from "./chat-config";
 import { setChatInstance } from "./chat-instance";
 import { ChatNodeMemo } from "./chat-node";
+import "./chat-tree.css";
 import { getParts, readClipboardTextAttachment } from "./clipboard";
 import { dictateToTextarea } from "./dictation";
 import { getReadableFileSize } from "./file-size";
@@ -59,15 +59,11 @@ import { getCombo } from "./keyboard";
 import { getAssistantNode, getNextId, getPrevId, getUserNode, INITIAL_NODES, patchNode } from "./tree-helper";
 import { useTreeNodes, type ChatNode } from "./tree-store";
 
-const HEADER_INTERSECTION_OPTIONS = { rootMargin: "0px", threshold: 0 };
-
 export function ChatTree() {
   const { treeNodes, setTreeNodes, treeNodes$, createWriter } = useTreeNodes({ initialNodes: INITIAL_NODES });
   const treeRootRef = useRef<HTMLDivElement>(null);
   const layoutRef = useRef<HTMLDivElement>(null);
-  const headerRef = useRef<HTMLDivElement>(null);
-  const headerSentinelRef = useRef<HTMLDivElement>(null);
-  const [isHeaderFloating, setIsHeaderFloating] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
   const { connections, getChatStreamProxy } = useConnections();
   const { saveChat, exportChat, loadChat, importChat } = useFileHooks(treeNodes, setTreeNodes);
 
@@ -500,14 +496,6 @@ export function ChatTree() {
     layout.style.setProperty("--app-header-height", `${header.offsetHeight}px`);
   }, []);
 
-  const handleHeaderIntersection = useCallback((entries: IntersectionObserverEntry[]) => {
-    const sentinel = headerSentinelRef.current;
-    if (!sentinel) return;
-    const entry = entries.find((item) => item.target === sentinel);
-    if (!entry) return;
-    setIsHeaderFloating(!entry.isIntersecting);
-  }, []);
-
   useEffect(() => {
     const header = headerRef.current;
     if (!header) return;
@@ -518,16 +506,6 @@ export function ChatTree() {
 
     return () => resizeObserver.disconnect();
   }, [updateHeaderHeight]);
-
-  useEffect(() => {
-    const sentinel = headerSentinelRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver(handleHeaderIntersection, HEADER_INTERSECTION_OPTIONS);
-    observer.observe(sentinel);
-
-    return () => observer.disconnect();
-  }, [handleHeaderIntersection]);
 
   const handleTextChange = useCallback((nodeId: string, content: string) => {
     setTreeNodes((nodes) => nodes.map(patchNode((node) => node.id === nodeId, { content })));
@@ -1013,9 +991,8 @@ export function ChatTree() {
   }, []);
 
   return (
-    <ChatAppLayout ref={layoutRef}>
-      <HeaderSentinel ref={headerSentinelRef} aria-hidden="true" />
-      <AppHeader ref={headerRef} data-floating={isHeaderFloating}>
+    <div className="c-chat-tree" ref={layoutRef}>
+      <header className="app-header" ref={headerRef}>
         <ChatConfigMemo
           onConnectionsButtonClick={handleConnectionsButtonClick}
           groupedConnections={groupedConnections}
@@ -1026,8 +1003,8 @@ export function ChatTree() {
           verbosity={verbosity}
           maxTokens={maxTokens}
         />
-      </AppHeader>
-      <MessageList ref={treeRootRef}>
+      </header>
+      <div className="message-list" ref={treeRootRef}>
         {treeNodes.map((node) => (
           <Fragment key={node.id}>
             <InputTokenizer node={node} />
@@ -1058,36 +1035,7 @@ export function ChatTree() {
             />
           </Fragment>
         ))}
-      </MessageList>
-    </ChatAppLayout>
+      </div>
+    </div>
   );
 }
-
-const ChatAppLayout = styled.div`
-  position: relative;
-  display: grid;
-  gap: 12px;
-  --app-header-height: 0px;
-`;
-
-const AppHeader = styled.header`
-  position: sticky;
-  top: 0;
-  z-index: var(--app-header-z-index);
-  background-color: var(--body-background);
-  padding-block: 8px 4px;
-`;
-
-const HeaderSentinel = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 1px;
-  pointer-events: none;
-`;
-
-const MessageList = styled.div`
-  display: grid;
-  gap: 16px;
-`;

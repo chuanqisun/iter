@@ -1,0 +1,87 @@
+.c-attachment-preview {
+  display: grid;
+  grid-template:
+    "media heading" auto
+    "media footer" auto / auto 1fr;
+  text-align: start;
+  align-content: center;
+  height: 48px;
+  padding: 0px 8px;
+  border: 1px solid var(--button-border-rest-color);
+  background-color: var(--button-background-rest-color);
+  border-radius: var(--button-border-radius);
+
+  &:hover {
+    border: 1px solid var(--button-border-hover-color);
+    background-color: var(--button-background-hover-color);
+  }
+
+  .heading {
+    display: grid;
+    grid-area: heading;
+    justify-content: start;
+    gap: 4px;
+    grid-auto-flow: column;
+    grid-auto-columns: auto;
+    align-items: baseline;
+  }
+
+  .footer {
+    display: grid;
+    grid-area: footer;
+    gap: 0px;
+    justify-content: start;
+    white-space: pre-wrap;
+    grid-auto-flow: column;
+    grid-auto-columns: auto;
+    color: var(--action-button-rest-color);
+    font-size: 12px;
+  }
+
+  .media {
+    grid-area: media;
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    margin-right: 8px;
+  }
+
+  .file-name {
+    font-size: 14px;
+    border: none;
+    background: none;
+    padding: 0;
+
+    /* Text longer than the maximum width shows an ellipsis. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 120px;
+    cursor: pointer;
+
+    &:focus-visible,
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .file-size {
+    opacity: 0.625;
+    font-size: 12px;
+  }
+
+  .action {
+    border: none;
+    background: none;
+    padding: 0;
+    display: inline;
+    cursor: pointer;
+    color: var(--action-button-rest-color);
+
+    &:focus-visible,
+    &:hover {
+      text-decoration: underline;
+      color: var(--action-button-hover-color);
+    }
+  }
+}

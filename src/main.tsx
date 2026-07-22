@@ -7,7 +7,7 @@ import { ChatTree } from "./chat-tree/chat-tree";
 import { CodeEditorElement } from "./code-editor/code-editor-element";
 import "./index.css";
 import { SettingsElement } from "./settings/settings-element";
-import { CenterClamp } from "./shell/center-clamp";
+import "./shell/center-clamp.css";
 
 CodeEditorElement.define();
 SettingsElement.define();
@@ -17,8 +17,8 @@ ArtifactEditorElement.define();
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <CenterClamp>
+    <div className="c-center-clamp">
       <ChatTree />
-    </CenterClamp>
+    </div>
   </React.StrictMode>,
 );
