@@ -25,8 +25,6 @@ const roleDislayName: Record<string, string> = {
   tool: "Tool",
 };
 
-const COLLAPSED_HEIGHT = 72;
-
 export interface ChatNodeProps {
   node: ChatNode;
   onAbort: (id: string) => void;
@@ -127,7 +125,7 @@ export function ChatNodeInternal(props: ChatNodeProps) {
   }, []);
 
   return (
-    <Thread key={node.id} data-node-id={node.id}>
+    <Thread key={node.id} data-node-id={node.id} className="c-chat-node">
       <MessageLayout className="js-message" ref={tabCyclingContainer}>
         <Avatar
           data-managed-focus="message-action"
@@ -212,17 +210,13 @@ export function ChatNodeInternal(props: ChatNodeProps) {
                 className="js-focusable"
                 id={node.id}
                 data-autofocus={node.id === INITIAL_USER_NODE.id ? "" : null}
+                data-collapsed={node.isCollapsed ? "" : null}
                 data-value={node.content}
                 data-lang="md"
                 data-placeholder={
                   node.role === "user"
                     ? "Ctrl + Enter to send, Esc to cancel, paste images for vision models, Shift + Space to dictate"
                     : "System message"
-                }
-                style={
-                  {
-                    "--max-height": node.isCollapsed ? `${COLLAPSED_HEIGHT}px` : undefined,
-                  } as any
                 }
                 onescape={onAbortAll}
                 oncontentchange={(e) => onTextChange(node.id, e.detail)}
@@ -238,7 +232,6 @@ export function ChatNodeInternal(props: ChatNodeProps) {
             ) : node.isViewSource ? (
               <StreamingEditor
                 node={node}
-                collapsedHeight={COLLAPSED_HEIGHT}
                 onEscape={() => onToggleViewFormat(node.id)}
                 onNavigatePrevious={onNavigatePrevious}
                 onNavigateNext={onNavigateNext}
@@ -252,7 +245,6 @@ export function ChatNodeInternal(props: ChatNodeProps) {
                 onDoubleClick={(e) => onPreviewDoubleClick(node.id, e)}
                 onNavigatePrevious={() => onNavigatePrevious(node.id)}
                 onNavigateNext={() => onNavigateNext(node.id)}
-                collapsedHeight={COLLAPSED_HEIGHT}
               />
             )}
 

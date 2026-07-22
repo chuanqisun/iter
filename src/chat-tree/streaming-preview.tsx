@@ -2,8 +2,8 @@ import type { MouseEvent } from "react";
 import React, { memo, useCallback, useEffect, useState } from "react";
 import { markdownToHtml, preloadPreviewWorker } from "../workers/worker-proxy";
 import { getCombo } from "./keyboard";
-import { MarkdownPreview } from "./markdown-preview";
 import { skipWhenBusy } from "./skip-when-busy";
+import "./streaming-preview.css";
 import type { ChatNode } from "./tree-store";
 
 export interface StreamingPreviewProps {
@@ -13,7 +13,6 @@ export interface StreamingPreviewProps {
   onNavigatePrevious: () => void;
   onNavigateNext: () => void;
   onDoubleClick: (e: MouseEvent) => void;
-  collapsedHeight?: number;
 }
 
 // memoize based on the relevant properties of the node
@@ -23,8 +22,7 @@ export const StreamingPreview = memo(StreamingPreviewInternal, (prevProps, nextP
     prevProps.node.content === nextProps.node.content &&
     prevProps.node.content$ === nextProps.node.content$ &&
     prevProps.node.cachedPreviewHtml?.key === nextProps.node.cachedPreviewHtml?.key &&
-    prevProps.node.isCollapsed === nextProps.node.isCollapsed &&
-    prevProps.collapsedHeight === nextProps.collapsedHeight
+    prevProps.node.isCollapsed === nextProps.node.isCollapsed
   );
 });
 
@@ -80,6 +78,7 @@ export function StreamingPreviewInternal(props: StreamingPreviewProps) {
 
         // Enter a code block
         if ((e.target as HTMLElement).closest("artifact-source")) {
+          if ((e.target as HTMLElement).closest(`[data-action="toggle-source"]`)) return;
           e.preventDefault(); // Otherwise, the dialog will immediately close
 
           (e.target as HTMLElement)
@@ -102,13 +101,14 @@ export function StreamingPreviewInternal(props: StreamingPreviewProps) {
   }, []);
 
   return (
-    <MarkdownPreview
+    <div
       tabIndex={0}
-      className="js-focusable"
+      className="streaming-preview js-focusable"
+      data-collapsed={props.node.isCollapsed ? "" : undefined}
+      data-streaming={props.node.content$ ? "" : undefined}
       onKeyDown={handleKeyDown}
       onDoubleClick={(e) => props.onDoubleClick(e)}
       id={props.node.id}
-      $maxHeight={props.node.isCollapsed ? props.collapsedHeight : undefined}
       dangerouslySetInnerHTML={{
         __html: html,
       }}

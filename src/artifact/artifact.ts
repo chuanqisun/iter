@@ -16,13 +16,33 @@ export function useArtifactActions() {
 }
 
 export function handleArtifactActions(event: MouseEvent) {
-  const trigger = (event.target as HTMLElement).closest(`artifact-action [data-action]`) as HTMLElement;
+  const trigger = (event.target as HTMLElement).closest(
+    `artifact-source [data-action="toggle-source"], artifact-action [data-action]`,
+  ) as HTMLElement;
   const action = trigger?.dataset.action;
 
   const artifactElement = trigger?.closest("artifact-element");
   if (!artifactElement) return;
 
-  const code = artifactElement?.querySelector("artifact-source")?.textContent ?? "";
+  if (action === "toggle-source") {
+    const source = trigger.closest("artifact-source");
+    if (!source) return;
+
+    const isExpanded = source.getAttribute("data-state") === "expanded";
+    const sources = event.ctrlKey
+      ? [...(source.closest("[data-node-id]")?.querySelectorAll("artifact-source") ?? [source])]
+      : [source];
+
+    sources.forEach((targetSource) => {
+      targetSource.setAttribute("data-state", isExpanded ? "collapsed" : "expanded");
+      const targetTrigger = targetSource.querySelector<HTMLElement>(`[data-action="toggle-source"]`);
+      targetTrigger?.setAttribute("aria-expanded", String(!isExpanded));
+      targetTrigger?.setAttribute("aria-label", isExpanded ? "Expand code preview" : "Collapse code preview");
+    });
+    return;
+  }
+
+  const code = artifactElement.querySelector("artifact-source code")?.textContent ?? "";
   const lang = artifactElement?.getAttribute("lang");
   if (!lang) return;
 

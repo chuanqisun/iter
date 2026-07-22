@@ -28,7 +28,16 @@ function initializeMarked() {
 
           return `
         <artifact-element lang="${editorLanguage}" ${attrStr}>  
-          <artifact-source>${highlightedHtml}</artifact-source>  
+          <artifact-source data-state="collapsed">
+            <button
+              type="button"
+              class="artifact-source-toggle"
+              data-action="toggle-source"
+              aria-label="Expand code preview"
+              aria-expanded="false"
+            ></button>
+            ${highlightedHtml}
+          </artifact-source>  
             <artifact-action>
               <button data-action="edit">Edit</button>
               <button data-action="attach">Attach</button>
@@ -55,7 +64,7 @@ export async function main() {
       whiteList: {
         ...whiteList,
         ...mathMLWhiteList,
-        button: ["data-action", "class"],
+        button: ["data-action", "class", "type", "aria-label", "aria-expanded"],
         div: ["class"],
         span: ["class"],
         pre: ["class", "style"],

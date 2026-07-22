@@ -4,10 +4,46 @@ artifact-element {
   min-height: 36px; /* reserve space for the action buttons */
 }
 
+artifact-source {
+  display: block;
+  position: relative;
+
+  .artifact-source-toggle {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 8px;
+    padding: 0;
+    border: 0;
+    cursor: pointer;
+    background: transparent;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--button-background-hover-color);
+    }
+  }
+
+  &[data-state="collapsed"] .shiki {
+    max-height: var(--code-block-collapsed-height);
+    overflow-y: scroll;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  [data-streaming] artifact-element:not(:has(~ *)) > &[data-state="collapsed"] .shiki {
+    justify-content: flex-end;
+  }
+}
+
 artifact-action {
   position: absolute;
   top: 6px;
   right: 6px;
+
+  artifact-source[data-state="collapsed"] + & {
+    right: 16px;
+  }
 
   button {
     font-size: 12px;
