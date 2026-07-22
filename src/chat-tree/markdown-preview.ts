@@ -6,6 +6,15 @@ export const MarkdownPreview = styled.div<{ $maxHeight?: number }>`
   overflow-x: auto;
   overflow-y: ${(props) => (props.$maxHeight ? "scroll" : "auto")};
   ${(props) => props.$maxHeight && `max-height: ${props.$maxHeight}px;`}
+  ${(props) =>
+    props.$maxHeight &&
+    `
+      &[data-streaming] {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+      }
+    `}
   padding: var(--input-padding-block) var(--input-padding-inline);
   line-height: var(--text-line-height);
   border-width: var(--input-border-width);
