@@ -2,8 +2,8 @@ import type { MouseEvent } from "react";
 import React, { memo, useCallback, useEffect, useState } from "react";
 import { markdownToHtml, preloadPreviewWorker } from "../workers/worker-proxy";
 import { getCombo } from "./keyboard";
-import { MarkdownPreview } from "./markdown-preview";
 import { skipWhenBusy } from "./skip-when-busy";
+import "./streaming-preview.css";
 import type { ChatNode } from "./tree-store";
 
 export interface StreamingPreviewProps {
@@ -31,6 +31,7 @@ export const StreamingPreview = memo(StreamingPreviewInternal, (prevProps, nextP
 export function StreamingPreviewInternal(props: StreamingPreviewProps) {
   // stream content into markdown preview
   const [html, setHtml] = useState<string>(props.node.cachedPreviewHtml?.value ?? "");
+  const maxHeight = props.node.isCollapsed ? props.collapsedHeight : undefined;
 
   useEffect(() => void preloadPreviewWorker(), []);
 
@@ -103,14 +104,15 @@ export function StreamingPreviewInternal(props: StreamingPreviewProps) {
   }, []);
 
   return (
-    <MarkdownPreview
+    <div
       tabIndex={0}
-      className="js-focusable"
+      className="streaming-preview js-focusable"
+      data-collapsed={maxHeight ? "" : undefined}
       data-streaming={props.node.content$ ? "" : undefined}
       onKeyDown={handleKeyDown}
       onDoubleClick={(e) => props.onDoubleClick(e)}
       id={props.node.id}
-      $maxHeight={props.node.isCollapsed ? props.collapsedHeight : undefined}
+      style={maxHeight ? ({ "--streaming-preview-max-height": `${maxHeight}px` } as React.CSSProperties) : undefined}
       dangerouslySetInnerHTML={{
         __html: html,
       }}
