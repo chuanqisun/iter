@@ -1,5 +1,6 @@
 # TODO
 
+- Incremental markdown preview rendering
 - Add URL context for all models. Pending API stablization
 - Edit existing connection
 - Download code block should map lang to file extension
@@ -8,8 +9,6 @@
 - Share readable file size algorithm with token counter algorithm
 - Language override for editor
 - Reference pinned code blocks
-- Migrate from styled components to CSS
-- Auto scroll to bottom
 - Handle markdown table horizontal overflow
 - Code block change tracking should use precise positions rather than regex matching
 - Up/down arrow for chat item (including menu actions) navigation
@@ -19,45 +18,49 @@
 - Preserve cursor position when switching between edit and view mode
 - Pin nodes from trim
 - Refactor: replace `onCopy` hook with `onGetCopyText` so host can manage copy lifecycle
-- Handle nested markdown code blocks with four back ticks
+- Bug: Nested markdown code blocks causes codemirror parser to fail
+- Allow user to expand/collapse code blocks in the codemirror editor
 
 # DONE
 
-- Bug: Shiki language lazy loading isn't effective
-- Bug: Live preview editor resizer broken
-- LaTeX support
-- When user pastes html partial text, convert it to markdown
-- Bug: abort error lingers after role switch (no repro)
-- Add search grounding from major providers
-- Use code editor for all chat messages input: handle paste, abort, hint text, focus management
-- Triple tick `run` block with `edit` macro that exposes file type specific hooks for efficient edit
-- Closing artifact while it is compiling left iframe on main thread
-- Migrate artifact to use shared editor
-- Bug: block action cannot handle long text
-- Bug: esplay should not transform url imports
-- When typing triple backtick in the beginning of chat box, auto switch to code mode
-- Bug: content doesn't initially render after role swithc from user to assistant
-- Manual code interpreter (with shebang line)
-- Support model specific options, e.g. thinking budget
-- Input token counter
-- Lazy init web worker
-- Token usage indicator
-- Bug: escape from code editor loses focus
-- Bug: trim during generation caused unwanted new nodes
-- Busy indicator
-- Show the abort control on the target node, not source node
-- Abort from any node
-- Code editor in any role
-- Allow dynamic role toggle
-- Keyboard navigation for chat item menu
-- Migrate to google genai sdk, pending https://github.com/googleapis/js-genai/issues/402
+- Added: Auto scroll to bottom
+- Added: mod-shift-v to paste text as attachment
+- Changed: migrate from styled components to CSS
+- Fixed: Shiki language lazy loading isn't effective
+- Fixed: Live preview editor resizer broken
+- Added: LaTeX support
+- Added: When user pastes html partial text, convert it to markdown
+- Fixed: abort error lingers after role switch (no repro)
+- Added: search grounding from major providers
+- Added: Use code editor for all chat messages input: handle paste, abort, hint text, focus management
+- Added: Triple tick `run` block with `edit` macro that exposes file type specific hooks for efficient edit
+- Fixed: closing artifact while it is compiling left iframe on main thread
+- Chore: Migrate artifact to use shared editor
+- Fixed: block action cannot handle long text
+- Fixed: esplay should not transform url imports
+- Added: When typing triple backtick in the beginning of chat box, auto switch to code mode
+- Fixed: content doesn't initially render after role swithc from user to assistant
+- Added: Manual code interpreter (with shebang line)
+- Added: Support model specific options, e.g. thinking budget
+- Added: Input token counter
+- Chore: Lazy init web worker
+- Added: Token usage indicator
+- Fixed: escape from code editor loses focus
+- Fixed: trim during generation caused unwanted new nodes
+- Added: Busy indicator
+- Changed: Show the abort control on the target node, not source node
+- Added: Abort from any node
+- Added: Code editor in any role
+- Added: Allow dynamic role toggle
+- Added: Keyboard navigation for chat item menu
+- Chore: Migrate to google genai sdk, pending https://github.com/googleapis/js-genai/issues/402
 - Fixed: mermaid dialog no longer visible
-- Offload highlighting to worker
-- CPU throttling for markdown rendering
-- Use rxjs to handle streaming
-- Use spawn cursor to allow selection during generation
-- Bug: svg cannot be rendered under the xml lang name
-- Bug: cannot open artifact when it lacks a lang attribute
-- Avoid re-rendering using rxjs
-- Refactor tree to be flat array
-- Refactor tree nodes into a reducer or rxjs store
+- Chore: Offload highlighting to worker
+- Chore: CPU throttling for markdown rendering
+- Chore: Use rxjs to handle streaming
+- Changed: Use spawn cursor to allow selection during generation
+- Fixed: svg cannot be rendered under the xml lang name
+- Fixed: cannot open artifact when it lacks a lang attribute
+- Chore: Avoid re-rendering using rxjs
+- Chore: Refactor tree to be flat array
+- Chore: Refactor tree nodes into a reducer or rxjs store
