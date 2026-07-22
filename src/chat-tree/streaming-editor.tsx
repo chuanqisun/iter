@@ -5,7 +5,6 @@ import type { ChatNode } from "./tree-store";
 
 export interface StreamingEditorProps {
   node: ChatNode;
-  collapsedHeight?: number;
   onTextChange: (id: string, text: string) => void;
   onNavigatePrevious: (id: string) => void;
   onNavigateNext: (id: string) => void;
@@ -54,13 +53,9 @@ export function StreamingEditor(props: StreamingEditorProps) {
       id={props.node.id}
       className="js-focusable"
       data-autofocus
+      data-collapsed={props.node.isCollapsed ? "" : undefined}
       data-value={props.node.content}
       data-lang="md"
-      style={
-        {
-          "--max-height": props.node.isCollapsed ? `${props.collapsedHeight}px` : undefined,
-        } as any
-      }
       onescape={() => props.onEscape(props.node.id)}
       oncontentchange={(e) => props.onTextChange(props.node.id, e.detail)}
       onnavigateprevious={() => props.onNavigatePrevious(props.node.id)}

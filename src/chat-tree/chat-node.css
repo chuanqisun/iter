@@ -21,6 +21,11 @@
   }
 }
 
+.c-chat-node {
+  --chat-node-collapsed-height: 144px;
+  --code-block-collapsed-height: 120px;
+}
+
 @keyframes braille-spin {
   0% {
     content: "⠏";

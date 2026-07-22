@@ -7,8 +7,11 @@ code-editor-element {
     outline: 2px solid currentColor;
     outline-offset: -2px;
   }
-  &[style*="--max-height"] .cm-scroller {
+  &[data-collapsed] .cm-scroller {
     overflow-y: scroll;
+  }
+  &[data-collapsed] {
+    --max-height: var(--chat-node-collapsed-height);
   }
 }
 

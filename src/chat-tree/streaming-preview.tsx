@@ -13,7 +13,6 @@ export interface StreamingPreviewProps {
   onNavigatePrevious: () => void;
   onNavigateNext: () => void;
   onDoubleClick: (e: MouseEvent) => void;
-  collapsedHeight?: number;
 }
 
 // memoize based on the relevant properties of the node
@@ -23,15 +22,13 @@ export const StreamingPreview = memo(StreamingPreviewInternal, (prevProps, nextP
     prevProps.node.content === nextProps.node.content &&
     prevProps.node.content$ === nextProps.node.content$ &&
     prevProps.node.cachedPreviewHtml?.key === nextProps.node.cachedPreviewHtml?.key &&
-    prevProps.node.isCollapsed === nextProps.node.isCollapsed &&
-    prevProps.collapsedHeight === nextProps.collapsedHeight
+    prevProps.node.isCollapsed === nextProps.node.isCollapsed
   );
 });
 
 export function StreamingPreviewInternal(props: StreamingPreviewProps) {
   // stream content into markdown preview
   const [html, setHtml] = useState<string>(props.node.cachedPreviewHtml?.value ?? "");
-  const maxHeight = props.node.isCollapsed ? props.collapsedHeight : undefined;
 
   useEffect(() => void preloadPreviewWorker(), []);
 
@@ -107,12 +104,11 @@ export function StreamingPreviewInternal(props: StreamingPreviewProps) {
     <div
       tabIndex={0}
       className="streaming-preview js-focusable"
-      data-collapsed={maxHeight ? "" : undefined}
+      data-collapsed={props.node.isCollapsed ? "" : undefined}
       data-streaming={props.node.content$ ? "" : undefined}
       onKeyDown={handleKeyDown}
       onDoubleClick={(e) => props.onDoubleClick(e)}
       id={props.node.id}
-      style={maxHeight ? ({ "--streaming-preview-max-height": `${maxHeight}px` } as React.CSSProperties) : undefined}
       dangerouslySetInnerHTML={{
         __html: html,
       }}

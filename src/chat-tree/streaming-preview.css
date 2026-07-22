@@ -9,7 +9,7 @@
   background-color: var(--readonly-text-background);
 
   &[data-collapsed] {
-    max-height: var(--streaming-preview-max-height);
+    max-height: var(--chat-node-collapsed-height);
     overflow-y: scroll;
 
     &[data-streaming] {

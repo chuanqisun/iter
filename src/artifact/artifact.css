@@ -24,7 +24,7 @@ artifact-source {
   }
 
   &[data-state="collapsed"] .shiki {
-    max-height: 124px;
+    max-height: var(--code-block-collapsed-height);
     overflow-y: scroll;
     display: flex;
     flex-direction: column;
