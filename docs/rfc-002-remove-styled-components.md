@@ -1,7 +1,8 @@
-# RFC 002: Remove styled-components
+---
+status: Completed
+---
 
-- Status: Proposed
-- Scope: Frontend styling and dependency cleanup
+# RFC 002: Remove styled-components
 
 ## Summary
 

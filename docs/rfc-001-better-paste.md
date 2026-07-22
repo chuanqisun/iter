@@ -1,8 +1,8 @@
+---
+status: Completed
+---
+
 # RFC 001: Paste Text as an Embedded Attachment
-
-## Status
-
-Proposed
 
 ## Summary
 
