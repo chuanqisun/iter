@@ -8,8 +8,8 @@
   --input-padding-inline: 8px;
   --input-border-radius: 2px;
   --input-border-width: 1px;
-  --text-line-height: 1.5;
-  --code-line-height: 1.2;
+  --text-line-height: 24px;
+  --code-line-height: 18px;
   --button-border-radius: 2px;
 
   --body-background: #e1e1e1;
