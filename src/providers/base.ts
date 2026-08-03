@@ -32,6 +32,7 @@ export interface GenericOptions {
   reasoningEffort?: string[];
   verbosity?: string[];
   thinkingBudget?: { min?: number; max: number };
+  serviceTier?: string;
 }
 
 export interface GenericMessage {
@@ -57,6 +58,7 @@ export interface GenericChatParams {
   topK?: number;
   reasoningEffort?: string;
   thinkingBudget?: number;
+  serviceTier?: string;
   search?: boolean;
   fetch?: boolean;
   onMetadata?: (metadata: GenericMetadata) => void;

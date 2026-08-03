@@ -23,6 +23,7 @@
 
 # DONE
 
+- Added: openai `fast` service tier
 - Added: Auto scroll to bottom
 - Added: mod-shift-v to paste text as attachment
 - Changed: migrate from styled components to CSS

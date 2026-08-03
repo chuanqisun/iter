@@ -13,6 +13,7 @@ export interface ChatConfigProps {
   verbosity: RouteParameter<string | undefined>;
   thinkingBudget: RouteParameter<number>;
   maxTokens: RouteParameter<number>;
+  serviceTier: RouteParameter<string>;
 }
 
 export const ChatConfigMemo = memo(ChatConfig);
@@ -120,6 +121,16 @@ function ChatConfig(props: ChatConfigProps) {
             onChange={(e) => props.maxTokens.replace((e.target as HTMLInputElement).valueAsNumber)}
           />
         </label>
+        {options?.serviceTier ? (
+          <label>
+            Fast
+            <input
+              type="checkbox"
+              checked={props.serviceTier.value === "fast"}
+              onChange={(e) => props.serviceTier.replace(e.target.checked ? "fast" : "auto")}
+            />
+          </label>
+        ) : null}
         <a href="https://github.com/chuanqisun/iter" target="_blank">
           GitHub
         </a>

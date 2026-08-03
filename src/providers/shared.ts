@@ -20,5 +20,6 @@ export function getOpenAIOptions(model: string): GenericOptions {
     temperature: isTemperatureSupported ? { max: 2 } : undefined,
     reasoningEffort: reasoningOptions.length > 0 ? reasoningOptions : undefined,
     verbosity: verbosityOptions.length > 0 ? verbosityOptions : undefined,
+    serviceTier: "auto",
   };
 }

@@ -1,6 +1,7 @@
 import type {
   EasyInputMessage,
   Response,
+  ResponseCreateParamsStreaming,
   ResponseInputFile,
   ResponseInputImage,
   ResponseInputItem,
@@ -121,6 +122,7 @@ export class OpenAIProvider implements BaseProvider {
           max_output_tokens: config?.maxTokens,
           top_p: config?.topP,
           prompt_cache_key: "iter",
+          service_tier: (config.serviceTier ?? options.serviceTier) as ResponseCreateParamsStreaming["service_tier"],
         },
         {
           signal: abortSignal,
