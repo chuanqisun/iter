@@ -26,13 +26,6 @@ artifact-source {
   &[data-state="collapsed"] .shiki {
     max-height: var(--code-block-collapsed-height);
     overflow-y: scroll;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-  }
-
-  [data-streaming] artifact-element:not(:has(~ *)) > &[data-state="collapsed"] .shiki {
-    justify-content: flex-end;
   }
 }
 

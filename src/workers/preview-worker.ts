@@ -28,13 +28,13 @@ function initializeMarked() {
 
           return `
         <artifact-element lang="${editorLanguage}" ${attrStr}>  
-          <artifact-source data-state="collapsed">
+          <artifact-source data-state="expanded">
             <button
               type="button"
               class="artifact-source-toggle"
               data-action="toggle-source"
-              aria-label="Expand code preview"
-              aria-expanded="false"
+              aria-label="Collapse code preview"
+              aria-expanded="true"
             ></button>
             ${highlightedHtml}
           </artifact-source>  
