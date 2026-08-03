@@ -1,7 +1,5 @@
 .streaming-preview {
-  min-height: 34px; /* Match a single-line textarea. */
-  overflow-x: auto;
-  overflow-y: auto;
+  min-height: var(--message-min-height);
   padding: var(--input-padding-block) var(--input-padding-inline);
   line-height: var(--text-line-height);
   border: var(--input-border-width) solid transparent;
@@ -11,6 +9,10 @@
   &[data-collapsed] {
     max-height: var(--chat-node-collapsed-height);
     overflow-y: scroll;
+
+    artifact-action {
+      top: var(--code-block-padding);
+    }
 
     &[data-streaming] {
       display: flex;
@@ -41,9 +43,9 @@
   }
 
   .shiki {
-    min-height: 36px; /* preven code from collapsing to 0px */
+    min-height: var(--code-block-min-height); /* preven code from collapsing when it's empty */
     overflow-x: auto;
-    padding: 8px;
+    padding: var(--code-block-padding);
     line-height: var(--code-line-height);
     color-scheme: dark;
 

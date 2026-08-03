@@ -22,9 +22,6 @@
 }
 
 .c-chat-node {
-  --chat-node-collapsed-height: 144px;
-  --code-block-collapsed-height: 120px;
-
   display: grid;
   gap: 8px;
   margin-left: 0;
@@ -68,8 +65,8 @@
   }
 
   .message-actions {
-    min-height: 30px;
-    line-height: 30px;
+    min-height: var(--message-action-bar-height);
+    line-height: var(--message-action-bar-height);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -77,7 +74,7 @@
     position: sticky;
     top: var(--app-header-height, 0px);
     background-color: var(--body-background);
-    z-index: var(--action-bar-z-index);
+    z-index: var(--message-bar-z-index);
 
     > * {
       color: var(--action-button-rest-color);

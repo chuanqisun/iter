@@ -1,6 +1,6 @@
 # TODO
 
-- Incremental markdown preview rendering
+- Incremental markdown preview rendering with streamdown
 - Add URL context for all models. Pending API stablization
 - Edit existing connection
 - Download code block should map lang to file extension
@@ -13,7 +13,6 @@
 - Code block change tracking should use precise positions rather than regex matching
 - Up/down arrow for chat item (including menu actions) navigation
 - Multi-headed concurrent chat
-- Sticky view/edit mode for each node
 - Manually append nodes
 - Preserve cursor position when switching between edit and view mode
 - Pin nodes from trim
@@ -23,6 +22,7 @@
 
 # DONE
 
+- Added: stick artifact actions
 - Added: openai `fast` service tier
 - Added: Auto scroll to bottom
 - Added: mod-shift-v to paste text as attachment

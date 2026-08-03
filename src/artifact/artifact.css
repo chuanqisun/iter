@@ -1,12 +1,18 @@
 artifact-element {
-  display: block;
+  display: grid;
   position: relative;
   min-height: 36px; /* reserve space for the action buttons */
+
+  > artifact-source,
+  > artifact-action {
+    grid-area: 1 / 1;
+  }
 }
 
 artifact-source {
   display: block;
   position: relative;
+  min-width: 0;
 
   .artifact-source-toggle {
     position: absolute;
@@ -30,12 +36,18 @@ artifact-source {
 }
 
 artifact-action {
-  position: absolute;
-  top: 6px;
-  right: 6px;
+  position: sticky;
+  top: calc(var(--app-header-height, 0px) + var(--message-action-bar-height) + var(--code-block-padding));
+  z-index: var(--action-bar-z-index);
+  align-self: start;
+  justify-self: end;
+  display: flex;
+  min-height: 20px;
+  gap: 4px;
+  margin: var(--code-block-padding);
 
   artifact-source[data-state="collapsed"] + & {
-    right: 16px;
+    margin-right: 16px;
   }
 
   button {
