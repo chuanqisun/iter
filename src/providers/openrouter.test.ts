@@ -83,4 +83,99 @@ describe("OpenRouterProvider", () => {
     expect(callArgs).toHaveProperty("reasoning", { effort: "high" });
     expect(callArgs).not.toHaveProperty("reasoning_effort");
   });
+
+  it("passes search and fetch tools when requested", async () => {
+    mockCreate.mockClear();
+    const proxy = provider.getChatStreamProxy(mockConnection);
+
+    // Search only
+    let stream = proxy({
+      messages: [{ role: "user", content: "hi" }],
+      search: true,
+    });
+    for await (const _ of stream) {
+    }
+    expect(mockCreate.mock.calls[0][0].tools).toEqual([{ type: "openrouter:web_search" }]);
+
+    mockCreate.mockClear();
+
+    // Fetch only
+    stream = proxy({
+      messages: [{ role: "user", content: "hi" }],
+      fetch: true,
+    });
+    for await (const _ of stream) {
+    }
+    expect(mockCreate.mock.calls[0][0].tools).toEqual([{ type: "openrouter:web_fetch" }]);
+
+    mockCreate.mockClear();
+
+    // Both search and fetch
+    stream = proxy({
+      messages: [{ role: "user", content: "hi" }],
+      search: true,
+      fetch: true,
+    });
+    for await (const _ of stream) {
+    }
+    expect(mockCreate.mock.calls[0][0].tools).toEqual([
+      { type: "openrouter:web_search" },
+      { type: "openrouter:web_fetch" },
+    ]);
+
+    mockCreate.mockClear();
+
+    // Neither
+    stream = proxy({
+      messages: [{ role: "user", content: "hi" }],
+    });
+    for await (const _ of stream) {
+    }
+    expect(mockCreate.mock.calls[0][0].tools).toBeUndefined();
+  });
+
+  it("extracts citations from stream chunks and yields formatted references", async () => {
+    mockCreate.mockImplementationOnce(async () => {
+      return (async function* () {
+        yield {
+          choices: [
+            {
+              delta: {
+                content: "Here is the answer.",
+                annotations: [{ type: "url_citation", url: "https://example.com/a", title: "Example A" }],
+              },
+            },
+          ],
+        };
+        yield {
+          choices: [
+            {
+              delta: {
+                annotations: [
+                  {
+                    type: "url_citation",
+                    url_citation: { url: "https://example.com/b", title: "Example B" },
+                  },
+                ],
+              },
+            },
+          ],
+        };
+      })();
+    });
+
+    const proxy = provider.getChatStreamProxy(mockConnection);
+    const chunks: string[] = [];
+    for await (const chunk of proxy({
+      messages: [{ role: "user", content: "hi" }],
+      search: true,
+    })) {
+      chunks.push(chunk);
+    }
+
+    expect(chunks).toEqual([
+      "Here is the answer.",
+      "\n\n## References\n\n1. [Example A](https://example.com/a)\n2. [Example B](https://example.com/b)",
+    ]);
+  });
 });

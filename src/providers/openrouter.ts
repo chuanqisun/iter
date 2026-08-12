@@ -18,6 +18,7 @@ import type {
   GenericMessage,
   GenericOptions,
 } from "./base";
+import { formatReferences, type Citation } from "./citation";
 
 export interface OpenRouterCredential extends BaseCredential {
   id: string;
@@ -120,6 +121,11 @@ export class OpenRouterProvider implements BaseProvider {
           ? { reasoning: { effort: reasoningEffort as ReasoningEffort } }
           : {};
 
+      const tools = [
+        ...(config.search ? [{ type: "openrouter:web_search" }] : []),
+        ...(config.fetch ? [{ type: "openrouter:web_fetch" }] : []),
+      ];
+
       const start = performance.now();
       let latencyMs: number | undefined;
       const stream = await client.chat.completions.create(
@@ -130,6 +136,7 @@ export class OpenRouterProvider implements BaseProvider {
           },
           messages: that.getOpenRouterMessage(messages, { isSystemMessageSupported }),
           model: connection.model,
+          tools: tools.length > 0 ? (tools as any) : undefined,
           temperature: options.temperature !== undefined ? config?.temperature : undefined,
           ...reasoning,
           max_completion_tokens: config?.maxTokens,
@@ -141,7 +148,9 @@ export class OpenRouterProvider implements BaseProvider {
         },
       );
 
+      const citations: Citation[] = [];
       for await (const chunk of stream) {
+        citations.push(...that.extractCitationsFromChunk(chunk));
         const content = chunk.choices.at(0)?.delta?.content;
         if (content) {
           latencyMs ??= performance.now() - start;
@@ -157,7 +166,45 @@ export class OpenRouterProvider implements BaseProvider {
           });
         }
       }
+
+      const references = formatReferences(citations);
+      if (references) {
+        yield references;
+      }
     };
+  }
+
+  private extractCitationsFromChunk(chunk: unknown): Citation[] {
+    if (!chunk || typeof chunk !== "object") return [];
+
+    const obj = chunk as Record<string, any>;
+    const targets = [obj, ...(Array.isArray(obj.choices) ? obj.choices : []).flatMap((c) => [c, c?.delta, c?.message])];
+
+    const rawAnnotations = targets.flatMap((target) => {
+      if (!target || typeof target !== "object") return [];
+      const items = [];
+      if (Array.isArray(target.annotations)) items.push(...target.annotations);
+      if (Array.isArray(target.citations)) items.push(...target.citations);
+      return items;
+    });
+
+    return rawAnnotations
+      .map((ann): Citation | undefined => {
+        if (!ann || typeof ann !== "object") return undefined;
+        const target =
+          (ann.url_citation && typeof ann.url_citation === "object" ? ann.url_citation : null) ??
+          (ann.citation && typeof ann.citation === "object" ? ann.citation : null) ??
+          ann;
+
+        if (target && typeof target.url === "string" && target.url) {
+          return {
+            url: target.url,
+            title: typeof target.title === "string" ? target.title : undefined,
+          };
+        }
+        return undefined;
+      })
+      .filter((c): c is Citation => Boolean(c));
   }
 
   private getOpenRouterMessage(
