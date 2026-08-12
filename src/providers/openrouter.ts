@@ -94,6 +94,7 @@ export class OpenRouterProvider implements BaseProvider {
     if (!this.isOpenRouterConnection(connection)) throw new Error("Invalid connection type");
     return {
       temperature: { max: 2 },
+      reasoningEffort: ["auto", "max", "xhigh", "high", "medium", "low", "minimal", "none"],
     };
   }
 
@@ -113,6 +114,12 @@ export class OpenRouterProvider implements BaseProvider {
 
       const isSystemMessageSupported = !connection.model.startsWith("o1-mini");
 
+      const reasoningEffort = config?.reasoningEffort;
+      const reasoning =
+        reasoningEffort && reasoningEffort !== "auto"
+          ? { reasoning: { effort: reasoningEffort as ReasoningEffort } }
+          : {};
+
       const start = performance.now();
       let latencyMs: number | undefined;
       const stream = await client.chat.completions.create(
@@ -124,9 +131,7 @@ export class OpenRouterProvider implements BaseProvider {
           messages: that.getOpenRouterMessage(messages, { isSystemMessageSupported }),
           model: connection.model,
           temperature: options.temperature !== undefined ? config?.temperature : undefined,
-          ...(options.reasoningEffort
-            ? { reasoning: { effort: (config.reasoningEffort ?? "low") as ReasoningEffort } }
-            : {}),
+          ...reasoning,
           max_completion_tokens: config?.maxTokens,
           top_p: config?.topP,
           user: "iter", // HACK: this seems to significantly improve cache hit rate
