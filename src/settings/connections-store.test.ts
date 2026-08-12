@@ -115,9 +115,6 @@ describe("connections-store", () => {
     expect(summary.features).toBe("openai/gpt-4o,anthropic/claude-3.5-sonnet");
 
     const connections = openrouterProvider.credentialToConnections(customCred);
-    expect(connections.map((c) => c.displayName)).toEqual([
-      "openai/gpt-4o",
-      "anthropic/claude-3.5-sonnet",
-    ]);
+    expect(connections.map((c) => c.displayName)).toEqual(["openai/gpt-4o", "anthropic/claude-3.5-sonnet"]);
   });
 });
