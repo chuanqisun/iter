@@ -21,6 +21,7 @@
 
 # DONE
 
+- Added: web search and fetch for all openrouter models
 - Added: editable connections
 - Added: stick artifact actions
 - Added: openai `fast` service tier
