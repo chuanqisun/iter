@@ -98,4 +98,26 @@ describe("connections-store", () => {
     const wrapDown = moveCredential("id-1", 1);
     expect(wrapDown.map((c) => c.id)).toEqual(["id-1", "id-2", "id-3"]);
   });
+
+  it("returns custom models in credential summary when provided", async () => {
+    const { createProvider } = await import("../providers/factory");
+    const openrouterProvider = createProvider("openrouter");
+
+    const customCred = {
+      id: "id-openrouter",
+      type: "openrouter",
+      accountName: "my-openrouter",
+      models: "openai/gpt-4o,anthropic/claude-3.5-sonnet",
+      apiKey: "sk-or-test",
+    };
+
+    const summary = openrouterProvider.getCredentialSummary(customCred);
+    expect(summary.features).toBe("openai/gpt-4o,anthropic/claude-3.5-sonnet");
+
+    const connections = openrouterProvider.credentialToConnections(customCred);
+    expect(connections.map((c) => c.displayName)).toEqual([
+      "openai/gpt-4o",
+      "anthropic/claude-3.5-sonnet",
+    ]);
+  });
 });

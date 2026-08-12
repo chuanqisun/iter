@@ -44,11 +44,12 @@ export class OpenRouterProvider implements BaseProvider {
     const accountName = (formData.get("newAccountName") as string)?.trim() || "openrouter";
 
     let models = (formData.get("newModels") as string)
-      .split(",")
+      ?.split(",")
       .map((deployment) => deployment.trim())
+      .filter(Boolean)
       .join(",");
 
-    if (!models.length) {
+    if (!models?.length) {
       models = OpenRouterProvider.defaultModels.join(",");
     }
 
@@ -85,7 +86,7 @@ export class OpenRouterProvider implements BaseProvider {
     return {
       title: credential.accountName,
       tagLine: credential.type,
-      features: OpenRouterProvider.defaultModels.join(","),
+      features: credential.models || OpenRouterProvider.defaultModels.join(","),
     };
   }
 
