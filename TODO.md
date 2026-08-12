@@ -2,7 +2,6 @@
 
 - Incremental markdown preview rendering with streamdown
 - Add URL context for all models. Pending API stablization
-- Edit existing connection
 - Download code block should map lang to file extension
 - Light theme: remove? fix?
 - Drag and drop file as upload
@@ -22,6 +21,7 @@
 
 # DONE
 
+- Added: editable connections
 - Added: stick artifact actions
 - Added: openai `fast` service tier
 - Added: Auto scroll to bottom

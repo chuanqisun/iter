@@ -68,16 +68,13 @@ export class InceptionProvider implements BaseProvider {
   static defaultModels = ["mercury-2", "mercury-coder"];
 
   parseNewCredentialForm(formData: FormData): InceptionCredential[] {
-    const accountName = formData.get("newAccountName") as string;
-
-    /* YYYYMMDDHHMMSS */
-    const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
+    const accountName = (formData.get("newAccountName") as string)?.trim() || "inception";
 
     return [
       {
         id: crypto.randomUUID(),
         type: "inception",
-        accountName: accountName?.length ? accountName : `inception-${timestamp}`,
+        accountName,
         apiKey: formData.get("newKey") as string,
       },
     ];

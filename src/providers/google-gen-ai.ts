@@ -39,16 +39,13 @@ export class GoogleGenAIProvider implements BaseProvider {
   };
 
   parseNewCredentialForm(formData: FormData): GoogleGenAICredential[] {
-    const accountName = formData.get("newAccountName") as string;
-
-    /* YYYYMMDDHHMMSS */
-    const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
+    const accountName = (formData.get("newAccountName") as string)?.trim() || "google-gen-ai";
 
     return [
       {
         id: crypto.randomUUID(),
         type: "google-gen-ai",
-        accountName: accountName?.length ? accountName : `google-gen-ai-${timestamp}`,
+        accountName,
         apiKey: formData.get("newKey") as string,
       },
     ];

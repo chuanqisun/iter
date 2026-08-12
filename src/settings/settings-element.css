@@ -3,10 +3,15 @@ settings-element {
   gap: 8px;
 
   .action-row {
-    display: grid;
-    grid-template-columns: auto 1fr;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     gap: 16px;
-    align-items: start;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 8px;
   }
 
   form {

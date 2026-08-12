@@ -41,10 +41,7 @@ export class OpenRouterProvider implements BaseProvider {
   static defaultModels = ["moonshotai/kimi-k2:free", "qwen/qwen3-coder:free"];
 
   parseNewCredentialForm(formData: FormData): OpenRouterCredential[] {
-    const accountName = formData.get("newAccountName") as string;
-
-    /* YYYYMMDDHHMMSS */
-    const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
+    const accountName = (formData.get("newAccountName") as string)?.trim() || "openrouter";
 
     let models = (formData.get("newModels") as string)
       .split(",")
@@ -59,7 +56,7 @@ export class OpenRouterProvider implements BaseProvider {
       {
         id: crypto.randomUUID(),
         type: "openrouter",
-        accountName: accountName?.length ? accountName : `openrouter-${timestamp}`,
+        accountName,
         models,
         apiKey: formData.get("newKey") as string,
       },

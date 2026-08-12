@@ -39,16 +39,13 @@ export class CerebrasProvider implements BaseProvider {
   static defaultModels = ["gpt-oss-120b", "gemma-4-31b", "zai-glm-4.7"];
 
   parseNewCredentialForm(formData: FormData): CerebrasCredential[] {
-    const accountName = formData.get("newAccountName") as string;
-
-    /* YYYYMMDDHHMMSS */
-    const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
+    const accountName = (formData.get("newAccountName") as string)?.trim() || "cerebras";
 
     return [
       {
         id: crypto.randomUUID(),
         type: "cerebras",
-        accountName: accountName?.length ? accountName : `cerebras-${timestamp}`,
+        accountName,
         apiKey: formData.get("newKey") as string,
       },
     ];

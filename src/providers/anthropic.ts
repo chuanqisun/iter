@@ -42,16 +42,13 @@ export class AnthropicProvider implements BaseProvider {
   static adaptiveThinkingEfforts = ["low", "medium", "high", "xhigh", "max"] as const;
 
   parseNewCredentialForm(formData: FormData): AnthropicCredential[] {
-    const accountName = formData.get("newAccountName") as string;
-
-    /* YYYYMMDDHHMMSS */
-    const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
+    const accountName = (formData.get("newAccountName") as string)?.trim() || "anthropic";
 
     return [
       {
         id: crypto.randomUUID(),
         type: "anthropic",
-        accountName: accountName?.length ? accountName : `anthropic-${timestamp}`,
+        accountName,
         apiKey: formData.get("newKey") as string,
       },
     ];

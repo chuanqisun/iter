@@ -43,16 +43,13 @@ export class OpenAIProvider implements BaseProvider {
   static defaultModels = ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.5-pro", "gpt-5.5"];
 
   parseNewCredentialForm(formData: FormData): OpenAICredential[] {
-    const accountName = formData.get("newAccountName") as string;
-
-    /* YYYYMMDDHHMMSS */
-    const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
+    const accountName = (formData.get("newAccountName") as string)?.trim() || "openai";
 
     return [
       {
         id: crypto.randomUUID(),
         type: "openai",
-        accountName: accountName?.length ? accountName : `openai-${timestamp}`,
+        accountName,
         apiKey: formData.get("newKey") as string,
       },
     ];
