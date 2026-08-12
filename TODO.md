@@ -1,7 +1,6 @@
 # TODO
 
 - Incremental markdown preview rendering with streamdown
-- Add URL context for all models. Pending API stablization
 - Download code block should map lang to file extension
 - Light theme: remove? fix?
 - Drag and drop file as upload
