@@ -32,16 +32,7 @@ describe("OpenRouterProvider", () => {
 
   it("returns reasoningEffort options including 'auto' as default", () => {
     const options = provider.getOptions(mockConnection);
-    expect(options.reasoningEffort).toEqual([
-      "auto",
-      "max",
-      "xhigh",
-      "high",
-      "medium",
-      "low",
-      "minimal",
-      "none",
-    ]);
+    expect(options.reasoningEffort).toEqual(["auto", "max", "xhigh", "high", "medium", "low", "minimal", "none"]);
   });
 
   it("leaves out reasoning effort parameters when reasoningEffort is 'auto' or undefined", async () => {
