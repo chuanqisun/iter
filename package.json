@@ -43,6 +43,7 @@
         "@codemirror/state": "^6.7.1",
         "@codemirror/view": "^6.43.8",
         "@google/genai": "^2.16.0",
+        "@openrouter/sdk": "^1.2.31",
         "@uiw/codemirror-theme-github": "^4.25.11",
         "gpt-tokenizer": "^3.4.0",
         "hast-util-to-string": "^3.0.1",

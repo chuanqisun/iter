@@ -14,6 +14,7 @@ export interface ChatConfigProps {
   thinkingBudget: RouteParameter<number>;
   maxTokens: RouteParameter<number>;
   serviceTier: RouteParameter<string>;
+  sort: RouteParameter<string>;
 }
 
 export const ChatConfigMemo = memo(ChatConfig);
@@ -43,6 +44,22 @@ function ChatConfig(props: ChatConfigProps) {
                     </option>
                   ))}
                 </optgroup>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        {options?.sort ? (
+          <label>
+            Sort
+            <select
+              className="select"
+              value={props.sort.value ?? options.sort.at(0)}
+              onChange={(e) => props.sort.replace(e.target.value)}
+            >
+              {options.sort.map((sortOption) => (
+                <option key={sortOption} value={sortOption}>
+                  {sortOption}
+                </option>
               ))}
             </select>
           </label>
@@ -131,9 +148,6 @@ function ChatConfig(props: ChatConfigProps) {
             />
           </label>
         ) : null}
-        <a href="https://github.com/chuanqisun/iter" target="_blank">
-          GitHub
-        </a>
       </menu>
     </div>
   );

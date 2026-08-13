@@ -1,13 +1,4 @@
-import type {
-  EasyInputMessage,
-  Response,
-  ResponseInputFile,
-  ResponseInputImage,
-  ResponseInputItem,
-  ResponseInputText,
-  ResponseOutputText,
-} from "openai/resources/responses/responses.mjs";
-import type { ReasoningEffort } from "openai/resources/shared.mjs";
+import type { OpenResponsesResult, ReasoningEffort, ResponseOutputText, StreamEvents } from "@openrouter/sdk/models";
 import { dataUrlToText, tryDecodeDataUrlAsText } from "../storage/codec";
 import type {
   BaseConnection,
@@ -97,6 +88,7 @@ export class OpenRouterProvider implements BaseProvider {
     return {
       temperature: { max: 2 },
       reasoningEffort: ["auto", "max", "xhigh", "high", "medium", "low", "minimal", "none"],
+      sort: ["price", "throughput", "latency"],
     };
   }
 
@@ -105,11 +97,9 @@ export class OpenRouterProvider implements BaseProvider {
     const that = this;
 
     return async function* ({ messages, abortSignal, ...config }: GenericChatParams) {
-      const OpenAI = await import("openai").then((res) => res.OpenAI);
-      const client = new OpenAI({
+      const { OpenRouter } = await import("@openrouter/sdk");
+      const client = new OpenRouter({
         apiKey: connection.apiKey,
-        baseURL: "https://openrouter.ai/api/v1",
-        dangerouslyAllowBrowser: true,
       });
 
       const options = that.getOptions(connection);
@@ -129,50 +119,65 @@ export class OpenRouterProvider implements BaseProvider {
 
       const start = performance.now();
       let latencyMs: number | undefined;
-      const stream = client.responses.stream(
+      const responseStream = (await client.responses.send(
         {
-          input: that.getOpenRouterMessages(messages, { isSystemMessageSupported }),
-          model: connection.model,
-          tools: tools.length > 0 ? (tools as any) : undefined,
-          temperature: options.temperature !== undefined ? config?.temperature : undefined,
-          ...reasoning,
-          max_output_tokens: config?.maxTokens,
-          top_p: config?.topP,
-          user: "iter", // HACK: this seems to significantly improve cache hit rate
+          responsesRequest: {
+            input: that.getOpenRouterMessages(messages, { isSystemMessageSupported }) as any,
+            model: connection.model,
+            tools: tools.length > 0 ? (tools as any) : undefined,
+            temperature: options.temperature !== undefined ? config?.temperature : undefined,
+            ...reasoning,
+            maxOutputTokens: config?.maxTokens,
+            topP: config?.topP,
+            user: "iter", // HACK: this seems to significantly improve cache hit rate
+            provider: {
+              sort: (config?.sort ?? "price") as any,
+            },
+            stream: true,
+          },
         },
         {
           signal: abortSignal,
         },
-      );
+      )) as AsyncIterable<StreamEvents>;
 
+      let finalResponse: OpenResponsesResult | undefined;
       const pacer = new OutputIndexPacer();
-      for await (const message of stream) {
+
+      for await (const message of responseStream) {
         if (message.type === "response.output_text.delta" && message.delta) {
           latencyMs ??= performance.now() - start;
-          yield pacer.process((message as any).output_index, message.delta);
+          const outputIndex = (message as any).outputIndex ?? (message as any).output_index;
+          yield pacer.process(outputIndex, message.delta);
+        } else if (message.type === "response.completed" || message.type === "response.failed") {
+          finalResponse = message.response;
         }
       }
 
-      const finalResponse = await stream.finalResponse();
-      const citations = that.extractCitations(finalResponse);
-      const references = formatReferences(citations);
-      if (references) {
-        yield references;
-      }
+      if (finalResponse) {
+        const citations = that.extractCitations(finalResponse);
+        const references = formatReferences(citations);
+        if (references) {
+          yield references;
+        }
 
-      const finalUsage = finalResponse.usage;
-      if (finalUsage) {
-        config?.onMetadata?.({
-          cachedInputTokens: finalUsage.input_tokens_details?.cached_tokens,
-          totalOutputTokens: finalUsage.output_tokens,
-          latencyMs,
-          durationMs: performance.now() - start,
-        });
+        const finalUsage = finalResponse.usage;
+        if (finalUsage) {
+          const cachedInputTokens =
+            finalUsage.inputTokensDetails?.cachedTokens ?? (finalUsage as any).input_tokens_details?.cached_tokens;
+          const totalOutputTokens = finalUsage.outputTokens ?? (finalUsage as any).output_tokens;
+          config?.onMetadata?.({
+            cachedInputTokens,
+            totalOutputTokens,
+            latencyMs,
+            durationMs: performance.now() - start,
+          });
+        }
       }
     };
   }
 
-  private extractCitations(response: Response): Citation[] {
+  private extractCitations(response: OpenResponsesResult): Citation[] {
     return (response.output ?? [])
       .flatMap((item) => (item.type === "message" ? item.content : []))
       .flatMap((content) => (content.type === "output_text" ? (content.annotations ?? []) : []))
@@ -181,6 +186,9 @@ export class OpenRouterProvider implements BaseProvider {
         const target =
           ("url_citation" in ann && ann.url_citation && typeof ann.url_citation === "object"
             ? ann.url_citation
+            : null) ??
+          ("urlCitation" in ann && (ann as any).urlCitation && typeof (ann as any).urlCitation === "object"
+            ? (ann as any).urlCitation
             : null) ??
           ("citation" in ann && ann.citation && typeof ann.citation === "object" ? ann.citation : null) ??
           ann;
@@ -201,7 +209,7 @@ export class OpenRouterProvider implements BaseProvider {
     options?: {
       isSystemMessageSupported?: boolean;
     },
-  ): ResponseInputItem[] {
+  ) {
     const convertedMessage = messages.map((message) => {
       switch (message.role) {
         case "user": {
@@ -213,19 +221,21 @@ export class OpenRouterProvider implements BaseProvider {
               .map((part) => {
                 if (part.type === "text/plain" && !part.name) {
                   // unnamed message is the main body text
-                  return { type: "input_text", text: dataUrlToText(part.url) } satisfies ResponseInputText;
+                  return { type: "input_text", text: dataUrlToText(part.url) };
                 } else if (part.type.startsWith("image/")) {
                   return {
                     type: "input_image",
                     detail: "auto",
+                    imageUrl: part.url,
                     image_url: part.url,
-                  } satisfies ResponseInputImage;
+                  };
                 } else if (part.type === "application/pdf") {
                   return {
                     type: "input_file",
+                    fileData: part.url,
                     file_data: part.url,
                     filename: part.name,
-                  } satisfies ResponseInputFile;
+                  };
                 } else {
                   const maybeTextFile = tryDecodeDataUrlAsText(part.url);
                   if (maybeTextFile) {
@@ -236,13 +246,13 @@ export class OpenRouterProvider implements BaseProvider {
 ${maybeTextFile.text}
 \`\`\`
                       `.trim(),
-                    } satisfies ResponseInputText;
+                    };
                   }
                   throw new Error(`Unsupported embedded message attachment: ${part.name ?? "unnamed"} ${part.type}`);
                 }
               })
               .filter((part) => part !== null),
-          } satisfies EasyInputMessage;
+          };
         }
         case "assistant": {
           if (typeof message.content === "string") return { role: message.role, content: message.content };
@@ -256,7 +266,7 @@ ${maybeTextFile.text}
               return {
                 type: "output_text",
                 text: dataUrlToText(part.url),
-              } as ResponseOutputText;
+              } satisfies ResponseOutputText;
             } else {
               const maybeTextFile = tryDecodeDataUrlAsText(part.url);
               if (maybeTextFile) {
@@ -268,7 +278,7 @@ ${maybeTextFile.text}
 ${maybeTextFile.text}
 \`\`\`
                   `.trim(),
-                } as ResponseOutputText;
+                } satisfies ResponseOutputText;
               }
               throw new Error(`Unsupported embedded message attachment: ${part.name ?? "unnamed"} ${part.type}`);
             }
@@ -282,7 +292,7 @@ ${maybeTextFile.text}
           return {
             role: message.role,
             content: corcedOutputTexts as any[],
-          } satisfies EasyInputMessage;
+          };
         }
         case "system":
           let finalRole: "developer" | "system" | "user" = "developer";
@@ -291,7 +301,7 @@ ${maybeTextFile.text}
             finalRole = "user";
           }
           if (typeof message.content === "string") {
-            return { role: finalRole, content: message.content } satisfies EasyInputMessage;
+            return { role: finalRole, content: message.content };
           } else {
             return {
               role: finalRole,
@@ -299,7 +309,7 @@ ${maybeTextFile.text}
                 .filter((part) => part.type === "text/plain")
                 .map((part) => dataUrlToText(part.url))
                 .join("\n"),
-            } satisfies EasyInputMessage;
+            };
           }
         default: {
           console.warn("Unknown message type", message);
@@ -308,7 +318,7 @@ ${maybeTextFile.text}
       }
     });
 
-    return convertedMessage.filter((m) => m !== null);
+    return convertedMessage.filter((m): m is NonNullable<typeof m> => m !== null);
   }
 
   private isOpenRouterCredential(credential: BaseCredential): credential is OpenRouterCredential {

@@ -116,10 +116,24 @@ export function ChatTree() {
     encode: String,
     decode: String,
   });
+  const sort = useRouteParameter({
+    name: "sort",
+    initial: "price",
+    encode: String,
+    decode: String,
+  });
 
   useArtifactActions();
   useRouteCache({
-    parameters: ["connection", "temperature", "max_tokens", "reasoning_effort", "thinking_budget", "service_tier"],
+    parameters: [
+      "connection",
+      "temperature",
+      "max_tokens",
+      "reasoning_effort",
+      "thinking_budget",
+      "service_tier",
+      "sort",
+    ],
   });
 
   const chat = useCallback(
@@ -140,6 +154,7 @@ export function ChatTree() {
         thinkingBudget: thinkingBudget.value,
         verbosity: verbosity.value,
         serviceTier: serviceTier.value,
+        sort: sort.value,
         search,
         fetch,
         messages,
@@ -156,6 +171,7 @@ export function ChatTree() {
       verbosity.value,
       thinkingBudget.value,
       serviceTier.value,
+      sort.value,
     ],
   );
 
@@ -1013,6 +1029,7 @@ export function ChatTree() {
           verbosity={verbosity}
           maxTokens={maxTokens}
           serviceTier={serviceTier}
+          sort={sort}
         />
       </header>
       <div className="message-list" ref={treeRootRef}>

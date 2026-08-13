@@ -1,24 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
 import { OpenRouterProvider } from "./openrouter";
 
-const mockStream = vi.fn().mockImplementation(() => {
-  const asyncIterable = (async function* () {
+const mockSend = vi.fn().mockImplementation(async () => {
+  return (async function* () {
     yield { type: "response.output_text.delta", delta: "hello" };
+    yield {
+      type: "response.completed",
+      response: {
+        output: [],
+        usage: undefined,
+      },
+    };
   })();
-
-  return Object.assign(asyncIterable, {
-    finalResponse: async () => ({
-      output: [],
-      usage: undefined,
-    }),
-  });
 });
 
-vi.mock("openai", () => {
+vi.mock("@openrouter/sdk", () => {
   return {
-    OpenAI: class MockOpenAI {
+    OpenRouter: class MockOpenRouter {
       responses = {
-        stream: mockStream,
+        send: mockSend,
       };
     },
   };
@@ -35,13 +35,49 @@ describe("OpenRouterProvider", () => {
     apiKey: "test-key",
   };
 
-  it("returns reasoningEffort options including 'auto' as default", () => {
+  it("returns reasoningEffort and sort options", () => {
     const options = provider.getOptions(mockConnection);
     expect(options.reasoningEffort).toEqual(["auto", "max", "xhigh", "high", "medium", "low", "minimal", "none"]);
+    expect(options.sort).toEqual(["price", "throughput", "latency"]);
+  });
+
+  it("defaults provider sort to 'price' and accepts specified sort options", async () => {
+    mockSend.mockClear();
+    const proxy = provider.getChatStreamProxy(mockConnection);
+
+    // Default sort
+    const stream1 = proxy({
+      messages: [{ role: "user", content: "hi" }],
+    });
+    for await (const _ of stream1) {
+    }
+    expect(mockSend.mock.calls[0][0].responsesRequest.provider).toEqual({ sort: "price" });
+
+    mockSend.mockClear();
+
+    // Throughput sort
+    const stream2 = proxy({
+      messages: [{ role: "user", content: "hi" }],
+      sort: "throughput",
+    });
+    for await (const _ of stream2) {
+    }
+    expect(mockSend.mock.calls[0][0].responsesRequest.provider).toEqual({ sort: "throughput" });
+
+    mockSend.mockClear();
+
+    // Latency sort
+    const stream3 = proxy({
+      messages: [{ role: "user", content: "hi" }],
+      sort: "latency",
+    });
+    for await (const _ of stream3) {
+    }
+    expect(mockSend.mock.calls[0][0].responsesRequest.provider).toEqual({ sort: "latency" });
   });
 
   it("leaves out reasoning effort parameters when reasoningEffort is 'auto' or undefined", async () => {
-    mockStream.mockClear();
+    mockSend.mockClear();
     const proxy = provider.getChatStreamProxy(mockConnection);
 
     // Test with reasoningEffort: "auto"
@@ -53,11 +89,11 @@ describe("OpenRouterProvider", () => {
       // consume stream
     }
 
-    const firstCallArgs = mockStream.mock.calls[0][0];
+    const firstCallArgs = mockSend.mock.calls[0][0].responsesRequest;
     expect(firstCallArgs).not.toHaveProperty("reasoning");
     expect(firstCallArgs).not.toHaveProperty("reasoning_effort");
 
-    mockStream.mockClear();
+    mockSend.mockClear();
 
     // Test with reasoningEffort undefined
     const stream2 = proxy({
@@ -67,13 +103,13 @@ describe("OpenRouterProvider", () => {
       // consume stream
     }
 
-    const secondCallArgs = mockStream.mock.calls[0][0];
+    const secondCallArgs = mockSend.mock.calls[0][0].responsesRequest;
     expect(secondCallArgs).not.toHaveProperty("reasoning");
     expect(secondCallArgs).not.toHaveProperty("reasoning_effort");
   });
 
   it("includes reasoning object when reasoningEffort is specified and not 'auto'", async () => {
-    mockStream.mockClear();
+    mockSend.mockClear();
     const proxy = provider.getChatStreamProxy(mockConnection);
 
     const stream = proxy({
@@ -84,13 +120,13 @@ describe("OpenRouterProvider", () => {
       // consume stream
     }
 
-    const callArgs = mockStream.mock.calls[0][0];
+    const callArgs = mockSend.mock.calls[0][0].responsesRequest;
     expect(callArgs).toHaveProperty("reasoning", { effort: "high" });
     expect(callArgs).not.toHaveProperty("reasoning_effort");
   });
 
   it("passes search and fetch tools when requested", async () => {
-    mockStream.mockClear();
+    mockSend.mockClear();
     const proxy = provider.getChatStreamProxy(mockConnection);
 
     // Search only
@@ -100,9 +136,9 @@ describe("OpenRouterProvider", () => {
     });
     for await (const _ of stream) {
     }
-    expect(mockStream.mock.calls[0][0].tools).toEqual([{ type: "openrouter:web_search" }]);
+    expect(mockSend.mock.calls[0][0].responsesRequest.tools).toEqual([{ type: "openrouter:web_search" }]);
 
-    mockStream.mockClear();
+    mockSend.mockClear();
 
     // Fetch only
     stream = proxy({
@@ -111,9 +147,9 @@ describe("OpenRouterProvider", () => {
     });
     for await (const _ of stream) {
     }
-    expect(mockStream.mock.calls[0][0].tools).toEqual([{ type: "openrouter:web_fetch" }]);
+    expect(mockSend.mock.calls[0][0].responsesRequest.tools).toEqual([{ type: "openrouter:web_fetch" }]);
 
-    mockStream.mockClear();
+    mockSend.mockClear();
 
     // Both search and fetch
     stream = proxy({
@@ -123,12 +159,12 @@ describe("OpenRouterProvider", () => {
     });
     for await (const _ of stream) {
     }
-    expect(mockStream.mock.calls[0][0].tools).toEqual([
+    expect(mockSend.mock.calls[0][0].responsesRequest.tools).toEqual([
       { type: "openrouter:web_search" },
       { type: "openrouter:web_fetch" },
     ]);
 
-    mockStream.mockClear();
+    mockSend.mockClear();
 
     // Neither
     stream = proxy({
@@ -136,38 +172,38 @@ describe("OpenRouterProvider", () => {
     });
     for await (const _ of stream) {
     }
-    expect(mockStream.mock.calls[0][0].tools).toBeUndefined();
+    expect(mockSend.mock.calls[0][0].responsesRequest.tools).toBeUndefined();
   });
 
   it("extracts citations from response and yields formatted references", async () => {
-    mockStream.mockImplementationOnce(() => {
-      const asyncIterable = (async function* () {
+    mockSend.mockImplementationOnce(async () => {
+      return (async function* () {
         yield { type: "response.output_text.delta", delta: "Here is the answer." };
+        yield {
+          type: "response.completed",
+          response: {
+            output: [
+              {
+                type: "message",
+                role: "assistant",
+                content: [
+                  {
+                    type: "output_text",
+                    text: "Here is the answer.",
+                    annotations: [
+                      { type: "url_citation", url: "https://example.com/a", title: "Example A" },
+                      {
+                        type: "url_citation",
+                        url_citation: { url: "https://example.com/b", title: "Example B" },
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        };
       })();
-
-      return Object.assign(asyncIterable, {
-        finalResponse: async () => ({
-          output: [
-            {
-              type: "message",
-              role: "assistant",
-              content: [
-                {
-                  type: "output_text",
-                  text: "Here is the answer.",
-                  annotations: [
-                    { type: "url_citation", url: "https://example.com/a", title: "Example A" },
-                    {
-                      type: "url_citation",
-                      url_citation: { url: "https://example.com/b", title: "Example B" },
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        }),
-      });
     });
 
     const proxy = provider.getChatStreamProxy(mockConnection);

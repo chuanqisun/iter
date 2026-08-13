@@ -101,7 +101,7 @@ function renderCredentials(credentials: BaseCredential[]) {
       const { title, tagLine, features } = createProvider(c.type).getCredentialSummary(c);
 
       return `<div class="action-row">
-        <div>
+        <div class="connection-summary">
           <div><b>${title}</b> (${tagLine})</div>
           <div>${features}</div>
         </div>
