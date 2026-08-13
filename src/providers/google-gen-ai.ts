@@ -29,7 +29,7 @@ export interface GoogleGenAIConnection extends BaseConnection {
 
 export class GoogleGenAIProvider implements BaseProvider {
   static type = "google-gen-ai";
-  static defaultModels = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-pro-preview"];
+  static defaultModels = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-pro-preview"];
 
   parseNewCredentialForm(formData: FormData): GoogleGenAICredential[] {
     const accountName = (formData.get("newAccountName") as string)?.trim() || "google-gen-ai";
@@ -93,6 +93,7 @@ export class GoogleGenAIProvider implements BaseProvider {
   }
 
   private getReasoningEffortConfig(model: string): string[] | undefined {
+    if (model.startsWith("gemini-3.7")) return ["low", "medium", "high"];
     if (model.startsWith("gemini-3.1-pro")) return ["low", "medium", "high"];
     if (model.startsWith("gemini-3")) return ["minimal", "low", "medium", "high"];
     return undefined;
