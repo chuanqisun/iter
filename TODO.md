@@ -20,6 +20,7 @@
 
 # DONE
 
+- Fixed: reasoning gap is missing between adjacent delta texts
 - Added: web search and fetch for all openrouter models
 - Added: editable connections
 - Added: stick artifact actions
