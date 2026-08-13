@@ -41,6 +41,7 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ Gemini 3.5 Flash Lite
   - ✅ Gemini 3.1 Pro Preview
 - xAI\*\*
+  - ✅ Grok 4.6
   - ✅ Grok 4.5
 - Cerebras
   - ✅ Gemma 4 31B

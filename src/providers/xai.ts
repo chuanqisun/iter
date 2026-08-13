@@ -37,7 +37,7 @@ export interface XAIConnection extends BaseConnection {
 
 export class XAIProvider implements BaseProvider {
   static type = "xai";
-  static defaultModels = ["grok-4.5"];
+  static defaultModels = ["grok-4.6", "grok-4.5"];
 
   parseNewCredentialForm(formData: FormData): XAICredential[] {
     const accountName = (formData.get("newAccountName") as string)?.trim() || "xai";
@@ -82,7 +82,7 @@ export class XAIProvider implements BaseProvider {
     if (!this.isXaiConnection(connection)) throw new Error("Invalid connection type");
     return {
       temperature: { max: 2 },
-      reasoningEffort: ["low", "medium", "high"],
+      reasoningEffort: ["low", "medium", "high", ...(connection.model === "grok-4.6" ? ["xhigh"] : [])],
     };
   }
 
