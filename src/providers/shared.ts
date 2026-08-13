@@ -1,5 +1,18 @@
 import type { GenericOptions } from "./base";
 
+export class OutputIndexPacer {
+  private previousIndex?: number;
+
+  process(index: number | undefined, delta: string): string {
+    if (!delta) return delta;
+    const shouldInsertSpace = this.previousIndex !== undefined && index !== undefined && this.previousIndex !== index;
+    if (index !== undefined) {
+      this.previousIndex = index;
+    }
+    return shouldInsertSpace ? ` ${delta}` : delta;
+  }
+}
+
 export function getOpenAIOptions(model: string): GenericOptions {
   const isTemperatureSupported = model.startsWith("gpt") && !model.startsWith("gpt-5");
   const reasoningOptions = [];

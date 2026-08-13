@@ -19,6 +19,7 @@ import type {
   GenericOptions,
 } from "./base";
 import { formatReferences, type Citation } from "./citation";
+import { OutputIndexPacer } from "./shared";
 
 export interface XAICredential extends BaseCredential {
   id: string;
@@ -120,10 +121,11 @@ export class XAIProvider implements BaseProvider {
         },
       );
 
+      const pacer = new OutputIndexPacer();
       for await (const message of stream) {
         if (message.type === "response.output_text.delta" && message.delta) {
           latencyMs ??= performance.now() - start;
-          yield message.delta;
+          yield pacer.process((message as any).output_index, message.delta);
         }
       }
 

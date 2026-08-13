@@ -9,6 +9,7 @@ import type {
   GenericOptions,
 } from "./base";
 import { formatReferences, type Citation } from "./citation";
+import { OutputIndexPacer } from "./shared";
 
 export interface GoogleGenAICredential extends BaseCredential {
   id: string;
@@ -153,12 +154,13 @@ export class GoogleGenAIProvider implements BaseProvider {
         },
       );
 
+      const pacer = new OutputIndexPacer();
       let citations: Citation[] = [];
       for await (const event of stream) {
         if (event.event_type === "step.delta" && event.delta) {
           if (event.delta.type === "text" && event.delta.text) {
             latencyMs ??= performance.now() - start;
-            yield event.delta.text;
+            yield pacer.process((event as any).index, event.delta.text);
           }
           if (event.delta.type === "text_annotation_delta" && event.delta.annotations) {
             citations.push(...that.extractCitationsFromAnnotations(event.delta.annotations));

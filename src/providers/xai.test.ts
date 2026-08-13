@@ -77,6 +77,33 @@ describe("XAIProvider", () => {
     });
   });
 
+  it("inserts space between different output_index deltas in multi-part responses", async () => {
+    mockStream.mockImplementationOnce(() => {
+      const asyncIterable = (async function* () {
+        yield { type: "response.output_text.delta", output_index: 1, delta: "First part." };
+        yield { type: "response.output_text.delta", output_index: 1, delta: " Still first." };
+        yield { type: "response.output_text.delta", output_index: 7, delta: "Second part." };
+      })();
+
+      return Object.assign(asyncIterable, {
+        finalResponse: async () => ({
+          output: [],
+          usage: undefined,
+        }),
+      });
+    });
+
+    const proxy = provider.getChatStreamProxy(mockConnection);
+    const chunks: string[] = [];
+    for await (const chunk of proxy({
+      messages: [{ role: "user", content: "Hi" }],
+    })) {
+      chunks.push(chunk);
+    }
+
+    expect(chunks).toEqual(["First part.", " Still first.", " Second part."]);
+  });
+
   it("maps attachments properly including documents and web search tools", async () => {
     mockStream.mockImplementationOnce(() => {
       const asyncIterable = (async function* () {

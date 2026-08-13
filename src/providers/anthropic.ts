@@ -18,6 +18,7 @@ import type {
   GenericOptions,
 } from "./base";
 import { formatReferences, type Citation } from "./citation";
+import { OutputIndexPacer } from "./shared";
 
 export interface AnthropicCredential extends BaseCredential {
   id: string;
@@ -172,10 +173,11 @@ export class AnthropicProvider implements BaseProvider {
         },
       );
 
+      const pacer = new OutputIndexPacer();
       for await (const message of stream) {
         if (message.type === "content_block_delta" && message.delta.type === "text_delta" && message.delta.text) {
           latencyMs ??= performance.now() - start;
-          yield message.delta.text;
+          yield pacer.process(message.index, message.delta.text);
         }
       }
 
