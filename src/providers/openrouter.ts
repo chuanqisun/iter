@@ -179,7 +179,9 @@ export class OpenRouterProvider implements BaseProvider {
       .map((ann): Citation | undefined => {
         if (!ann || typeof ann !== "object") return undefined;
         const target =
-          ("url_citation" in ann && ann.url_citation && typeof ann.url_citation === "object" ? ann.url_citation : null) ??
+          ("url_citation" in ann && ann.url_citation && typeof ann.url_citation === "object"
+            ? ann.url_citation
+            : null) ??
           ("citation" in ann && ann.citation && typeof ann.citation === "object" ? ann.citation : null) ??
           ann;
 
