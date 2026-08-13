@@ -5,8 +5,7 @@
   border: var(--input-border-width) solid transparent;
   border-radius: 2px;
   background-color: var(--readonly-text-background);
-  overflow-x: auto; /* content may overflow when there is no gap in words*/
-  overflow-wrap: break-word;
+  word-break: break-word;
 
   &[data-collapsed] {
     max-height: var(--chat-node-collapsed-height);
@@ -76,6 +75,12 @@
 
     tr:hover {
       background-color: var(--table-hover-color);
+    }
+  }
+
+  .katex {
+    math {
+      line-height: 0;
     }
   }
 }
