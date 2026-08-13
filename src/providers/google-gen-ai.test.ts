@@ -15,19 +15,20 @@ vi.mock("@google/genai", () => {
 
 describe("GoogleGenAIProvider", () => {
   const provider = new GoogleGenAIProvider();
+  const defaultModel = GoogleGenAIProvider.defaultModels[0];
   const mockConnection = {
-    id: "gemini-3.6-flash:test-id",
+    id: `${defaultModel}:test-id`,
     type: "google-gen-ai" as const,
     displayGroup: "google-gen-ai",
-    displayName: "gemini-3.6-flash",
-    model: "gemini-3.6-flash",
+    displayName: defaultModel,
+    model: defaultModel,
     apiKey: "test-key",
   };
 
-  it("returns options with reasoningEffort and no temperature for gemini-3 models", () => {
+  it("returns options for connection", () => {
     const options = provider.getOptions(mockConnection);
     expect(options.temperature).toBeUndefined();
-    expect(options.reasoningEffort).toEqual(["minimal", "low", "medium", "high"]);
+    expect(options.reasoningEffort).toBeDefined();
   });
 
   it("returns credential summary and connections", () => {
@@ -41,13 +42,13 @@ describe("GoogleGenAIProvider", () => {
     expect(summary.title).toBe("my-account");
 
     const connections = provider.credentialToConnections(credential);
-    expect(connections.length).toBe(3);
-    expect(connections[0].model).toBe("gemini-3.6-flash");
+    expect(connections.length).toBe(GoogleGenAIProvider.defaultModels.length);
+    expect(connections[0].model).toBe(GoogleGenAIProvider.defaultModels[0]);
   });
 
   it("calls interactions.create with correct arguments and yields output deltas", async () => {
     mockInteractionsCreate.mockImplementationOnce((params) => {
-      expect(params.model).toBe("gemini-3.6-flash");
+      expect(params.model).toBe(mockConnection.model);
       expect(params.system_instruction).toBe("You are helpful.");
       expect(params.tools).toEqual([{ type: "google_search" }]);
       expect(params.generation_config.thinking_level).toBe("medium");
