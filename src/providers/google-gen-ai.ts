@@ -1,4 +1,3 @@
-import type { Content, GroundingMetadata, Part, ThinkingLevel } from "@google/genai";
 import { dataUrlToText, tryDecodeDataUrlAsText } from "../storage/codec";
 import type {
   BaseConnection,
@@ -30,13 +29,6 @@ export interface GoogleGenAIConnection extends BaseConnection {
 export class GoogleGenAIProvider implements BaseProvider {
   static type = "google-gen-ai";
   static defaultModels = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-pro-preview"];
-
-  static thinkingLevelMap: Record<string, ThinkingLevel> = {
-    minimal: "MINIMAL" as ThinkingLevel.MINIMAL,
-    low: "LOW" as ThinkingLevel.LOW,
-    medium: "MEDIUM" as ThinkingLevel.MEDIUM,
-    high: "HIGH" as ThinkingLevel.HIGH,
-  };
 
   parseNewCredentialForm(formData: FormData): GoogleGenAICredential[] {
     const accountName = (formData.get("newAccountName") as string)?.trim() || "google-gen-ai";
@@ -91,10 +83,12 @@ export class GoogleGenAIProvider implements BaseProvider {
     return !model.startsWith("gemini-3");
   }
 
-  private extractCitations(metadata: GroundingMetadata): Citation[] {
-    return (metadata.groundingChunks ?? []).flatMap((chunk) =>
-      chunk.web?.uri ? [{ url: chunk.web.uri, title: chunk.web.title }] : [],
-    );
+  private extractCitationsFromAnnotations(annotations?: Array<any>): Citation[] {
+    if (!annotations) return [];
+    return annotations.flatMap((anno) => {
+      const url = anno.url || anno.uri;
+      return url ? [{ url, title: anno.title }] : [];
+    });
   }
 
   private getReasoningEffortConfig(model: string): string[] | undefined {
@@ -104,16 +98,16 @@ export class GoogleGenAIProvider implements BaseProvider {
   }
 
   private getFinalThinkingLevel(model: string, inputLevel?: string) {
-    if (model.startsWith("gemini-3-pro")) {
+    if (model.startsWith("gemini-3") && model.includes("-pro")) {
       const supported = ["low", "high"];
       const level = supported.includes(inputLevel!) ? inputLevel : "low";
-      return GoogleGenAIProvider.thinkingLevelMap[level as keyof typeof GoogleGenAIProvider.thinkingLevelMap];
+      return level as "low" | "high";
     }
 
-    if (model.startsWith("gemini-3-flash")) {
+    if (model.startsWith("gemini-3") && model.includes("-flash")) {
       const supported = ["minimal", "low", "medium", "high"];
       const level = supported.includes(inputLevel!) ? inputLevel : "minimal";
-      return GoogleGenAIProvider.thinkingLevelMap[level as keyof typeof GoogleGenAIProvider.thinkingLevelMap];
+      return level as "minimal" | "low" | "medium" | "high";
     }
 
     return undefined;
@@ -127,51 +121,72 @@ export class GoogleGenAIProvider implements BaseProvider {
       const GoogleGenAI = await import("@google/genai").then((res) => res.GoogleGenAI);
       const client = new GoogleGenAI({ apiKey: connection.apiKey });
 
-      const { system, messages: googleMessages } = that.getGoogleGenAIMessages(messages);
+      const { system, steps } = that.getGoogleGenAIMessages(messages);
 
       const options = that.getOptions(connection);
       const tools = [
-        ...(config.search ? ([{ googleSearch: {} }] as const) : []),
-        ...(config.fetch ? ([{ urlContext: {} }] as const) : []),
+        ...(config.search ? ([{ type: "google_search" }] as const) : []),
+        ...(config.fetch ? ([{ type: "url_context" }] as const) : []),
       ];
 
       const start = performance.now();
       let latencyMs: number | undefined;
-      const result = await client.models.generateContentStream({
-        model: connection.model,
-        contents: googleMessages,
-        config: {
-          systemInstruction: system,
-          abortSignal,
-          temperature: options.temperature !== undefined ? config?.temperature : undefined,
-          topP: config?.topP,
-          maxOutputTokens: config?.maxTokens,
+
+      const stream = await client.interactions.create(
+        {
+          model: connection.model,
+          input: steps as any,
+          stream: true,
+          system_instruction: system,
           tools: tools.length ? [...tools] : undefined,
-          thinkingConfig: {
-            thinkingLevel: that.getFinalThinkingLevel(connection.model, config.reasoningEffort),
-          },
+          generation_config: {
+            thinking_level: that.getFinalThinkingLevel(connection.model, config.reasoningEffort),
+            max_output_tokens: config?.maxTokens,
+            ...(options.temperature !== undefined && config?.temperature !== undefined
+              ? { temperature: config.temperature }
+              : {}),
+          } as any,
         },
-      });
+        {
+          signal: abortSignal,
+          fetchOptions: { signal: abortSignal },
+        },
+      );
 
       let citations: Citation[] = [];
-      for await (const message of result) {
-        const chunk = message.text;
-        const metadata = message.candidates?.at(0)?.groundingMetadata;
-        if (metadata) {
-          citations = that.extractCitations(metadata);
+      for await (const event of stream) {
+        if (event.event_type === "step.delta" && event.delta) {
+          if (event.delta.type === "text" && event.delta.text) {
+            latencyMs ??= performance.now() - start;
+            yield event.delta.text;
+          }
+          if (event.delta.type === "text_annotation_delta" && event.delta.annotations) {
+            citations.push(...that.extractCitationsFromAnnotations(event.delta.annotations));
+          }
         }
 
-        if (chunk) {
-          latencyMs ??= performance.now() - start;
-          yield chunk;
+        if (event.event_type === "interaction.completed") {
+          const interaction = event.interaction;
+          if (interaction?.usage) {
+            config.onMetadata?.({
+              cachedInputTokens: interaction.usage.total_cached_tokens,
+              totalOutputTokens: interaction.usage.total_output_tokens,
+              latencyMs,
+              durationMs: performance.now() - start,
+            });
+          }
+          if (interaction?.steps) {
+            for (const step of interaction.steps) {
+              if (step.type === "model_output" && step.content) {
+                for (const c of step.content) {
+                  if (c.type === "text" && c.annotations) {
+                    citations.push(...that.extractCitationsFromAnnotations(c.annotations));
+                  }
+                }
+              }
+            }
+          }
         }
-        if (message.usageMetadata)
-          config.onMetadata?.({
-            cachedInputTokens: message.usageMetadata.cachedContentTokenCount,
-            totalOutputTokens: message.usageMetadata.candidatesTokenCount,
-            latencyMs,
-            durationMs: performance.now() - start,
-          });
       }
 
       const references = formatReferences(citations);
@@ -191,10 +206,10 @@ export class GoogleGenAIProvider implements BaseProvider {
 
   private getGoogleGenAIMessages(messages: GenericMessage[]): {
     system?: string;
-    messages: Content[];
+    steps: Array<{ type: "user_input" | "model_output"; content: any[] }>;
   } {
     let system: string | undefined;
-    const convertedMessages: Content[] = [];
+    const steps: Array<{ type: "user_input" | "model_output"; content: any[] }> = [];
 
     messages.forEach((message) => {
       if (message.role === "system") {
@@ -206,60 +221,72 @@ export class GoogleGenAIProvider implements BaseProvider {
             .map((part) => dataUrlToText(part.url))
             .join("\n");
         }
-      } else if (typeof message.content === "string") {
-        convertedMessages.push({
-          role: this.toGeminiRoleName(message.role),
-          parts: [{ text: message.content }],
-        });
       } else {
-        const convertedMessageParts = message.content.map((part) => {
-          switch (part.type) {
-            case "image/gif":
-            case "image/png":
-            case "image/webp":
-            case "application/pdf": {
-              return {
-                inlineData: this.dataUrlToInlineDataPart(part.url),
-              } satisfies Part;
-            }
-            default: {
-              if (part.type === "text/plain" && !part.name) {
-                // unnamed message is the main body text
-                return {
-                  text: dataUrlToText(part.url),
-                } satisfies Part;
-              }
+        const convertedContent: any[] = [];
+
+        if (typeof message.content === "string") {
+          convertedContent.push({
+            type: "text",
+            text: message.content,
+          });
+        } else {
+          message.content.forEach((part) => {
+            if (part.type.startsWith("image/")) {
+              const inline = this.dataUrlToInlineDataPart(part.url);
+              convertedContent.push({
+                type: "image",
+                mime_type: inline.mimeType,
+                data: inline.data,
+              });
+            } else if (part.type === "application/pdf") {
+              const inline = this.dataUrlToInlineDataPart(part.url);
+              convertedContent.push({
+                type: "document",
+                mime_type: inline.mimeType,
+                data: inline.data,
+              });
+            } else if (part.type === "text/plain" && !part.name) {
+              convertedContent.push({
+                type: "text",
+                text: dataUrlToText(part.url),
+              });
+            } else {
               const maybeTextFile = tryDecodeDataUrlAsText(part.url);
               if (maybeTextFile) {
                 const filePrefix = message.role === "user" ? "input" : "output";
-                return {
+                convertedContent.push({
+                  type: "text",
                   text: `
 \`\`\`${part.name ?? "unnamed"} ${filePrefix} type=${maybeTextFile.mediaType}
 ${maybeTextFile.text}
 \`\`\`
-                      `.trim(),
-                } satisfies Part;
+`.trim(),
+                });
+              } else {
+                throw new Error(`Unsupported embedded message attachment: ${part.name ?? "unnamed"} ${part.type}`);
               }
-              throw new Error(`Unsupported embedded message attachment: ${part.name ?? "unnamed"} ${part.type}`);
             }
-          }
-        });
+          });
+        }
 
-        convertedMessages.push({
-          role: this.toGeminiRoleName(message.role),
-          parts: convertedMessageParts.filter((part) => part !== null),
-        });
+        if (message.role === "assistant") {
+          steps.push({
+            type: "model_output",
+            content: convertedContent,
+          });
+        } else {
+          steps.push({
+            type: "user_input",
+            content: convertedContent,
+          });
+        }
       }
     });
 
     return {
       system,
-      messages: convertedMessages,
+      steps,
     };
-  }
-
-  private toGeminiRoleName(role: "assistant" | "user") {
-    return role === "assistant" ? "model" : "user";
   }
 
   private dataUrlToInlineDataPart(dataUrl: string) {

@@ -24,11 +24,11 @@
 # Gemini
 
 ```jsonl
-{"candidates": [{"content": {"parts": [{"text": " find top-rated ramen spots in the Boston area along with their notable specialties and general locations.\n\nWhat I need to do: Perform"}],"role": "model"},"index": 0}],"usageMetadata": {"promptTokenCount": 38,"candidatesTokenCount": 59,"totalTokenCount": 443,"promptTokensDetails": [{"modality": "TEXT","tokenCount": 38}],"thoughtsTokenCount": 346,"serviceTier": "standard"},"modelVersion": "gemini-3.6-flash","responseId": "fx99aoLYMPDg_uMP3cTFyAU"}
-{"candidates": [{"content": {"parts": [{"text": " a search for the best and most popular ramen restaurants in and around Boston.\n\nLet's start the search."}],"role": "model"},"index": 0}],"usageMetadata": {"promptTokenCount": 38,"candidatesTokenCount": 82,"totalTokenCount": 466,"promptTokensDetails": [{"modality": "TEXT","tokenCount": 38}],"thoughtsTokenCount": 346,"serviceTier": "standard"},"modelVersion": "gemini-3.6-flash","responseId": "fx99aoLYMPDg_uMP3cTFyAU"}
+{"index":1,"delta":{"text":" Boston\". From the top results, I will select 3 popular spots, gather details about their locations and signature dishes, and then summarize the","type":"text"},"event_type":"step.delta"}
+{"index":1,"delta":{"text":" findings for you.\n\nLet's begin the search.","type":"text"},"event_type":"step.delta"}
 
 ...(omitted)
 
-{"candidates": [{"content": {"parts": [{"text": "Here are 3 top-rated ramen spots in and near Boston, each offering a distinct style and experience:\n\n### "}],"role": "model"},"index": 0}],"usageMetadata": {"promptTokenCount": 38,"candidatesTokenCount": 25,"totalTokenCount": 241,"promptTokensDetails": [{"modality": "TEXT","tokenCount": 38}],"thoughtsTokenCount": 178,"serviceTier": "standard"},"modelVersion": "gemini-3.6-flash","responseId": "fx99aoLYMPDg_uMP3cTFyAU"}
-{"candidates": [{"content": {"parts": [{"text": "1. **Ganko Ittetsu Ramen** *(Brookline / Coolidge Corner)*\n* **Style / Specialty:** Sapporo-style ramen"}],"role": "model"},"index": 0}],"usageMetadata": {"promptTokenCount": 38,"candidatesTokenCount": 54,"totalTokenCount": 270,"promptTokensDetails": [{"modality": "TEXT","tokenCount": 38}],"thoughtsTokenCount": 178,"serviceTier": "standard"},"modelVersion": "gemini-3.6-flash","responseId": "fx99aoLYMPDg_uMP3cTFyAU"}
+{"index":5,"delta":{"text":"Here is a summary of 3 highly recommended ramen","type":"text"},"event_type":"step.delta"}
+{"index":5,"delta":{"text":" places in and around the Boston area based on popular local consensus:\n\n### 1. **Ganko Ittetsu Ramen","type":"text"},"event_type":"step.delta"}
 ```
