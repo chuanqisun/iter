@@ -101,7 +101,7 @@ describe("XAIProvider", () => {
       chunks.push(chunk);
     }
 
-    expect(chunks).toEqual(["First part.", " Still first.", " Second part."]);
+    expect(chunks).toEqual(["First part.", " Still first.", "\n\nSecond part."]);
   });
 
   it("maps attachments properly including documents and web search tools", async () => {

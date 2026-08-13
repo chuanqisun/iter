@@ -1,19 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
 import { OpenRouterProvider } from "./openrouter";
 
-const mockCreate = vi.fn().mockImplementation(async () => {
-  return (async function* () {
-    yield { choices: [{ delta: { content: "hello" } }] };
+const mockStream = vi.fn().mockImplementation(() => {
+  const asyncIterable = (async function* () {
+    yield { type: "response.output_text.delta", delta: "hello" };
   })();
+
+  return Object.assign(asyncIterable, {
+    finalResponse: async () => ({
+      output: [],
+      usage: undefined,
+    }),
+  });
 });
 
 vi.mock("openai", () => {
   return {
     OpenAI: class MockOpenAI {
-      chat = {
-        completions: {
-          create: mockCreate,
-        },
+      responses = {
+        stream: mockStream,
       };
     },
   };
@@ -36,7 +41,7 @@ describe("OpenRouterProvider", () => {
   });
 
   it("leaves out reasoning effort parameters when reasoningEffort is 'auto' or undefined", async () => {
-    mockCreate.mockClear();
+    mockStream.mockClear();
     const proxy = provider.getChatStreamProxy(mockConnection);
 
     // Test with reasoningEffort: "auto"
@@ -48,11 +53,11 @@ describe("OpenRouterProvider", () => {
       // consume stream
     }
 
-    const firstCallArgs = mockCreate.mock.calls[0][0];
+    const firstCallArgs = mockStream.mock.calls[0][0];
     expect(firstCallArgs).not.toHaveProperty("reasoning");
     expect(firstCallArgs).not.toHaveProperty("reasoning_effort");
 
-    mockCreate.mockClear();
+    mockStream.mockClear();
 
     // Test with reasoningEffort undefined
     const stream2 = proxy({
@@ -62,13 +67,13 @@ describe("OpenRouterProvider", () => {
       // consume stream
     }
 
-    const secondCallArgs = mockCreate.mock.calls[0][0];
+    const secondCallArgs = mockStream.mock.calls[0][0];
     expect(secondCallArgs).not.toHaveProperty("reasoning");
     expect(secondCallArgs).not.toHaveProperty("reasoning_effort");
   });
 
   it("includes reasoning object when reasoningEffort is specified and not 'auto'", async () => {
-    mockCreate.mockClear();
+    mockStream.mockClear();
     const proxy = provider.getChatStreamProxy(mockConnection);
 
     const stream = proxy({
@@ -79,13 +84,13 @@ describe("OpenRouterProvider", () => {
       // consume stream
     }
 
-    const callArgs = mockCreate.mock.calls[0][0];
+    const callArgs = mockStream.mock.calls[0][0];
     expect(callArgs).toHaveProperty("reasoning", { effort: "high" });
     expect(callArgs).not.toHaveProperty("reasoning_effort");
   });
 
   it("passes search and fetch tools when requested", async () => {
-    mockCreate.mockClear();
+    mockStream.mockClear();
     const proxy = provider.getChatStreamProxy(mockConnection);
 
     // Search only
@@ -95,9 +100,9 @@ describe("OpenRouterProvider", () => {
     });
     for await (const _ of stream) {
     }
-    expect(mockCreate.mock.calls[0][0].tools).toEqual([{ type: "openrouter:web_search" }]);
+    expect(mockStream.mock.calls[0][0].tools).toEqual([{ type: "openrouter:web_search" }]);
 
-    mockCreate.mockClear();
+    mockStream.mockClear();
 
     // Fetch only
     stream = proxy({
@@ -106,9 +111,9 @@ describe("OpenRouterProvider", () => {
     });
     for await (const _ of stream) {
     }
-    expect(mockCreate.mock.calls[0][0].tools).toEqual([{ type: "openrouter:web_fetch" }]);
+    expect(mockStream.mock.calls[0][0].tools).toEqual([{ type: "openrouter:web_fetch" }]);
 
-    mockCreate.mockClear();
+    mockStream.mockClear();
 
     // Both search and fetch
     stream = proxy({
@@ -118,12 +123,12 @@ describe("OpenRouterProvider", () => {
     });
     for await (const _ of stream) {
     }
-    expect(mockCreate.mock.calls[0][0].tools).toEqual([
+    expect(mockStream.mock.calls[0][0].tools).toEqual([
       { type: "openrouter:web_search" },
       { type: "openrouter:web_fetch" },
     ]);
 
-    mockCreate.mockClear();
+    mockStream.mockClear();
 
     // Neither
     stream = proxy({
@@ -131,37 +136,38 @@ describe("OpenRouterProvider", () => {
     });
     for await (const _ of stream) {
     }
-    expect(mockCreate.mock.calls[0][0].tools).toBeUndefined();
+    expect(mockStream.mock.calls[0][0].tools).toBeUndefined();
   });
 
-  it("extracts citations from stream chunks and yields formatted references", async () => {
-    mockCreate.mockImplementationOnce(async () => {
-      return (async function* () {
-        yield {
-          choices: [
-            {
-              delta: {
-                content: "Here is the answer.",
-                annotations: [{ type: "url_citation", url: "https://example.com/a", title: "Example A" }],
-              },
-            },
-          ],
-        };
-        yield {
-          choices: [
-            {
-              delta: {
-                annotations: [
-                  {
-                    type: "url_citation",
-                    url_citation: { url: "https://example.com/b", title: "Example B" },
-                  },
-                ],
-              },
-            },
-          ],
-        };
+  it("extracts citations from response and yields formatted references", async () => {
+    mockStream.mockImplementationOnce(() => {
+      const asyncIterable = (async function* () {
+        yield { type: "response.output_text.delta", delta: "Here is the answer." };
       })();
+
+      return Object.assign(asyncIterable, {
+        finalResponse: async () => ({
+          output: [
+            {
+              type: "message",
+              role: "assistant",
+              content: [
+                {
+                  type: "output_text",
+                  text: "Here is the answer.",
+                  annotations: [
+                    { type: "url_citation", url: "https://example.com/a", title: "Example A" },
+                    {
+                      type: "url_citation",
+                      url_citation: { url: "https://example.com/b", title: "Example B" },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        }),
+      });
     });
 
     const proxy = provider.getChatStreamProxy(mockConnection);

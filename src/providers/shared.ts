@@ -9,7 +9,7 @@ export class OutputIndexPacer {
     if (index !== undefined) {
       this.previousIndex = index;
     }
-    return shouldInsertSpace ? ` ${delta}` : delta;
+    return shouldInsertSpace ? `\n\n${delta}` : delta;
   }
 }
 

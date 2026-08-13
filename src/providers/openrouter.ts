@@ -1,12 +1,12 @@
 import type {
-  ChatCompletionAssistantMessageParam,
-  ChatCompletionContentPart,
-  ChatCompletionContentPartImage,
-  ChatCompletionContentPartText,
-  ChatCompletionMessageParam,
-  ChatCompletionSystemMessageParam,
-  ChatCompletionUserMessageParam,
-} from "openai/resources/index.mjs";
+  EasyInputMessage,
+  Response,
+  ResponseInputFile,
+  ResponseInputImage,
+  ResponseInputItem,
+  ResponseInputText,
+  ResponseOutputText,
+} from "openai/resources/responses/responses.mjs";
 import type { ReasoningEffort } from "openai/resources/shared.mjs";
 import { dataUrlToText, tryDecodeDataUrlAsText } from "../storage/codec";
 import type {
@@ -19,6 +19,7 @@ import type {
   GenericOptions,
 } from "./base";
 import { formatReferences, type Citation } from "./citation";
+import { OutputIndexPacer } from "./shared";
 
 export interface OpenRouterCredential extends BaseCredential {
   id: string;
@@ -128,18 +129,14 @@ export class OpenRouterProvider implements BaseProvider {
 
       const start = performance.now();
       let latencyMs: number | undefined;
-      const stream = await client.chat.completions.create(
+      const stream = client.responses.stream(
         {
-          stream: true,
-          stream_options: {
-            include_usage: true,
-          },
-          messages: that.getOpenRouterMessage(messages, { isSystemMessageSupported }),
+          input: that.getOpenRouterMessages(messages, { isSystemMessageSupported }),
           model: connection.model,
           tools: tools.length > 0 ? (tools as any) : undefined,
           temperature: options.temperature !== undefined ? config?.temperature : undefined,
           ...reasoning,
-          max_completion_tokens: config?.maxTokens,
+          max_output_tokens: config?.maxTokens,
           top_p: config?.topP,
           user: "iter", // HACK: this seems to significantly improve cache hit rate
         },
@@ -148,58 +145,48 @@ export class OpenRouterProvider implements BaseProvider {
         },
       );
 
-      const citations: Citation[] = [];
-      for await (const chunk of stream) {
-        citations.push(...that.extractCitationsFromChunk(chunk));
-        const content = chunk.choices.at(0)?.delta?.content;
-        if (content) {
+      const pacer = new OutputIndexPacer();
+      for await (const message of stream) {
+        if (message.type === "response.output_text.delta" && message.delta) {
           latencyMs ??= performance.now() - start;
-          yield content;
-        }
-        if (chunk.usage) {
-          config?.onMetadata?.({
-            cachedInputTokens: chunk.usage.prompt_tokens_details?.cached_tokens,
-            totalOutputTokens:
-              (chunk.usage.completion_tokens_details?.reasoning_tokens ?? 0) + chunk.usage.completion_tokens,
-            latencyMs,
-            durationMs: performance.now() - start,
-          });
+          yield pacer.process((message as any).output_index, message.delta);
         }
       }
 
+      const finalResponse = await stream.finalResponse();
+      const citations = that.extractCitations(finalResponse);
       const references = formatReferences(citations);
       if (references) {
         yield references;
       }
+
+      const finalUsage = finalResponse.usage;
+      if (finalUsage) {
+        config?.onMetadata?.({
+          cachedInputTokens: finalUsage.input_tokens_details?.cached_tokens,
+          totalOutputTokens: finalUsage.output_tokens,
+          latencyMs,
+          durationMs: performance.now() - start,
+        });
+      }
     };
   }
 
-  private extractCitationsFromChunk(chunk: unknown): Citation[] {
-    if (!chunk || typeof chunk !== "object") return [];
-
-    const obj = chunk as Record<string, any>;
-    const targets = [obj, ...(Array.isArray(obj.choices) ? obj.choices : []).flatMap((c) => [c, c?.delta, c?.message])];
-
-    const rawAnnotations = targets.flatMap((target) => {
-      if (!target || typeof target !== "object") return [];
-      const items = [];
-      if (Array.isArray(target.annotations)) items.push(...target.annotations);
-      if (Array.isArray(target.citations)) items.push(...target.citations);
-      return items;
-    });
-
-    return rawAnnotations
+  private extractCitations(response: Response): Citation[] {
+    return (response.output ?? [])
+      .flatMap((item) => (item.type === "message" ? item.content : []))
+      .flatMap((content) => (content.type === "output_text" ? (content.annotations ?? []) : []))
       .map((ann): Citation | undefined => {
         if (!ann || typeof ann !== "object") return undefined;
         const target =
-          (ann.url_citation && typeof ann.url_citation === "object" ? ann.url_citation : null) ??
-          (ann.citation && typeof ann.citation === "object" ? ann.citation : null) ??
+          ("url_citation" in ann && ann.url_citation && typeof ann.url_citation === "object" ? ann.url_citation : null) ??
+          ("citation" in ann && ann.citation && typeof ann.citation === "object" ? ann.citation : null) ??
           ann;
 
-        if (target && typeof target.url === "string" && target.url) {
+        if (target && typeof (target as any).url === "string" && (target as any).url) {
           return {
-            url: target.url,
-            title: typeof target.title === "string" ? target.title : undefined,
+            url: (target as any).url,
+            title: typeof (target as any).title === "string" ? (target as any).title : undefined,
           };
         }
         return undefined;
@@ -207,12 +194,12 @@ export class OpenRouterProvider implements BaseProvider {
       .filter((c): c is Citation => Boolean(c));
   }
 
-  private getOpenRouterMessage(
+  private getOpenRouterMessages(
     messages: GenericMessage[],
     options?: {
       isSystemMessageSupported?: boolean;
     },
-  ): ChatCompletionMessageParam[] {
+  ): ResponseInputItem[] {
     const convertedMessage = messages.map((message) => {
       switch (message.role) {
         case "user": {
@@ -224,37 +211,36 @@ export class OpenRouterProvider implements BaseProvider {
               .map((part) => {
                 if (part.type === "text/plain" && !part.name) {
                   // unnamed message is the main body text
-                  return { type: "text", text: dataUrlToText(part.url) } satisfies ChatCompletionContentPartText;
+                  return { type: "input_text", text: dataUrlToText(part.url) } satisfies ResponseInputText;
                 } else if (part.type.startsWith("image/")) {
                   return {
-                    type: "image_url",
-                    image_url: { url: part.url },
-                  } satisfies ChatCompletionContentPartImage;
+                    type: "input_image",
+                    detail: "auto",
+                    image_url: part.url,
+                  } satisfies ResponseInputImage;
                 } else if (part.type === "application/pdf") {
                   return {
-                    type: "file",
-                    file: {
-                      file_data: part.url,
-                      filename: part.name,
-                    },
-                  } satisfies ChatCompletionContentPart.File;
+                    type: "input_file",
+                    file_data: part.url,
+                    filename: part.name,
+                  } satisfies ResponseInputFile;
                 } else {
                   const maybeTextFile = tryDecodeDataUrlAsText(part.url);
                   if (maybeTextFile) {
                     return {
-                      type: "text",
+                      type: "input_text",
                       text: `
 \`\`\`${part.name ?? "unnamed"} type=${maybeTextFile.mediaType}
 ${maybeTextFile.text}
 \`\`\`
                       `.trim(),
-                    } satisfies ChatCompletionContentPartText;
+                    } satisfies ResponseInputText;
                   }
                   throw new Error(`Unsupported embedded message attachment: ${part.name ?? "unnamed"} ${part.type}`);
                 }
               })
               .filter((part) => part !== null),
-          } satisfies ChatCompletionUserMessageParam;
+          } satisfies EasyInputMessage;
         }
         case "assistant": {
           if (typeof message.content === "string") return { role: message.role, content: message.content };
@@ -266,21 +252,21 @@ ${maybeTextFile.text}
           const corcedOutputTexts = message.content.map((part) => {
             if (part.type === "text/plain") {
               return {
-                type: "text",
+                type: "output_text",
                 text: dataUrlToText(part.url),
-              } as ChatCompletionContentPartText;
+              } as ResponseOutputText;
             } else {
               const maybeTextFile = tryDecodeDataUrlAsText(part.url);
               if (maybeTextFile) {
                 const filePrefix = message.role === "user" ? "input" : "output";
                 return {
-                  type: "text",
+                  type: "output_text",
                   text: `
 \`\`\`${part.name ?? "unnamed"} ${filePrefix} type=${maybeTextFile.mediaType}
 ${maybeTextFile.text}
 \`\`\`
                   `.trim(),
-                } as ChatCompletionContentPartText;
+                } as ResponseOutputText;
               }
               throw new Error(`Unsupported embedded message attachment: ${part.name ?? "unnamed"} ${part.type}`);
             }
@@ -294,17 +280,16 @@ ${maybeTextFile.text}
           return {
             role: message.role,
             content: corcedOutputTexts as any[],
-          } satisfies ChatCompletionAssistantMessageParam;
+          } satisfies EasyInputMessage;
         }
         case "system":
-          let finalRole: "system" | "user" = "system";
+          let finalRole: "developer" | "system" | "user" = "developer";
           if (!options?.isSystemMessageSupported) {
             console.error("System message is not supported for this model, converted to user message");
             finalRole = "user";
           }
           if (typeof message.content === "string") {
-            return { role: finalRole, content: message.content } satisfies
-              ChatCompletionSystemMessageParam | ChatCompletionUserMessageParam;
+            return { role: finalRole, content: message.content } satisfies EasyInputMessage;
           } else {
             return {
               role: finalRole,
@@ -312,7 +297,7 @@ ${maybeTextFile.text}
                 .filter((part) => part.type === "text/plain")
                 .map((part) => dataUrlToText(part.url))
                 .join("\n"),
-            } satisfies ChatCompletionSystemMessageParam | ChatCompletionUserMessageParam;
+            } satisfies EasyInputMessage;
           }
         default: {
           console.warn("Unknown message type", message);
