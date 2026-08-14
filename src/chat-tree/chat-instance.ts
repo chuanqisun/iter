@@ -1,8 +1,8 @@
 // a global instance to allow sharing chat provider between react and web components
 
-import type { GenericChatParams } from "../providers/base";
+import type { RuntimeChatParams } from "../providers/base";
 
-export type GlobalChatProxy = (params: GenericChatParams) => AsyncGenerator<string>;
+export type GlobalChatProxy = (params: RuntimeChatParams) => AsyncGenerator<string>;
 let chatInstance: GlobalChatProxy | undefined;
 
 export function getChatInstance(): GlobalChatProxy {

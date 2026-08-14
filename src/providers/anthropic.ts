@@ -13,9 +13,9 @@ import type {
   BaseCredential,
   BaseProvider,
   ChatStreamProxy,
-  GenericChatParams,
   GenericMessage,
-  GenericOptions,
+  ModelParamOptions,
+  RuntimeChatParams,
 } from "./base";
 import { formatReferences, type Citation } from "./citation";
 import { OutputIndexPacer } from "./shared";
@@ -82,7 +82,7 @@ export class AnthropicProvider implements BaseProvider {
     };
   }
 
-  getOptions(connection: BaseConnection): GenericOptions {
+  getOptions(connection: BaseConnection): ModelParamOptions {
     if (!this.isAnthropicConnection(connection)) throw new Error("Invalid connection type");
 
     const supportsAdaptiveThinking = this.supportsAdaptiveThinking(connection.model);
@@ -98,7 +98,7 @@ export class AnthropicProvider implements BaseProvider {
     if (!this.isAnthropicConnection(connection)) throw new Error("Invalid connection type");
     const that = this;
 
-    return async function* ({ messages, abortSignal, ...config }: GenericChatParams) {
+    return async function* ({ messages, abortSignal, ...config }: RuntimeChatParams) {
       const Anthropic = await import("@anthropic-ai/sdk").then((res) => res.Anthropic);
       const client = new Anthropic({
         apiKey: connection.apiKey,

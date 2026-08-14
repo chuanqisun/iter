@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { OutputIndexPacer } from "./shared";
+import { clampNumber, OutputIndexPacer, sanitizeParamsFromOptions, selectEnum } from "./shared";
 
 describe("OutputIndexPacer", () => {
   it("yields deltas unchanged on initial delta and matching indices", () => {
@@ -34,5 +34,126 @@ describe("OutputIndexPacer", () => {
   it("handles empty delta text", () => {
     const pacer = new OutputIndexPacer();
     expect(pacer.process(1, "")).toBe("");
+  });
+});
+
+describe("sanitizeParamsFromOptions", () => {
+  it("keeps valid parameters within bounds for supported options", () => {
+    const sanitized = sanitizeParamsFromOptions(
+      {
+        temperature: { max: 2 },
+        reasoningEffort: ["none", "low", "medium", "high"],
+        maxTokens: { min: 1, max: 16384 },
+      },
+      {
+        temperature: 0.7,
+        reasoningEffort: "medium",
+        maxTokens: 4096,
+      },
+    );
+
+    expect(sanitized).toEqual({
+      temperature: 0.7,
+      reasoningEffort: "medium",
+      maxTokens: 4096,
+      verbosity: undefined,
+      thinkingBudget: undefined,
+      serviceTier: undefined,
+      sort: undefined,
+      costTier: undefined,
+      minCodingScore: undefined,
+    });
+  });
+
+  it("clamps numerical parameters and defaults invalid enum options", () => {
+    const sanitized = sanitizeParamsFromOptions(
+      {
+        temperature: { min: 0.5, max: 1.0 },
+        reasoningEffort: ["low", "medium", "high"],
+        maxTokens: { min: 1, max: 8192 },
+        minCodingScore: { min: 0, max: 1, step: 0.05 },
+      },
+      {
+        temperature: 2.5,
+        reasoningEffort: "invalid_effort",
+        maxTokens: 32768,
+        minCodingScore: 1.5,
+      },
+    );
+
+    expect(sanitized.temperature).toBe(1.0);
+    expect(sanitized.reasoningEffort).toBe("low");
+    expect(sanitized.maxTokens).toBe(8192);
+    expect(sanitized.minCodingScore).toBe(1.0);
+  });
+
+  it("sets unsupported parameter fields to undefined", () => {
+    const sanitized = sanitizeParamsFromOptions(
+      {
+        temperature: { max: 2 },
+      },
+      {
+        temperature: 0.5,
+        reasoningEffort: "high",
+        verbosity: "low",
+        sort: "price",
+        costTier: "high",
+      },
+    );
+
+    expect(sanitized.temperature).toBe(0.5);
+    expect(sanitized.reasoningEffort).toBeUndefined();
+    expect(sanitized.verbosity).toBeUndefined();
+    expect(sanitized.sort).toBeUndefined();
+    expect(sanitized.costTier).toBeUndefined();
+  });
+
+  it("handles NaN numeric inputs by falling back to min or default bounds", () => {
+    const sanitized = sanitizeParamsFromOptions(
+      {
+        temperature: { min: 0.1, max: 2.0 },
+        thinkingBudget: { min: 100, max: 1000 },
+      },
+      {
+        temperature: NaN,
+        thinkingBudget: NaN,
+      },
+    );
+
+    expect(sanitized.temperature).toBe(0.1);
+    expect(sanitized.thinkingBudget).toBe(100);
+  });
+
+  it("handles serviceTier options correctly", () => {
+    const sanitizedWithOption = sanitizeParamsFromOptions({ serviceTier: "auto" }, { serviceTier: "fast" });
+    expect(sanitizedWithOption.serviceTier).toBe("fast");
+
+    const sanitizedWithInvalid = sanitizeParamsFromOptions(
+      { serviceTier: "auto" },
+      { serviceTier: "unsupported_tier" },
+    );
+    expect(sanitizedWithInvalid.serviceTier).toBe("auto");
+
+    const sanitizedWithoutOption = sanitizeParamsFromOptions({}, { serviceTier: "fast" });
+    expect(sanitizedWithoutOption.serviceTier).toBeUndefined();
+  });
+});
+
+describe("clampNumber & selectEnum helpers", () => {
+  it("clampNumber clamps value to min/max range or fallback", () => {
+    expect(clampNumber(5, { min: 0, max: 10 })).toBe(5);
+    expect(clampNumber(-5, { min: 0, max: 10 })).toBe(0);
+    expect(clampNumber(15, { min: 0, max: 10 })).toBe(10);
+    expect(clampNumber(undefined, { min: 2, max: 10 })).toBe(2);
+    expect(clampNumber(undefined, { min: 2, max: 10 }, 8)).toBe(8);
+    expect(clampNumber(undefined, undefined)).toBeUndefined();
+  });
+
+  it("selectEnum returns matched allowed item or first item", () => {
+    expect(selectEnum("high", ["low", "medium", "high"])).toBe("high");
+    expect(selectEnum("unknown", ["low", "medium", "high"])).toBe("low");
+    expect(selectEnum(undefined, ["low", "medium", "high"])).toBe("low");
+    expect(selectEnum("high", undefined)).toBeUndefined();
+    expect(selectEnum("high", [])).toBeUndefined();
   });
 });

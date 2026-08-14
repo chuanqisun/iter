@@ -1,23 +1,13 @@
 import { memo } from "react";
 import type { BaseConnection } from "../providers/base";
-import type { RouteParameter } from "../router/use-route-parameter";
+import type { ModelParameterRouteParams } from "../settings/use-model-parameter-sync";
 import { useOptions } from "../settings/use-options";
 import "./chat-config.css";
 
-export interface ChatConfigProps {
+export type ChatConfigProps = {
   onConnectionsButtonClick: () => void;
   groupedConnections: [string, BaseConnection[] | undefined][];
-  connectionKey: RouteParameter<string | null>;
-  temperature: RouteParameter<number>;
-  reasoningEffort: RouteParameter<string | undefined>;
-  verbosity: RouteParameter<string | undefined>;
-  thinkingBudget: RouteParameter<number>;
-  maxTokens: RouteParameter<number>;
-  serviceTier: RouteParameter<string>;
-  sort: RouteParameter<string>;
-  costTier: RouteParameter<string>;
-  minCodingScore: RouteParameter<number>;
-}
+} & ModelParameterRouteParams;
 
 export const ChatConfigMemo = memo(ChatConfig);
 
@@ -91,10 +81,10 @@ function ChatConfig(props: ChatConfigProps) {
               min={options.minCodingScore.min ?? 0}
               max={options.minCodingScore.max ?? 1}
               step={options.minCodingScore.step ?? 0.05}
-              value={props.minCodingScore.value}
+              value={props.minCodingScore.value ?? ""}
               onChange={(e) => {
                 const val = (e.target as HTMLInputElement).valueAsNumber;
-                props.minCodingScore.replace(isNaN(val) ? 0.8 : val);
+                props.minCodingScore.replace(isNaN(val) ? undefined : val);
               }}
             />
           </label>
@@ -107,9 +97,12 @@ function ChatConfig(props: ChatConfigProps) {
               type="number"
               min={options.temperature.min ?? 0}
               max={options.temperature.max}
-              value={props.temperature.value}
+              value={props.temperature.value ?? ""}
               step={0.05}
-              onChange={(e) => props.temperature.replace((e.target as HTMLInputElement).valueAsNumber)}
+              onChange={(e) => {
+                const val = (e.target as HTMLInputElement).valueAsNumber;
+                props.temperature.replace(isNaN(val) ? undefined : val);
+              }}
             />
           </label>
         ) : null}
@@ -155,9 +148,12 @@ function ChatConfig(props: ChatConfigProps) {
               type="number"
               min={options.thinkingBudget.min ?? 0}
               max={options.thinkingBudget.max}
-              value={props.thinkingBudget.value}
+              value={props.thinkingBudget.value ?? ""}
               step={100}
-              onChange={(e) => props.thinkingBudget.replace((e.target as HTMLInputElement).valueAsNumber)}
+              onChange={(e) => {
+                const val = (e.target as HTMLInputElement).valueAsNumber;
+                props.thinkingBudget.replace(isNaN(val) ? undefined : val);
+              }}
             />
           </label>
         ) : null}
@@ -169,8 +165,11 @@ function ChatConfig(props: ChatConfigProps) {
             min={options?.maxTokens?.min ?? 0}
             max={options?.maxTokens?.max ?? 128000}
             step={100}
-            value={props.maxTokens.value}
-            onChange={(e) => props.maxTokens.replace((e.target as HTMLInputElement).valueAsNumber)}
+            value={props.maxTokens.value ?? ""}
+            onChange={(e) => {
+              const val = (e.target as HTMLInputElement).valueAsNumber;
+              props.maxTokens.replace(isNaN(val) ? undefined : val);
+            }}
           />
         </label>
         {options?.serviceTier ? (

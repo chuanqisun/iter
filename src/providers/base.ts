@@ -16,17 +16,47 @@ export interface SummarizedCredential {
   features: string;
 }
 
+export interface ModelParams {
+  temperature?: number;
+  maxTokens?: number;
+  reasoningEffort?: string;
+  verbosity?: string;
+  thinkingBudget?: number;
+  serviceTier?: string;
+  sort?: string;
+  costTier?: string;
+  minCodingScore?: number;
+}
+
+export const MODEL_PARAM_KEYS = [
+  "temperature",
+  "maxTokens",
+  "reasoningEffort",
+  "verbosity",
+  "thinkingBudget",
+  "serviceTier",
+  "sort",
+  "costTier",
+  "minCodingScore",
+] as const satisfies readonly (keyof ModelParams)[];
+
+export type ChatParamKey = (typeof MODEL_PARAM_KEYS)[number];
+
+// Compile-time assertion
+type ExpectTrue<T extends true> = T;
+export type VerifyAllChatParametersKeysCovered = ExpectTrue<
+  Exclude<keyof ModelParams, ChatParamKey> extends never ? true : false
+>;
+
 export interface BaseProvider {
   parseNewCredentialForm(formData: FormData): BaseCredential[];
   credentialToConnections(credential: BaseCredential): BaseConnection[];
   getCredentialSummary(credential: BaseCredential): SummarizedCredential;
   getChatStreamProxy(connection: BaseConnection): ChatStreamProxy;
-  getOptions(connection: BaseConnection): GenericOptions;
+  getOptions(connection: BaseConnection): ModelParamOptions;
 }
 
-export interface GenericOptions {
-  topP?: { min: number; max: number; step: number };
-  topK?: { min: number; max: number; step: number };
+export interface ModelParamOptions {
   temperature?: { min?: number; max: number };
   maxTokens?: { min?: number; max: number };
   reasoningEffort?: string[];
@@ -51,20 +81,9 @@ export interface CustomContentPart {
   url: string;
 }
 
-export interface GenericChatParams {
+export interface RuntimeChatParams extends ModelParams {
   messages: GenericMessage[];
   abortSignal?: AbortSignal;
-  temperature?: number;
-  maxTokens?: number;
-  verbosity?: string;
-  topP?: number;
-  topK?: number;
-  reasoningEffort?: string;
-  thinkingBudget?: number;
-  serviceTier?: string;
-  sort?: string;
-  costTier?: string;
-  minCodingScore?: number;
   search?: boolean;
   fetch?: boolean;
   onMetadata?: (metadata: GenericMetadata) => void;
@@ -77,4 +96,4 @@ export interface GenericMetadata {
   latencyMs?: number;
 }
 
-export type ChatStreamProxy = (params: GenericChatParams) => AsyncGenerator<string>;
+export type ChatStreamProxy = (params: RuntimeChatParams) => AsyncGenerator<string>;

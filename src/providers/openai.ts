@@ -15,9 +15,9 @@ import type {
   BaseCredential,
   BaseProvider,
   ChatStreamProxy,
-  GenericChatParams,
   GenericMessage,
-  GenericOptions,
+  ModelParamOptions,
+  RuntimeChatParams,
 } from "./base";
 import { formatReferences, type Citation } from "./citation";
 import { getOpenAIOptions, OutputIndexPacer } from "./shared";
@@ -81,7 +81,7 @@ export class OpenAIProvider implements BaseProvider {
     };
   }
 
-  getOptions(connection: BaseConnection): GenericOptions {
+  getOptions(connection: BaseConnection): ModelParamOptions {
     if (!this.isOpenAIConnection(connection)) throw new Error("Invalid connection type");
     const model = connection.model;
     return getOpenAIOptions(model);
@@ -91,7 +91,7 @@ export class OpenAIProvider implements BaseProvider {
     if (!this.isOpenAIConnection(connection)) throw new Error("Invalid connection type");
     const that = this;
 
-    return async function* ({ messages, abortSignal, ...config }: GenericChatParams) {
+    return async function* ({ messages, abortSignal, ...config }: RuntimeChatParams) {
       const OpenAI = await import("openai").then((res) => res.OpenAI);
       const client = new OpenAI({
         apiKey: connection.apiKey,
@@ -117,7 +117,6 @@ export class OpenAIProvider implements BaseProvider {
               : {}),
           },
           max_output_tokens: config?.maxTokens,
-          top_p: config?.topP,
           prompt_cache_key: "iter",
           service_tier: (config.serviceTier ?? options.serviceTier) as ResponseCreateParamsStreaming["service_tier"],
         },

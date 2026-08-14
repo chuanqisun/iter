@@ -4,9 +4,9 @@ import type {
   BaseCredential,
   BaseProvider,
   ChatStreamProxy,
-  GenericChatParams,
   GenericMessage,
-  GenericOptions,
+  ModelParamOptions,
+  RuntimeChatParams,
 } from "./base";
 
 export interface InceptionCredential extends BaseCredential {
@@ -106,7 +106,7 @@ export class InceptionProvider implements BaseProvider {
     };
   }
 
-  getOptions(connection: BaseConnection): GenericOptions {
+  getOptions(connection: BaseConnection): ModelParamOptions {
     if (!this.isInceptionConnection(connection)) throw new Error("Invalid connection type");
 
     return {
@@ -123,7 +123,7 @@ export class InceptionProvider implements BaseProvider {
     if (!this.isInceptionConnection(connection)) throw new Error("Invalid connection type");
     const that = this;
 
-    return async function* ({ messages, abortSignal, ...config }: GenericChatParams) {
+    return async function* ({ messages, abortSignal, ...config }: RuntimeChatParams) {
       const apiUrl = "https://api.inceptionlabs.ai/v1/chat/completions";
 
       const options = that.getOptions(connection);
@@ -145,7 +145,6 @@ export class InceptionProvider implements BaseProvider {
         messages: that.getInceptionMessages(messages),
         max_tokens: resolvedMaxTokens,
         temperature: resolvedTemperature,
-        top_p: config?.topP,
         stream: true,
         stream_options: {
           include_usage: true,
