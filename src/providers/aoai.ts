@@ -13,9 +13,9 @@ import type {
   BaseCredential,
   BaseProvider,
   ChatStreamProxy,
-  GenericChatParams,
   GenericMessage,
-  GenericOptions,
+  ModelParamOptions,
+  RuntimeChatParams,
 } from "./base";
 import { getOpenAIOptions } from "./shared";
 
@@ -93,7 +93,7 @@ export class AzureOpenAIProvider implements BaseProvider {
     };
   }
 
-  getOptions(connection: BaseConnection): GenericOptions {
+  getOptions(connection: BaseConnection): ModelParamOptions {
     if (!this.isAzureOpenAIConnection(connection)) throw new Error("Invalid connection type");
     const model = connection.deployment;
     return getOpenAIOptions(model);
@@ -103,7 +103,7 @@ export class AzureOpenAIProvider implements BaseProvider {
     if (!this.isAzureOpenAIConnection(connection)) throw new Error("Invalid connection type");
     const that = this;
 
-    return async function* ({ messages, abortSignal, ...config }: GenericChatParams) {
+    return async function* ({ messages, abortSignal, ...config }: RuntimeChatParams) {
       const AzureOpenAI = await import("openai").then((res) => res.AzureOpenAI);
       const client = new AzureOpenAI({
         apiKey: connection.apiKey,
@@ -130,7 +130,6 @@ export class AzureOpenAIProvider implements BaseProvider {
             : {}),
         },
         max_output_tokens: config?.maxTokens,
-        top_p: config?.topP,
         prompt_cache_key: "iter",
       });
 

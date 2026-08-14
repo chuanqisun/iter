@@ -5,9 +5,9 @@ import type {
   BaseCredential,
   BaseProvider,
   ChatStreamProxy,
-  GenericChatParams,
   GenericMessage,
-  GenericOptions,
+  ModelParamOptions,
+  RuntimeChatParams,
 } from "./base";
 import { formatReferences, type Citation } from "./citation";
 import { OutputIndexPacer } from "./shared";
@@ -93,7 +93,7 @@ export class OpenRouterProvider implements BaseProvider {
     };
   }
 
-  getOptions(connection: BaseConnection): GenericOptions {
+  getOptions(connection: BaseConnection): ModelParamOptions {
     if (!this.isOpenRouterConnection(connection)) throw new Error("Invalid connection type");
 
     if (connection.model === "auto" || connection.model === "openrouter/auto") {
@@ -131,7 +131,7 @@ export class OpenRouterProvider implements BaseProvider {
     if (!this.isOpenRouterConnection(connection)) throw new Error("Invalid connection type");
     const that = this;
 
-    return async function* ({ messages, abortSignal, ...config }: GenericChatParams) {
+    return async function* ({ messages, abortSignal, ...config }: RuntimeChatParams) {
       const { OpenRouter } = await import("@openrouter/sdk");
       const client = new OpenRouter({
         apiKey: connection.apiKey,
@@ -181,7 +181,6 @@ export class OpenRouterProvider implements BaseProvider {
             temperature: options.temperature !== undefined ? config?.temperature : undefined,
             ...reasoning,
             maxOutputTokens: config?.maxTokens,
-            topP: config?.topP,
             user: "iter", // HACK: this seems to significantly improve cache hit rate
             provider: {
               sort: (config?.sort ?? "price") as any,

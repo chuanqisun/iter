@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { OpenRouterProvider } from "./openrouter";
+import { DEFAULT_MIN_CODING_SCORE, sanitizeParamsFromOptions } from "./shared";
 
 const mockSend = vi.fn().mockImplementation(async () => {
   return (async function* () {
@@ -280,14 +281,35 @@ describe("OpenRouterProvider", () => {
 
     const stream = proxy({
       messages: [{ role: "user", content: "write python code" }],
-      minCodingScore: 0.8,
+      minCodingScore: DEFAULT_MIN_CODING_SCORE,
     });
     for await (const _ of stream) {
     }
 
     const callArgs = mockSend.mock.calls[0][0].responsesRequest;
     expect(callArgs.model).toBe("openrouter/pareto-code");
-    expect(callArgs.plugins).toEqual([{ id: "pareto-router", min_coding_score: 0.8 }]);
+    expect(callArgs.plugins).toEqual([{ id: "pareto-router", min_coding_score: DEFAULT_MIN_CODING_SCORE }]);
+  });
+
+  it("sanitizes parameters for auto and pareto models correctly", () => {
+    const autoConn = { ...mockConnection, model: "auto" };
+    const paretoConn = { ...mockConnection, model: "pareto" };
+
+    const autoSanitized = sanitizeParamsFromOptions(provider.getOptions(autoConn), {
+      costTier: "high",
+      reasoningEffort: "low",
+      minCodingScore: 0.9,
+    });
+    expect(autoSanitized.costTier).toBe("high");
+    expect(autoSanitized.reasoningEffort).toBe("low");
+    expect(autoSanitized.minCodingScore).toBeUndefined(); // minCodingScore not supported for auto
+
+    const paretoSanitized = sanitizeParamsFromOptions(provider.getOptions(paretoConn), {
+      costTier: "high",
+      minCodingScore: 0.9,
+    });
+    expect(paretoSanitized.costTier).toBeUndefined(); // costTier not supported for pareto
+    expect(paretoSanitized.minCodingScore).toBe(0.9);
   });
 
   it("sends openrouter/free model for free connection", async () => {

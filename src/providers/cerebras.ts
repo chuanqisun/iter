@@ -13,9 +13,9 @@ import type {
   BaseCredential,
   BaseProvider,
   ChatStreamProxy,
-  GenericChatParams,
   GenericMessage,
-  GenericOptions,
+  ModelParamOptions,
+  RuntimeChatParams,
 } from "./base";
 
 export interface CerebrasCredential extends BaseCredential {
@@ -77,7 +77,7 @@ export class CerebrasProvider implements BaseProvider {
     };
   }
 
-  getOptions(connection: BaseConnection): GenericOptions {
+  getOptions(connection: BaseConnection): ModelParamOptions {
     if (!this.isCerebrasConnection(connection)) throw new Error("Invalid connection type");
 
     const reasoningEffort =
@@ -99,7 +99,7 @@ export class CerebrasProvider implements BaseProvider {
     if (!this.isCerebrasConnection(connection)) throw new Error("Invalid connection type");
     const that = this;
 
-    return async function* ({ messages, abortSignal, ...config }: GenericChatParams) {
+    return async function* ({ messages, abortSignal, ...config }: RuntimeChatParams) {
       const OpenAI = await import("openai").then((res) => res.OpenAI);
       const client = new OpenAI({
         apiKey: connection.apiKey,
@@ -124,7 +124,6 @@ export class CerebrasProvider implements BaseProvider {
           temperature: options.temperature !== undefined ? config.temperature : undefined,
           reasoning_effort: reasoningEffort as ReasoningEffort | undefined,
           max_completion_tokens: config.maxTokens,
-          top_p: config.topP,
           user: "iter",
         },
         {

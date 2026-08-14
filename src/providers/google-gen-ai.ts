@@ -4,9 +4,9 @@ import type {
   BaseCredential,
   BaseProvider,
   ChatStreamProxy,
-  GenericChatParams,
   GenericMessage,
-  GenericOptions,
+  ModelParamOptions,
+  RuntimeChatParams,
 } from "./base";
 import { formatReferences, type Citation } from "./citation";
 import { OutputIndexPacer } from "./shared";
@@ -70,7 +70,7 @@ export class GoogleGenAIProvider implements BaseProvider {
     };
   }
 
-  getOptions(connection: BaseConnection): GenericOptions {
+  getOptions(connection: BaseConnection): ModelParamOptions {
     if (!this.isGoogleGenAIConnection(connection)) throw new Error("Invalid connection type");
 
     // ref: https://ai.google.dev/gemini-api/docs/thinking
@@ -119,7 +119,7 @@ export class GoogleGenAIProvider implements BaseProvider {
     if (!this.isGoogleGenAIConnection(connection)) throw new Error("Invalid connection type");
     const that = this;
 
-    return async function* ({ messages, abortSignal, ...config }: GenericChatParams) {
+    return async function* ({ messages, abortSignal, ...config }: RuntimeChatParams) {
       const GoogleGenAI = await import("@google/genai").then((res) => res.GoogleGenAI);
       const client = new GoogleGenAI({ apiKey: connection.apiKey });
 

@@ -18,6 +18,7 @@ import { type GenericMessage, type GenericMetadata } from "../providers/base";
 import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
 import { useConnections } from "../settings/use-connections";
+import { useModelParameterSync } from "../settings/use-model-parameter-sync";
 import { showToast } from "../shell/toast";
 import {
   fileExtensionToLanguage,
@@ -80,74 +81,77 @@ export function ChatTree() {
     encode: String,
     decode: String,
   });
-  const temperature = useRouteParameter({
+  const temperature = useRouteParameter<number | undefined>({
     name: "temperature",
-    initial: 0,
+    initial: undefined,
     encode: String,
     decode: Number,
   });
-  const maxTokens = useRouteParameter({
+  const maxTokens = useRouteParameter<number | undefined>({
     name: "max_tokens",
     initial: 200,
     encode: String,
     decode: Number,
   });
-  const reasoningEffort = useRouteParameter({
+  const reasoningEffort = useRouteParameter<string | undefined>({
     name: "reasoning_effort",
-    initial: undefined as string | undefined,
+    initial: undefined,
     encode: String,
     decode: String,
   });
-  const verbosity = useRouteParameter({
+  const verbosity = useRouteParameter<string | undefined>({
     name: "verbosity",
-    initial: undefined as string | undefined,
+    initial: undefined,
     encode: String,
     decode: String,
   });
-  const thinkingBudget = useRouteParameter({
+  const thinkingBudget = useRouteParameter<number | undefined>({
     name: "thinking_budget",
-    initial: 0,
+    initial: undefined,
     encode: String,
     decode: Number,
   });
-  const serviceTier = useRouteParameter({
+  const serviceTier = useRouteParameter<string | undefined>({
     name: "service_tier",
-    initial: "auto",
+    initial: undefined,
     encode: String,
     decode: String,
   });
-  const sort = useRouteParameter({
+  const sort = useRouteParameter<string | undefined>({
     name: "sort",
-    initial: "price",
+    initial: undefined,
     encode: String,
     decode: String,
   });
-  const costTier = useRouteParameter({
+  const costTier = useRouteParameter<string | undefined>({
     name: "cost_tier",
-    initial: "low",
+    initial: undefined,
     encode: String,
     decode: String,
   });
-  const minCodingScore = useRouteParameter({
+  const minCodingScore = useRouteParameter<number | undefined>({
     name: "min_coding_score",
-    initial: 0.8,
+    initial: undefined,
     encode: String,
     decode: Number,
   });
 
   useArtifactActions();
   useRouteCache({
-    parameters: [
-      "connection",
-      "temperature",
-      "max_tokens",
-      "reasoning_effort",
-      "thinking_budget",
-      "service_tier",
-      "sort",
-      "cost_tier",
-      "min_coding_score",
-    ],
+    parameters: ["connection"],
+  });
+
+  useModelParameterSync(connections, {
+    connectionKey,
+    temperature,
+    maxTokens,
+    reasoningEffort,
+    verbosity,
+    thinkingBudget,
+    serviceTier,
+    sort,
+    costTier,
+    minCodingScore,
   });
 
   const chat = useCallback(
