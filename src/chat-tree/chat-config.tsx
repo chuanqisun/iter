@@ -101,7 +101,7 @@ function ChatConfig(props: ChatConfigProps) {
         ) : null}
         {options?.temperature ? (
           <label>
-            Temperature
+            Temp
             <input
               className="input auto-width-input"
               type="number"
@@ -115,7 +115,7 @@ function ChatConfig(props: ChatConfigProps) {
         ) : null}
         {options?.reasoningEffort ? (
           <label>
-            Reasoning
+            Reason
             <select
               className="select"
               value={props.reasoningEffort.value ?? options.reasoningEffort.at(0)}
