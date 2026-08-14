@@ -20,6 +20,7 @@
 
 # DONE
 
+- Added: openrouter auto, pareto, and free mode.
 - Fixed: reasoning gap is missing between adjacent delta texts
 - Added: web search and fetch for all openrouter models
 - Added: editable connections
