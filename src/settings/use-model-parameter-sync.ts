@@ -59,6 +59,7 @@ export function useModelParameterSync(connections: BaseConnection[], routeParams
           await setStoredModelParams(prevId, currentParams);
         }
 
+        if (canceled || activeConnectionIdRef.current !== targetConnectionId) return;
         prevConnectionIdRef.current = targetConnectionId;
 
         const stored = await getStoredModelParams(targetConnectionId);
