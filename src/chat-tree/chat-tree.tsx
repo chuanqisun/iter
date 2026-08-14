@@ -122,6 +122,18 @@ export function ChatTree() {
     encode: String,
     decode: String,
   });
+  const costTier = useRouteParameter({
+    name: "cost_tier",
+    initial: "low",
+    encode: String,
+    decode: String,
+  });
+  const minCodingScore = useRouteParameter({
+    name: "min_coding_score",
+    initial: 0.8,
+    encode: String,
+    decode: Number,
+  });
 
   useArtifactActions();
   useRouteCache({
@@ -133,6 +145,8 @@ export function ChatTree() {
       "thinking_budget",
       "service_tier",
       "sort",
+      "cost_tier",
+      "min_coding_score",
     ],
   });
 
@@ -155,6 +169,8 @@ export function ChatTree() {
         verbosity: verbosity.value,
         serviceTier: serviceTier.value,
         sort: sort.value,
+        costTier: costTier.value,
+        minCodingScore: minCodingScore.value,
         search,
         fetch,
         messages,
@@ -172,6 +188,8 @@ export function ChatTree() {
       thinkingBudget.value,
       serviceTier.value,
       sort.value,
+      costTier.value,
+      minCodingScore.value,
     ],
   );
 
@@ -1030,6 +1048,8 @@ export function ChatTree() {
           maxTokens={maxTokens}
           serviceTier={serviceTier}
           sort={sort}
+          costTier={costTier}
+          minCodingScore={minCodingScore}
         />
       </header>
       <div className="message-list" ref={treeRootRef}>

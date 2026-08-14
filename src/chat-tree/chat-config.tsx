@@ -15,6 +15,8 @@ export interface ChatConfigProps {
   maxTokens: RouteParameter<number>;
   serviceTier: RouteParameter<string>;
   sort: RouteParameter<string>;
+  costTier: RouteParameter<string>;
+  minCodingScore: RouteParameter<number>;
 }
 
 export const ChatConfigMemo = memo(ChatConfig);
@@ -62,6 +64,39 @@ function ChatConfig(props: ChatConfigProps) {
                 </option>
               ))}
             </select>
+          </label>
+        ) : null}
+        {options?.costTier ? (
+          <label>
+            Cost
+            <select
+              className="select"
+              value={props.costTier.value ?? options.costTier.at(0)}
+              onChange={(e) => props.costTier.replace(e.target.value)}
+            >
+              {options.costTier.map((tier) => (
+                <option key={tier} value={tier}>
+                  {tier}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        {options?.minCodingScore ? (
+          <label>
+            Score
+            <input
+              className="input auto-width-input"
+              type="number"
+              min={options.minCodingScore.min ?? 0}
+              max={options.minCodingScore.max ?? 1}
+              step={options.minCodingScore.step ?? 0.05}
+              value={props.minCodingScore.value}
+              onChange={(e) => {
+                const val = (e.target as HTMLInputElement).valueAsNumber;
+                props.minCodingScore.replace(isNaN(val) ? 0.8 : val);
+              }}
+            />
           </label>
         ) : null}
         {options?.temperature ? (

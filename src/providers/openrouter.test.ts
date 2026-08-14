@@ -37,7 +37,7 @@ describe("OpenRouterProvider", () => {
 
   it("returns reasoningEffort and sort options", () => {
     const options = provider.getOptions(mockConnection);
-    expect(options.reasoningEffort).toEqual(["auto", "max", "xhigh", "high", "medium", "low", "minimal", "none"]);
+    expect(options.reasoningEffort).toEqual(["auto", "none", "minimal", "low", "medium", "high", "xhigh", "max"]);
     expect(options.sort).toEqual(["price", "throughput", "latency"]);
   });
 
@@ -219,5 +219,89 @@ describe("OpenRouterProvider", () => {
       "Here is the answer.",
       "\n\n## References\n\n1. [Example A](https://example.com/a)\n2. [Example B](https://example.com/b)",
     ]);
+  });
+
+  it("includes built-in models auto, free, pareto in credentialToConnections", () => {
+    const cred = {
+      id: "cred-1",
+      type: "openrouter",
+      accountName: "my-openrouter",
+      models: "auto,free,pareto",
+      apiKey: "sk-test",
+    };
+    const connections = provider.credentialToConnections(cred);
+    expect(connections.map((c) => c.model)).toEqual(["auto", "free", "pareto"]);
+
+    const credWithCustom = {
+      ...cred,
+      models: "custom/model-1",
+    };
+    const connectionsWithCustom = provider.credentialToConnections(credWithCustom);
+    expect(connectionsWithCustom.map((c) => c.model)).toEqual(["auto", "free", "pareto", "custom/model-1"]);
+  });
+
+  it("returns cost option for auto model", () => {
+    const autoConn = { ...mockConnection, model: "auto" };
+    const options = provider.getOptions(autoConn);
+    expect(options.costTier).toEqual(["low", "medium", "high", "xhigh", "max"]);
+    expect(options.reasoningEffort).toEqual(["auto", "none", "minimal", "low", "medium", "high", "xhigh", "max"]);
+    expect(options.sort).toEqual(["price", "throughput", "latency"]);
+  });
+
+  it("returns sort and score options for pareto model", () => {
+    const paretoConn = { ...mockConnection, model: "pareto" };
+    const options = provider.getOptions(paretoConn);
+    expect(options.sort).toEqual(["price", "throughput", "latency"]);
+    expect(options.minCodingScore).toEqual({ min: 0, max: 1, step: 0.05 });
+    expect(options.costTier).toBeUndefined();
+  });
+
+  it("sends openrouter/auto model and auto-router plugin for auto connection", async () => {
+    mockSend.mockClear();
+    const autoConn = { ...mockConnection, model: "auto" };
+    const proxy = provider.getChatStreamProxy(autoConn);
+
+    const stream = proxy({
+      messages: [{ role: "user", content: "hi" }],
+      costTier: "high",
+    });
+    for await (const _ of stream) {
+    }
+
+    const callArgs = mockSend.mock.calls[0][0].responsesRequest;
+    expect(callArgs.model).toBe("openrouter/auto");
+    expect(callArgs.plugins).toEqual([{ id: "auto-router", cost_tier: "high" }]);
+  });
+
+  it("sends openrouter/pareto-code model and pareto-router plugin for pareto connection", async () => {
+    mockSend.mockClear();
+    const paretoConn = { ...mockConnection, model: "pareto" };
+    const proxy = provider.getChatStreamProxy(paretoConn);
+
+    const stream = proxy({
+      messages: [{ role: "user", content: "write python code" }],
+      minCodingScore: 0.8,
+    });
+    for await (const _ of stream) {
+    }
+
+    const callArgs = mockSend.mock.calls[0][0].responsesRequest;
+    expect(callArgs.model).toBe("openrouter/pareto-code");
+    expect(callArgs.plugins).toEqual([{ id: "pareto-router", min_coding_score: 0.8 }]);
+  });
+
+  it("sends openrouter/free model for free connection", async () => {
+    mockSend.mockClear();
+    const freeConn = { ...mockConnection, model: "free" };
+    const proxy = provider.getChatStreamProxy(freeConn);
+
+    const stream = proxy({
+      messages: [{ role: "user", content: "hello" }],
+    });
+    for await (const _ of stream) {
+    }
+
+    const callArgs = mockSend.mock.calls[0][0].responsesRequest;
+    expect(callArgs.model).toBe("openrouter/free");
   });
 });

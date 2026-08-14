@@ -34,6 +34,8 @@ export interface GenericOptions {
   thinkingBudget?: { min?: number; max: number };
   serviceTier?: string;
   sort?: string[];
+  costTier?: string[];
+  minCodingScore?: { min: number; max: number; step: number };
 }
 
 export interface GenericMessage {
@@ -61,6 +63,8 @@ export interface GenericChatParams {
   thinkingBudget?: number;
   serviceTier?: string;
   sort?: string;
+  costTier?: string;
+  minCodingScore?: number;
   search?: boolean;
   fetch?: boolean;
   onMetadata?: (metadata: GenericMetadata) => void;

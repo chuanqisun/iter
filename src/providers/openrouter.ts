@@ -31,7 +31,8 @@ export interface OpenRouterConnection extends BaseConnection {
 
 export class OpenRouterProvider implements BaseProvider {
   static type = "openrouter";
-  static defaultModels = ["moonshotai/kimi-k2:free", "qwen/qwen3-coder:free"];
+  static builtInModels = ["auto", "free", "pareto"];
+  static defaultModels = ["auto", "free", "pareto"];
 
   parseNewCredentialForm(formData: FormData): OpenRouterCredential[] {
     const accountName = (formData.get("newAccountName") as string)?.trim() || "openrouter";
@@ -60,7 +61,16 @@ export class OpenRouterProvider implements BaseProvider {
   credentialToConnections(credential: BaseCredential): OpenRouterConnection[] {
     if (!this.isOpenRouterCredential(credential)) throw new Error("Invalid credential type");
 
-    return credential.models.split(",").map(
+    const customModels = credential.models
+      ? credential.models
+          .split(",")
+          .map((m) => m.trim())
+          .filter(Boolean)
+      : [];
+
+    const allModels = Array.from(new Set([...OpenRouterProvider.builtInModels, ...customModels]));
+
+    return allModels.map(
       (model) =>
         ({
           id: `${model}:${credential.id}`,
@@ -85,11 +95,36 @@ export class OpenRouterProvider implements BaseProvider {
 
   getOptions(connection: BaseConnection): GenericOptions {
     if (!this.isOpenRouterConnection(connection)) throw new Error("Invalid connection type");
+
+    if (connection.model === "auto" || connection.model === "openrouter/auto") {
+      return {
+        temperature: { max: 2 },
+        costTier: ["low", "medium", "high", "xhigh", "max"],
+        reasoningEffort: ["auto", "none", "minimal", "low", "medium", "high", "xhigh", "max"],
+        sort: ["price", "throughput", "latency"],
+      };
+    }
+
+    if (connection.model === "pareto" || connection.model === "openrouter/pareto-code") {
+      return {
+        temperature: { max: 2 },
+        sort: ["price", "throughput", "latency"],
+        minCodingScore: { min: 0, max: 1, step: 0.05 },
+      };
+    }
+
     return {
       temperature: { max: 2 },
-      reasoningEffort: ["auto", "max", "xhigh", "high", "medium", "low", "minimal", "none"],
+      reasoningEffort: ["auto", "none", "minimal", "low", "medium", "high", "xhigh", "max"],
       sort: ["price", "throughput", "latency"],
     };
+  }
+
+  private getOpenRouterModel(model: string): string {
+    if (model === "auto" || model === "openrouter/auto") return "openrouter/auto";
+    if (model === "free" || model === "openrouter/free") return "openrouter/free";
+    if (model === "pareto" || model === "openrouter/pareto-code") return "openrouter/pareto-code";
+    return model;
   }
 
   getChatStreamProxy(connection: BaseConnection): ChatStreamProxy {
@@ -103,6 +138,24 @@ export class OpenRouterProvider implements BaseProvider {
       });
 
       const options = that.getOptions(connection);
+      const resolvedModel = that.getOpenRouterModel(connection.model);
+
+      const plugins: any[] = [];
+      if (connection.model === "auto" || connection.model === "openrouter/auto") {
+        if (config?.costTier) {
+          plugins.push({
+            id: "auto-router",
+            cost_tier: config.costTier,
+          });
+        }
+      } else if (connection.model === "pareto" || connection.model === "openrouter/pareto-code") {
+        if (config?.minCodingScore !== undefined && !isNaN(config.minCodingScore)) {
+          plugins.push({
+            id: "pareto-router",
+            min_coding_score: config.minCodingScore,
+          });
+        }
+      }
 
       const isSystemMessageSupported = !connection.model.startsWith("o1-mini");
 
@@ -123,7 +176,7 @@ export class OpenRouterProvider implements BaseProvider {
         {
           responsesRequest: {
             input: that.getOpenRouterMessages(messages, { isSystemMessageSupported }) as any,
-            model: connection.model,
+            model: resolvedModel,
             tools: tools.length > 0 ? (tools as any) : undefined,
             temperature: options.temperature !== undefined ? config?.temperature : undefined,
             ...reasoning,
@@ -133,6 +186,7 @@ export class OpenRouterProvider implements BaseProvider {
             provider: {
               sort: (config?.sort ?? "price") as any,
             },
+            plugins: plugins.length > 0 ? (plugins as any) : undefined,
             stream: true,
           },
         },
