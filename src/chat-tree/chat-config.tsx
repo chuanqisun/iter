@@ -40,22 +40,6 @@ function ChatConfig(props: ChatConfigProps) {
             </select>
           </label>
         ) : null}
-        {options?.sort ? (
-          <label>
-            Sort
-            <select
-              className="select"
-              value={props.sort.value ?? options.sort.at(0)}
-              onChange={(e) => props.sort.replace(e.target.value)}
-            >
-              {options.sort.map((sortOption) => (
-                <option key={sortOption} value={sortOption}>
-                  {sortOption}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
         {options?.costTier ? (
           <label>
             Cost
@@ -67,6 +51,22 @@ function ChatConfig(props: ChatConfigProps) {
               {options.costTier.map((tier) => (
                 <option key={tier} value={tier}>
                   {tier}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        {options?.sort ? (
+          <label>
+            Sort
+            <select
+              className="select"
+              value={props.sort.value ?? options.sort.at(0)}
+              onChange={(e) => props.sort.replace(e.target.value)}
+            >
+              {options.sort.map((sortOption) => (
+                <option key={sortOption} value={sortOption}>
+                  {sortOption}
                 </option>
               ))}
             </select>
