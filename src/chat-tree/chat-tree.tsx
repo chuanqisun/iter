@@ -138,7 +138,17 @@ export function ChatTree() {
 
   useArtifactActions();
   useRouteCache({
-    parameters: ["connection"],
+    parameters: [
+      "connection",
+      "temperature",
+      "max_tokens",
+      "reasoning_effort",
+      "thinking_budget",
+      "service_tier",
+      "sort",
+      "cost_tier",
+      "min_coding_score",
+    ],
   });
 
   useModelParameterSync(connections, {
