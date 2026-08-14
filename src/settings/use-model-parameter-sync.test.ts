@@ -7,6 +7,7 @@ import {
   applyChatParams,
   CHAT_PARAM_KEYS,
   extractChatParams,
+  mergeModelParams,
   type ModelParameterRouteParams,
 } from "./use-model-parameter-sync";
 
@@ -121,5 +122,47 @@ describe("extractChatParams & applyChatParams helpers", () => {
     expect(replaces.temperature).not.toHaveBeenCalled();
     expect(replaces.verbosity).not.toHaveBeenCalled();
     expect(replaces.costTier).not.toHaveBeenCalled();
+  });
+});
+
+describe("mergeModelParams", () => {
+  it("overrides stored values with explicitly provided URL parameters", () => {
+    const stored = { temperature: 0.7, maxTokens: 2000, reasoningEffort: "low" };
+    const urlParams = { temperature: 1.2 };
+
+    const merged = mergeModelParams(stored, urlParams);
+
+    expect(merged.temperature).toBe(1.2);
+    expect(merged.maxTokens).toBe(2000);
+    expect(merged.reasoningEffort).toBe("low");
+  });
+
+  it("uses stored parameters as fallback when URL parameters are absent (undefined)", () => {
+    const stored = { temperature: 0.5, reasoningEffort: "high", costTier: "free" };
+    const urlParams = { temperature: undefined, reasoningEffort: undefined };
+
+    const merged = mergeModelParams(stored, urlParams);
+
+    expect(merged.temperature).toBe(0.5);
+    expect(merged.reasoningEffort).toBe("high");
+    expect(merged.costTier).toBe("free");
+  });
+
+  it("returns URL parameters when no stored parameters exist", () => {
+    const urlParams = { temperature: 1.2, maxTokens: 3000 };
+
+    const merged = mergeModelParams(null, urlParams);
+
+    expect(merged).toEqual({ temperature: 1.2, maxTokens: 3000 });
+  });
+
+  it("honors explicit falsy URL parameter values like 0", () => {
+    const stored = { temperature: 0.7, minCodingScore: 80 };
+    const urlParams = { minCodingScore: 0 };
+
+    const merged = mergeModelParams(stored, urlParams);
+
+    expect(merged.minCodingScore).toBe(0);
+    expect(merged.temperature).toBe(0.7);
   });
 });

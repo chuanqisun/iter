@@ -35,10 +35,22 @@ export function applyChatParams(routeParams: ModelParameterRouteParams, next: Mo
   }
 }
 
+export function mergeModelParams(stored: ModelParams | null | undefined, urlParams: ModelParams): ModelParams {
+  if (!stored) return { ...urlParams };
+  const merged: ModelParams = { ...stored };
+  for (const key of MODEL_PARAM_KEYS) {
+    if (urlParams[key] !== undefined) {
+      merged[key] = urlParams[key] as any;
+    }
+  }
+  return merged;
+}
+
 export function useModelParameterSync(connections: BaseConnection[], routeParams: ModelParameterRouteParams) {
   const prevConnectionIdRef = useRef<string | null>(null);
   const activeConnectionIdRef = useRef<string | null>(null);
   const isSyncingRef = useRef<boolean>(false);
+  const isInitialLoadRef = useRef<boolean>(true);
 
   const currentConnectionId = routeParams.connectionKey.value;
   activeConnectionIdRef.current = currentConnectionId;
@@ -70,7 +82,11 @@ export function useModelParameterSync(connections: BaseConnection[], routeParams
         if (!conn) return;
 
         const provider = createProvider(conn.type);
-        const candidateParams = stored ?? currentParams;
+        const candidateParams = isInitialLoadRef.current
+          ? mergeModelParams(stored, currentParams)
+          : (stored ?? currentParams);
+        isInitialLoadRef.current = false;
+
         const options = provider.getOptions(conn);
         const sanitized = sanitizeParamsFromOptions(options, candidateParams);
 
