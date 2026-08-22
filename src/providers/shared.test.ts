@@ -125,11 +125,20 @@ describe("sanitizeParamsFromOptions", () => {
   });
 
   it("handles serviceTier options correctly", () => {
-    const sanitizedWithOption = sanitizeParamsFromOptions({ serviceTier: "auto" }, { serviceTier: "fast" });
+    const sanitizedWithOption = sanitizeParamsFromOptions(
+      { serviceTier: ["auto", "fast", "flex"] },
+      { serviceTier: "fast" },
+    );
     expect(sanitizedWithOption.serviceTier).toBe("fast");
 
+    const sanitizedWithFlex = sanitizeParamsFromOptions(
+      { serviceTier: ["auto", "fast", "flex"] },
+      { serviceTier: "flex" },
+    );
+    expect(sanitizedWithFlex.serviceTier).toBe("flex");
+
     const sanitizedWithInvalid = sanitizeParamsFromOptions(
-      { serviceTier: "auto" },
+      { serviceTier: ["auto", "fast", "flex"] },
       { serviceTier: "unsupported_tier" },
     );
     expect(sanitizedWithInvalid.serviceTier).toBe("auto");

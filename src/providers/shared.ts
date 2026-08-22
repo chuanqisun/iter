@@ -37,7 +37,7 @@ export function getOpenAIOptions(model: string): ModelParamOptions {
     temperature: isTemperatureSupported ? { max: 2 } : undefined,
     reasoningEffort: reasoningOptions.length > 0 ? reasoningOptions : undefined,
     verbosity: verbosityOptions.length > 0 ? verbosityOptions : undefined,
-    serviceTier: "auto",
+    serviceTier: ["auto", "fast", "flex"],
   };
 }
 
@@ -74,11 +74,7 @@ export function sanitizeParamsFromOptions(options: ModelParamOptions, params: Mo
     reasoningEffort: selectEnum(params.reasoningEffort, options.reasoningEffort),
     verbosity: selectEnum(params.verbosity, options.verbosity),
     thinkingBudget: clampNumber(params.thinkingBudget, options.thinkingBudget, options.thinkingBudget?.min ?? 0),
-    serviceTier: options.serviceTier
-      ? params.serviceTier === "fast" || params.serviceTier === "auto"
-        ? params.serviceTier
-        : options.serviceTier
-      : undefined,
+    serviceTier: selectEnum(params.serviceTier, options.serviceTier),
     sort: selectEnum(params.sort, options.sort),
     costTier: selectEnum(params.costTier, options.costTier),
     minCodingScore: clampNumber(params.minCodingScore, options.minCodingScore, DEFAULT_MIN_CODING_SCORE),

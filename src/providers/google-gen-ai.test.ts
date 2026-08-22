@@ -29,6 +29,7 @@ describe("GoogleGenAIProvider", () => {
     const options = provider.getOptions(mockConnection);
     expect(options.temperature).toBeUndefined();
     expect(options.reasoningEffort).toBeDefined();
+    expect(options.serviceTier).toEqual(["auto", "flex", "priority"]);
   });
 
   it("returns credential summary and connections", () => {
@@ -51,6 +52,7 @@ describe("GoogleGenAIProvider", () => {
       expect(params.model).toBe(mockConnection.model);
       expect(params.system_instruction).toBe("You are helpful.");
       expect(params.tools).toEqual([{ type: "google_search" }]);
+      expect(params.service_tier).toBe("flex");
       expect(params.generation_config.thinking_level).toBe("medium");
       expect(params.input).toEqual([
         {
@@ -98,6 +100,7 @@ describe("GoogleGenAIProvider", () => {
       ],
       search: true,
       reasoningEffort: "medium",
+      serviceTier: "flex",
       onMetadata,
     });
 
@@ -114,5 +117,28 @@ describe("GoogleGenAIProvider", () => {
         totalOutputTokens: 20,
       }),
     );
+  });
+
+  it("omits service_tier when serviceTier is auto or default", async () => {
+    mockInteractionsCreate.mockImplementationOnce((params) => {
+      expect(params.service_tier).toBeUndefined();
+
+      return (async function* () {
+        yield {
+          event_type: "step.delta",
+          delta: { type: "text", text: "OK" },
+        };
+      })();
+    });
+
+    const proxy = provider.getChatStreamProxy(mockConnection);
+    const generator = proxy({
+      messages: [{ role: "user", content: "Hi" }],
+      serviceTier: "auto",
+    });
+
+    for await (const _chunk of generator) {
+      // consume
+    }
   });
 });

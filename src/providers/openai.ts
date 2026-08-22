@@ -118,7 +118,8 @@ export class OpenAIProvider implements BaseProvider {
           },
           max_output_tokens: config?.maxTokens,
           prompt_cache_key: "iter",
-          service_tier: (config.serviceTier ?? options.serviceTier) as ResponseCreateParamsStreaming["service_tier"],
+          service_tier: (config.serviceTier ??
+            options.serviceTier?.at(0)) as ResponseCreateParamsStreaming["service_tier"],
         },
         {
           signal: abortSignal,

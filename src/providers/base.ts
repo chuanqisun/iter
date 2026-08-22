@@ -62,7 +62,7 @@ export interface ModelParamOptions {
   reasoningEffort?: string[];
   verbosity?: string[];
   thinkingBudget?: { min?: number; max: number };
-  serviceTier?: string;
+  serviceTier?: string[];
   sort?: string[];
   costTier?: string[];
   minCodingScore?: { min: number; max: number; step: number };

@@ -77,6 +77,7 @@ export class GoogleGenAIProvider implements BaseProvider {
     return {
       reasoningEffort: this.getReasoningEffortConfig(connection.model),
       temperature: this.supportsTemperature(connection.model) ? { max: 2 } : undefined,
+      serviceTier: ["auto", "flex", "priority"],
     };
   }
 
@@ -134,6 +135,8 @@ export class GoogleGenAIProvider implements BaseProvider {
       const start = performance.now();
       let latencyMs: number | undefined;
 
+      const serviceTier = config.serviceTier ?? options.serviceTier?.at(0);
+
       const stream = await client.interactions.create(
         {
           model: connection.model,
@@ -141,6 +144,7 @@ export class GoogleGenAIProvider implements BaseProvider {
           stream: true,
           system_instruction: system,
           tools: tools.length ? [...tools] : undefined,
+          service_tier: serviceTier && serviceTier !== "auto" ? serviceTier : undefined,
           generation_config: {
             thinking_level: that.getFinalThinkingLevel(connection.model, config.reasoningEffort),
             max_output_tokens: config?.maxTokens,

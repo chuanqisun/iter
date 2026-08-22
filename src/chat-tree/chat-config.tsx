@@ -174,12 +174,18 @@ function ChatConfig(props: ChatConfigProps) {
         </label>
         {options?.serviceTier ? (
           <label>
-            Fast
-            <input
-              type="checkbox"
-              checked={props.serviceTier.value === "fast"}
-              onChange={(e) => props.serviceTier.replace(e.target.checked ? "fast" : "auto")}
-            />
+            Tier
+            <select
+              className="select"
+              value={props.serviceTier.value ?? options.serviceTier.at(0)}
+              onChange={(e) => props.serviceTier.replace(e.target.value)}
+            >
+              {options.serviceTier.map((tier) => (
+                <option key={tier} value={tier}>
+                  {tier}
+                </option>
+              ))}
+            </select>
           </label>
         ) : null}
       </menu>
