@@ -22,6 +22,8 @@
   - Use Indexed DB (via idb-keyval library) to store checkpoints as files. One file per save point. Consider reusing the existing export/import markup file format
 - Testing
   - Carefully testing the auto-save and restore behavior (without DOM)
+  - Handle various save/restore edge cases. Consider different sequencing, and limit handling.
+  - Do NOT hard code limits in the test code. Do NOT implement business logic in the test code. Instead, import any parameters from the main code and only test behaviors.
 - Refactoring
   - Implement the full feature, then refactor the code to reduce unnecessary duplication of logic, and ensure high readability and maintainability
   - Avoid commenting. Instead prefer self-evident naming. Comment is only needed for special hacks/workarounds
