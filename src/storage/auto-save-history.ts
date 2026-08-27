@@ -57,9 +57,8 @@ export function recordCheckpointInManifest(manifest: AutoSaveManifest, options: 
   const existingInstance = manifest.instances.find((inst) => inst.instanceId === instanceId);
   const otherInstances = manifest.instances.filter((inst) => inst.instanceId !== instanceId);
 
-  const existingCheckpoint = !isNewBranch && checkpointId
-    ? existingInstance?.checkpoints.find((cp) => cp.id === checkpointId)
-    : undefined;
+  const existingCheckpoint =
+    !isNewBranch && checkpointId ? existingInstance?.checkpoints.find((cp) => cp.id === checkpointId) : undefined;
 
   let activeCheckpointId: string;
   let updatedCheckpoints: AutoSaveCheckpointMeta[];
@@ -70,11 +69,7 @@ export function recordCheckpointInManifest(manifest: AutoSaveManifest, options: 
       cp.id === activeCheckpointId ? { ...cp, timestamp: now } : cp,
     );
   } else {
-    const newCheckpoint = createCheckpointMeta(
-      instanceId,
-      existingInstance ? undefined : checkpointId,
-      now,
-    );
+    const newCheckpoint = createCheckpointMeta(instanceId, existingInstance ? undefined : checkpointId, now);
     activeCheckpointId = newCheckpoint.id;
     updatedCheckpoints = [newCheckpoint, ...(existingInstance?.checkpoints ?? [])];
   }

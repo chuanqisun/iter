@@ -8,8 +8,8 @@ import {
   getManifest,
   type CheckpointPreview,
 } from "../storage/restore-service";
-import { getRoleIcon } from "./role-metadata";
 import "./restore-dialog.css";
+import { getRoleIcon } from "./role-metadata";
 
 export interface RestoreDialogProps {
   isOpen: boolean;
