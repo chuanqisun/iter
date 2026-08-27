@@ -1,4 +1,4 @@
-import React, { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
+import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useArtifactActions } from "../artifact/artifact";
 import type { ArtifactEvents } from "../artifact/languages/generic";
 import {
@@ -27,6 +27,7 @@ import {
   mimeTypeToFileExtension,
   textToDataUrl,
 } from "../storage/codec";
+import { useAutoSave } from "../storage/use-auto-save";
 import { uploadFiles, useFileHooks } from "../storage/use-file-hooks";
 import { speech, type WebSpeechResult } from "../voice/speech-recognition";
 import {
@@ -54,10 +55,21 @@ import { getParts, readClipboardTextAttachment } from "./clipboard";
 import { dictateToTextarea } from "./dictation";
 import { getReadableFileSize } from "./file-size";
 import { getFilename } from "./filename-dialog";
-import { autoFocusNthInput } from "./focus";
+import { useAutoFocus } from "./focus";
 import { InputTokenizer } from "./input-tokenizer";
 import { getCombo } from "./keyboard";
-import { getAssistantNode, getNextId, getPrevId, getUserNode, INITIAL_NODES, patchNode } from "./tree-helper";
+import { RestoreDialog } from "./restore-dialog";
+import {
+  ensureTrailingUserNode,
+  getAssistantNode,
+  getNextId,
+  getPrevId,
+  getUserNode,
+  INITIAL_NODES,
+  INITIAL_USER_NODE,
+  isTail,
+  patchNode,
+} from "./tree-helper";
 import { useTreeNodes, type ChatNode } from "./tree-store";
 
 export function ChatTree() {
@@ -67,8 +79,21 @@ export function ChatTree() {
   const headerRef = useRef<HTMLElement>(null);
   const { connections, getChatStreamProxy } = useConnections();
   const { saveChat, exportChat, loadChat, importChat } = useFileHooks(treeNodes, setTreeNodes);
+  const { save: saveAutoSave, restore: restoreAutoSave } = useAutoSave();
+  const [isRestoreOpen, setIsRestoreOpen] = useState(false);
+  const { focusTargetNodeId, focusLastNode, handleAutoFocus } = useAutoFocus(INITIAL_USER_NODE.id);
 
   useKeepBodyScrolledToBottom(treeRootRef);
+
+  const handleRestoreSavePoint = useCallback(
+    async (storageKey: string) => {
+      const restored = await restoreAutoSave(storageKey);
+      setTreeNodes(() => restored);
+      focusLastNode(restored);
+      showToast("✅ Restored session");
+    },
+    [focusLastNode, restoreAutoSave, setTreeNodes],
+  );
 
   const handleConnectionsButtonClick = useCallback(
     () => document.querySelector("settings-element")?.closest("dialog")?.showModal(),
@@ -288,14 +313,20 @@ export function ChatTree() {
           break;
         case "ctrl+o":
           loadChat()
-            .then(() => autoFocusNthInput(0))
-            .then(() => showToast("✅ Loaded"))
+            .then((loaded) => {
+              if (loaded) {
+                focusLastNode(loaded);
+                showToast("✅ Loaded");
+              }
+            })
             .catch((e) => showToast(`❌ Error ${e?.message}`));
           break;
         case "ctrl+shift+o":
           importChat()
-            .then((file) => showToast(`✅ Imported ${file.name} ${getReadableFileSize(file.size)}`))
-            .then(() => autoFocusNthInput(0))
+            .then(({ file, tree }) => {
+              focusLastNode(tree);
+              showToast(`✅ Imported ${file.name} ${getReadableFileSize(file.size)}`);
+            })
             .catch((e) => showToast(`❌ Error ${e?.message}`));
           break;
 
@@ -372,7 +403,7 @@ export function ChatTree() {
     });
 
     return () => abortController.abort();
-  }, [exportChat, importChat]);
+  }, [exportChat, focusLastNode, importChat, loadChat]);
 
   // handle file system runtime API requests from iframes
   useEffect(() => {
@@ -443,13 +474,7 @@ export function ChatTree() {
           const rest = nodes.slice(sourceIndex + 1);
           const newNodes = [...base, newAssistantNode, ...rest];
 
-          // Ensure last node is user
-          if (newNodes[newNodes.length - 1]?.role !== "user") {
-            const newUserNode = getUserNode(crypto.randomUUID());
-            newNodes.push(newUserNode);
-          }
-
-          return newNodes;
+          return ensureTrailingUserNode(newNodes);
         });
 
         showToast(`✅ Wrote content`);
@@ -542,11 +567,6 @@ export function ChatTree() {
     return () => ac.abort();
   }, [chat]);
 
-  // auto focus last textarea on startup
-  useEffect(() => {
-    autoFocusNthInput(-1);
-  }, []);
-
   const updateHeaderHeight = useCallback(() => {
     const layout = layoutRef.current;
     const header = headerRef.current;
@@ -610,12 +630,7 @@ export function ChatTree() {
       if (targetIndex === -1) return nodes;
       const newNodes = nodes.filter((n) => n.id !== nodeId);
 
-      // If last node is not user, append a user node
-      if (newNodes.length && newNodes[newNodes.length - 1].role !== "user") {
-        const newUserNode = getUserNode(crypto.randomUUID());
-        return [...newNodes, newUserNode];
-      }
-      return newNodes;
+      return ensureTrailingUserNode(newNodes);
     });
   }, []);
 
@@ -628,12 +643,7 @@ export function ChatTree() {
 
       const newNodes = nodes.slice(0, targetIndex + 1);
 
-      // Ensure last node is user
-      if (newNodes.length && newNodes[newNodes.length - 1].role !== "user") {
-        const newUserNode = getUserNode(crypto.randomUUID());
-        return [...newNodes, newUserNode];
-      }
-      return newNodes;
+      return ensureTrailingUserNode(newNodes);
     });
   }, []);
 
@@ -763,14 +773,18 @@ export function ChatTree() {
       });
       const newUserNode = getUserNode(crypto.randomUUID());
 
-      setTreeNodes((nodes) => {
-        const activeUserNodeIndex = nodes.findIndex((n) => n.id === activeUserNodeId);
-        if (activeUserNodeIndex === -1) return nodes;
+      const activeUserNodeIndex = treeNodes$.value.findIndex((n) => n.id === activeUserNodeId);
+      if (activeUserNodeIndex === -1) return;
 
-        // Remove all nodes after activeUserNodeId
-        const base = nodes.slice(0, activeUserNodeIndex + 1);
-        return [...base, newAssistantNode, newUserNode];
-      });
+      const isNewBranch = !isTail(activeUserNodeIndex, treeNodes$.value);
+
+      // Remove all nodes after activeUserNodeId
+      const base = treeNodes$.value.slice(0, activeUserNodeIndex + 1);
+      const updatedNodes = [...base, newAssistantNode, newUserNode];
+      setTreeNodes(() => updatedNodes);
+
+      // Auto-save after user submits request
+      saveAutoSave(updatedNodes, isNewBranch);
 
       const patchMetadata = (metadata: GenericMetadata) => {
         const metadata$ = newAssistantNode.metadata$;
@@ -798,6 +812,8 @@ export function ChatTree() {
         setTreeNodes((nodes) =>
           nodes.map((n) => (n.id === newAssistantNode.id ? { ...n, abortController: undefined } : n)),
         );
+        // Auto-save after AI finishes responding
+        saveAutoSave(treeNodes$.value, false);
       } catch (e: any) {
         setTreeNodes((nodes) =>
           nodes.map((node) =>
@@ -806,6 +822,8 @@ export function ChatTree() {
               : node,
           ),
         );
+        // Auto-save after error
+        saveAutoSave(treeNodes$.value, false);
       }
     },
     [chat, getMessageChain],
@@ -839,12 +857,7 @@ export function ChatTree() {
       // Keep system node and the selected node
       const newNodes = [systemNode, targetNode];
 
-      // Ensure last node is a user node
-      if (targetNode.role !== "user") {
-        newNodes.push(getUserNode(crypto.randomUUID()));
-      }
-
-      return newNodes;
+      return ensureTrailingUserNode(newNodes);
     });
   }, []);
 
@@ -997,18 +1010,14 @@ export function ChatTree() {
     setTreeNodes((nodes) => {
       const targetIndex = nodes.findIndex((n) => n.id === nodeId);
       if (targetIndex === -1) return nodes;
-      const newNodes = nodes.flatMap((node, i, arr) => {
+      const newNodes = nodes.map((node, i) => {
         if (i === targetIndex && node.role !== "system") {
           const newRole = node.role === "user" ? "assistant" : "user";
-          if (i === arr.length - 1) {
-            return [{ ...node, role: newRole } satisfies ChatNode, getUserNode(crypto.randomUUID())];
-          } else {
-            return { ...node, role: newRole } satisfies ChatNode;
-          }
+          return { ...node, role: newRole } satisfies ChatNode;
         }
         return node;
       });
-      return newNodes;
+      return ensureTrailingUserNode(newNodes);
     });
   }, []);
 
@@ -1072,6 +1081,8 @@ export function ChatTree() {
             <InputTokenizer node={node} />
             <ChatNodeMemo
               node={node}
+              autoFocus={node.id === focusTargetNodeId}
+              onAutoFocus={handleAutoFocus}
               onAbort={handleAbort}
               onAbortAll={handleAbortAll}
               onCodeBlockChange={handleCodeBlockChange}
@@ -1087,6 +1098,7 @@ export function ChatTree() {
               onPasteTextAsAttachment={handlePasteTextAsAttachment}
               onPreviewDoubleClick={handlePreviewDoubleClick}
               onRemoveAttachment={handleRemoveAttachment}
+              onRestore={node.role === "system" ? () => setIsRestoreOpen(true) : undefined}
               onRunNode={handleRunNode}
               onTextChange={handleTextChange}
               onToggleAttachmentType={handleToggleAttachmentType}
@@ -1098,6 +1110,11 @@ export function ChatTree() {
           </Fragment>
         ))}
       </div>
+      <RestoreDialog
+        isOpen={isRestoreOpen}
+        onClose={() => setIsRestoreOpen(false)}
+        onRestore={handleRestoreSavePoint}
+      />
     </div>
   );
 }

@@ -51,10 +51,10 @@ describe("model-parameter-store", () => {
 
   it("handles storage exceptions gracefully without crashing", async () => {
     const { get, set } = await import("idb-keyval");
-    vi.mocked(get).mockRejectedValueOnce(new Error("IndexedDB read error"));
-    vi.mocked(set).mockRejectedValueOnce(new Error("IndexedDB write error"));
+    (get as any).mockRejectedValueOnce(new Error("IndexedDB read error"));
+    (set as any).mockRejectedValueOnce(new Error("IndexedDB write error"));
 
-    await expect(setStoredModelParams("error-conn", { temperature: 0.5 })).resolves.not.toThrow();
+    await expect(setStoredModelParams("error-conn", { temperature: 0.5 })).resolves.toBeUndefined();
     await expect(getStoredModelParams("error-conn")).resolves.toBeNull();
   });
 });

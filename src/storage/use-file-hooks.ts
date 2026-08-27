@@ -1,6 +1,8 @@
 import { get, set } from "idb-keyval";
 import { useCallback } from "react";
+import { ensureTrailingUserNode } from "../chat-tree/tree-helper";
 import type { ChatNode } from "../chat-tree/tree-store";
+import { formatTimestampSlug } from "./codec";
 import { parseChat, stringifyChat } from "./format";
 
 export function useFileHooks(treeNodes: ChatNode[], setTreeNodes: (value: React.SetStateAction<ChatNode[]>) => void) {
@@ -13,10 +15,7 @@ export function useFileHooks(treeNodes: ChatNode[], setTreeNodes: (value: React.
   const exportChat = useCallback(async () => {
     const raw = await stringifyChat(treeNodes);
 
-    const timestamp = new Date()
-      .toISOString()
-      .split(".")[0]
-      .replace(/[-T:.]/g, "");
+    const timestamp = formatTimestampSlug();
     const htmlFile = new File([raw], `session-${timestamp}`, {
       type: "text/html",
     });
@@ -32,28 +31,25 @@ export function useFileHooks(treeNodes: ChatNode[], setTreeNodes: (value: React.
       return;
     }
 
-    const tree = await parseChat(
-      raw,
-      treeNodes.slice(0, 2).map((i) => i.id),
-    );
+    const tree = await parseChat(raw);
     console.log(`[file] loaded`, tree);
 
-    setTreeNodes(() => tree);
-  }, []);
+    const finalTree = ensureTrailingUserNode(tree);
+    setTreeNodes(() => finalTree);
+    return finalTree;
+  }, [setTreeNodes]);
 
   const importChat = useCallback(async () => {
     const uploadedFile = (await uploadFiles()).at(0);
     if (!uploadedFile) throw new Error("No file uploaded");
-    const tree = await parseChat(
-      await uploadedFile.text(),
-      treeNodes.slice(0, 2).map((i) => i.id),
-    );
+    const tree = await parseChat(await uploadedFile.text());
 
     if (tree.length < 2) throw new Error("Invalid chat file");
     console.log(`[file] imported`, tree);
-    setTreeNodes(() => tree);
-    return uploadedFile;
-  }, []);
+    const finalTree = ensureTrailingUserNode(tree);
+    setTreeNodes(() => finalTree);
+    return { file: uploadedFile, tree: finalTree };
+  }, [setTreeNodes]);
 
   return { saveChat, exportChat, loadChat, importChat };
 }

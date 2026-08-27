@@ -60,11 +60,9 @@ function createMessageSection(node: ChatNode): HTMLElement {
   return section;
 }
 
-export async function parseChat(raw: string, preserveIds?: string[]): Promise<ChatNode[]> {
+export async function parseChat(raw: string): Promise<ChatNode[]> {
   const dom = new DOMParser().parseFromString(raw, "text/html");
-  const nodes = (await Promise.all([...dom.querySelectorAll<HTMLElement>(`[data-role]`)].map(parseMessaage))).map(
-    (node, i) => ({ ...node, id: preserveIds?.at(i) ?? node.id }),
-  );
+  const nodes = await Promise.all([...dom.querySelectorAll<HTMLElement>(`[data-role]`)].map(parseMessaage));
 
   return nodes;
 }

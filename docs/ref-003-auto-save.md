@@ -12,7 +12,7 @@
 - User experience
   - Saving is performed in the background with no visual indication or unnecessary component re-rendering.
   - Recovery is performed via a "Restore" button and a dialog for inspecting and picking the save point.
-  - The "Restore" button has the same "text link" style as the existing chat message menu buttons.
+  - The "Restore" button is located in the system message menu, permanently available, and shares the exact same action button styles as other message menu actions.
 - Data modeling
   - Each app instance has a unique id (mapping to each tab/window in the browser where the app runs).
   - Checkpoint overwrite vs. creation strategy:
@@ -25,13 +25,13 @@
   - Limits (K and P) may change over time without breaking existing data or format.
   - The window/tab identity is immutable. Opening a new tab/window creates a new instance, and restoring a closed tab/window means copying the state into the current instance.
 - Data recovery
-  - When user opens the app, the initial state is always empty, with two input areas (one for system prompt, one for user prompt). When there is recovery data, a "Restore" text-link button is displayed below the bottom of the thread and removed once the thread has any content in it.
+  - A "Restore" button is available in the system message menu.
   - The recovery dialog uses a master-detail pattern matching the styling of the connections settings dialog:
-    - Master pane: list of app instances (newest first).
-    - Detail pane: save point navigation ("Prev" and "Next" buttons) and chronological preview of the entire thread.
-  - A "Download" button in the dialog allows downloading the selected save point as its raw HTML file.
-  - A "Load" button copies the selected save point into the current app instance and closes the dialog. The user can then continue to work on the restored state.
-  - Escape key closes the dialog (consistent with existing system dialogs).
+    - Master pane: list of app instances (newest first). Each item shows timestamp on the first line and number of save points on the second line (without instance ID). Left pane is compact with no gap and no padding around the list.
+    - Detail pane: save point navigation ("Newer" and "Older" buttons without unicode arrows, showing "X/Y" index info), and chronological preview of the entire thread with emoji role icons (⚙️ for system, 👤 for user, 🤖 for assistant).
+    - An "Export" button in the dialog allows downloading the selected save point as its raw HTML file.
+    - A "Load" button copies the selected save point into the current app instance and closes the dialog. The user can then continue to work on the restored state.
+    - Escape key closes the dialog (consistent with existing system dialogs).
 - Storage & Architecture
   - Modular separation into three distinct layers:
     1. **History Management**: In-memory data structures and pure functions managing instance lists, checkpoints (create vs. overwrite), ranking, and limit pruning without storage or UI dependencies.
@@ -45,7 +45,7 @@
   - Implement the full feature, then refactor the code to reduce unnecessary duplication of logic, and ensure high readability and maintainability.
   - Avoid commenting. Instead prefer self-evident naming. Comment is only needed for special hacks/workarounds.
 - Styling
-  - "Restore" button uses the text-link button style identical to chat message menu buttons.
+  - "Restore" button is in the system message actions menu sharing identical styles with `message-actions` button elements.
   - Dialog structure, header, body, field rows, actions, and form layouts use the same CSS design tokens and style rules as the connections settings dialog.
 
 ## Implementation plan
@@ -217,25 +217,24 @@
 
 - **`src/chat-tree/restore-dialog.css` (New File):**
   - Styled consistent with `settings-element.css` (modal layout, field labels, action rows, button styles, scroll areas).
-  - Left pane: Instance list (newest first, timestamp, checkpoint count).
-  - Right pane: Checkpoint navigation ("Prev", "Next", "X of Y"), chronological preview container listing all thread messages with role indicators, action buttons ("Download", "Load", "Cancel").
+  - Left pane: Instance list (newest first, timestamp, checkpoint count, compact layout without gaps/padding).
+  - Right pane: Checkpoint navigation ("Newer", "Older", "X/Y"), chronological preview container listing all thread messages with emoji role indicators, action buttons ("Export", "Load", "Cancel").
 - **`src/chat-tree/restore-dialog.tsx` (New File):**
   - Props: `isOpen: boolean`, `onClose: () => void`, `onRestore: (nodes: ChatNode[]) => void`.
-  - Master-detail view displaying instances and chronological checkpoint messages.
-  - "Download" and "Load" handlers.
+  - Master-detail view displaying instances and chronological checkpoint messages with emojis.
+  - "Export" and "Load" handlers.
   - Closes on `Escape` key, backdrop click, or Cancel.
 
-#### Step 8: Chat Tree Integration (`src/chat-tree/chat-tree.tsx` & `src/chat-tree/chat-tree.css`)
+#### Step 8: Chat Tree Integration (`src/chat-tree/chat-tree.tsx` & `src/chat-tree/chat-node.tsx`)
 
-- **`src/chat-tree/chat-tree.css`:**
-  - Style for the "Restore" button using the exact text-link style of chat message menu actions:
-    `background: none; border: none; padding: 0; cursor: pointer; color: var(--action-button-rest-color); &:hover, &:focus-visible { color: var(--action-button-hover-color); text-decoration: underline; }`.
+- **`src/chat-tree/chat-node.tsx`:**
+  - Added "Restore" action button in the system message actions menu, sharing identical styling and keyboard focus navigation with other menu buttons.
 - **`src/chat-tree/chat-tree.tsx`:**
   - Wire `useAutoSave`.
   - When user runs a prompt:
     - Determine if target node is the tail of the thread (`node.id === tailNode.id`). If submitting from an earlier node, pass `isNewBranch: true` to `save(...)`.
     - Trigger `save` right after user submission and after AI streaming finishes.
-  - When `isThreadEmpty(treeNodes)` and `hasRecoveryData` are both true, render the text-link "Restore" button at the bottom of the thread.
+  - Passes `onRestoreClick` down to system message node to open the `RestoreDialog`.
   - Ensure existing key combos (`ctrl+s`, `ctrl+o`, `ctrl+shift+s`, `ctrl+shift+o`) remain untouched and operate purely on manual file I/O.
 
 ---

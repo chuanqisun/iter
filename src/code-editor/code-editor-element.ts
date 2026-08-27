@@ -158,7 +158,7 @@ export class CodeEditorElement extends HTMLElement {
   }
 
   focus() {
-    setTimeout(() => this.editorView?.focus());
+    this.editorView?.focus();
   }
 
   moveCursorToEnd() {

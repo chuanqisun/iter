@@ -100,6 +100,13 @@ export function mimeTypeToFileExtension(mimeType: string): string {
   return mimeTypesFileExtensions[mimeType.toLowerCase()] ?? "txt";
 }
 
+export function formatTimestampSlug(date: Date | number = new Date()): string {
+  return new Date(date)
+    .toISOString()
+    .split(".")[0]
+    .replace(/[-T:.]/g, "");
+}
+
 export function tryDecodeDataUrlAsText(dataUrl: string): { text: string; mediaType: string } | null {
   try {
     const { isBase64, data, mediaType } = parseDataURL(dataUrl);
