@@ -1,43 +1,52 @@
 # Outline
 
 - Goal
-  - prevent data loss due to (1) accidental close of window, and (2) accidental regeneration of earlier message in the thread
+  - Prevent data loss due to (1) accidental close of window/tab, and (2) accidental regeneration/branching of earlier messages in the thread.
+- Independence from Manual Save/Open
+  - The existing manual file operations (`mod+s`, `mod+o`, `mod+shift+s`, `mod+shift+o`) remain completely independent from the auto-save system.
+  - Manual save/open operations do NOT read from, write into, or alter the auto-save history/manifest in any way.
 - Timing
-  - auto-save performed at non-distruptive moments: (1) after user submits a request and (2) after AI finishes responding. The former fills network waiting time, the latter fills user's reaction time.
+  - Auto-save performed at non-disruptive moments: (1) after user submits a request and (2) after AI finishes responding. The former fills network waiting time, the latter fills user's reaction time.
   - Do NOT trigger auto-save on empty thread. When user opens the app and reloads a few times, nothing should be saved.
   - After restoring a save point, do NOT auto-save the newly restored state until user submits or AI finishes responding.
 - User experience
-  - Saving is performed in the background, no visual indication or unnecessary component re-rendering
-  - Recovery is performed via a "Restore" button and a dialog for picking the save point
+  - Saving is performed in the background with no visual indication or unnecessary component re-rendering.
+  - Recovery is performed via a "Restore" button and a dialog for inspecting and picking the save point.
+  - The "Restore" button has the same "text link" style as the existing chat message menu buttons.
 - Data modeling
-  - Each app instance has a unique id. This maps to each tab/window in the browser where app script runs
-  - Each app instance has a history of save points. We preserve the most recent K (=10 by default) save points per app instance
-  - We preserve the most recent P (=10 by default) app instances. Newer changes would bump the instance to a higher position on the list
-  - Limits (K and P) may change over time without breaking existing data or format
-  - The window/tab identity is immutable. Opening a new tab/window creates a new instance, and restoring a closed tab/window means copying the state into the new instance.
-  - Checkpoints do NOT store a separate text summary; the UI simply displays the last two messages
+  - Each app instance has a unique id (mapping to each tab/window in the browser where the app runs).
+  - Checkpoint overwrite vs. creation strategy:
+    - By default, auto-save **overwrites** the existing checkpoint for the current instance (updating its HTML payload and timestamp).
+    - A **new checkpoint** is created for the app instance ONLY under two scenarios:
+      (a) It is the first save for the instance and there is no existing checkpoint to overwrite.
+      (b) It is triggered from the user submitting a message that is not at the tail of the thread (which implies the user is branching or wiping downstream messages).
+  - We preserve the most recent K (=10 by default) save points per app instance.
+  - We preserve the most recent P (=10 by default) app instances. Newer changes bump the active instance to the top of the list.
+  - Limits (K and P) may change over time without breaking existing data or format.
+  - The window/tab identity is immutable. Opening a new tab/window creates a new instance, and restoring a closed tab/window means copying the state into the current instance.
 - Data recovery
-  - When user opens the app, the initial state is always empty, with two input areas, one for system prompt, one for user prompt. When there is recovery data, we should display it below the bottom of the thread and remove it once the thread has any content in it.
-  - The recovery area is just a single "Restore" button that opens a dialog.
-  - The dialog is a master-detail pattern. Master is a list of app instances (newest first), and detail is the latest save point, with "Prev" and "Next" buttons to navigate through the save points.
-  - The detail view displays the last two messages of the selected save point.
+  - When user opens the app, the initial state is always empty, with two input areas (one for system prompt, one for user prompt). When there is recovery data, a "Restore" text-link button is displayed below the bottom of the thread and removed once the thread has any content in it.
+  - The recovery dialog uses a master-detail pattern matching the styling of the connections settings dialog:
+    - Master pane: list of app instances (newest first).
+    - Detail pane: save point navigation ("Prev" and "Next" buttons) and chronological preview of the entire thread.
   - A "Download" button in the dialog allows downloading the selected save point as its raw HTML file.
-  - A "Load" button will copy the selected save point into the current app instance and close the dialog. The user can then continue to work on the restored state.
-  - Escape key should close the dialog. You can look into the current system menu and borrow its behavior.
+  - A "Load" button copies the selected save point into the current app instance and closes the dialog. The user can then continue to work on the restored state.
+  - Escape key closes the dialog (consistent with existing system dialogs).
 - Storage & Architecture
   - Modular separation into three distinct layers:
-    1. **History Management**: In-memory data structures and algorithms managing instance lists, save points, ranking, and limit pruning without storage or UI dependencies.
-    2. **Auto-Save**: Orchestrates timing, checks empty thread guard, serializes chat data to HTML, hydrates history, writes to Indexed DB (via `idb-keyval`), and cleans up deleted keys.
-    3. **Restore**: Reads checkpoints/manifest from Indexed DB, extracts the last two messages for preview, enables raw HTML export, and populates the app.
+    1. **History Management**: In-memory data structures and pure functions managing instance lists, checkpoints (create vs. overwrite), ranking, and limit pruning without storage or UI dependencies.
+    2. **Auto-Save**: Orchestrates timing, checks empty thread guard, detects non-tail submissions, serializes chat data to HTML, hydrates history, writes to Indexed DB (via `idb-keyval`), and cleans up deleted keys.
+    3. **Restore**: Reads checkpoints/manifest from Indexed DB, extracts and formats chronological thread preview, enables raw HTML export, and populates the app.
 - Testing
   - Carefully test history management, auto-save, restore, and pruning behavior (without DOM).
-  - Explicitly unit test pruning algorithms (both instance-level and checkpoint-level key eviction and limit changes).
+  - Explicitly unit test checkpoint overwrite vs. new checkpoint branch creation, and pruning algorithms (both instance-level and checkpoint-level key eviction and limit changes).
   - Do NOT hard code limits in the test code. Do NOT implement business logic in the test code. Instead, import parameters from the main code and test dynamic limit adaptations.
 - Refactoring
   - Implement the full feature, then refactor the code to reduce unnecessary duplication of logic, and ensure high readability and maintainability.
   - Avoid commenting. Instead prefer self-evident naming. Comment is only needed for special hacks/workarounds.
 - Styling
-  - Keep the styling consistent with current app.
+  - "Restore" button uses the text-link button style identical to chat message menu buttons.
+  - Dialog structure, header, body, field rows, actions, and form layouts use the same CSS design tokens and style rules as the connections settings dialog.
 
 ## Implementation plan
 
@@ -47,24 +56,27 @@
 +-------------------------------------------------------------+
 |                     React UI Layer                          |
 |  - ChatTree (triggers save on submit / complete)            |
-|  - Restore Button & RestoreDialog (master-detail UI)        |
+|  - Restore Button (text-link style matching message actions)|
+|  - RestoreDialog (settings-style master-detail UI)          |
 +------------------------------+------------------------------+
                                |
                                v
 +-------------------------------------------------------------+
 |                 useAutoSave Hook (React Adapter)            |
-|  - Holds mutable instanceId & save locks via refs (no lag)  |
+|  - Holds mutable instanceId, activeCheckpointId, save locks |
 |  - Subscribes to recovery data availability                 |
 |  - Exposes save/restore callbacks without re-renderings     |
+|  - Fully isolated from manual mod+s/o & mod+shift+s/o       |
 +---------------+------------------------------+--------------+
                 |                              |
                 v                              v
 +-------------------------------+ +---------------------------+
 |       Auto-Save Engine        | |      Restore Engine       |
 |  - Empty thread detection     | |  - Fetch checkpoint & list|
-|  - stringifyChat serialization| |  - Extract last 2 msgs    |
-|  - Coordinates IDB writes     | |  - parseChat & populate   |
-|  - Removes pruned IDB keys    | |  - Download raw HTML file |
+|  - Tail vs. non-tail detection| |  - Chronological preview  |
+|  - stringifyChat serialization| |  - parseChat & populate   |
+|  - Coordinates IDB writes     | |  - Download raw HTML file |
+|  - Overwrite vs create logic  | |                           |
 +---------------+---------------+ +-------------+-------------+
                 |                               |
                 +---------------+---------------+
@@ -73,7 +85,8 @@
 +-------------------------------------------------------------+
 |                 History Store (Pure Model)                  |
 |  - AutoSaveManifest & Checkpoint data structures            |
-|  - Pure functions: addCheckpoint, bumpInstance, prune       |
+|  - Pure functions: recordCheckpoint (overwrite vs create)   |
+|  - bumpInstance, pruneManifest                              |
 |  - Dynamic K and P limit adaptation & evicted keys list     |
 +-------------------------------+-----------------------------+
                                 |
@@ -109,21 +122,33 @@
     instances: AutoSaveInstanceSummary[];
   }
 
+  export interface RecordCheckpointOptions {
+    instanceId: string;
+    checkpointId?: string;
+    isNewBranch?: boolean;
+    limits?: { maxCheckpoints?: number; maxInstances?: number };
+  }
+
   export interface PruneResult {
     manifest: AutoSaveManifest;
+    activeCheckpointId: string;
     evictedStorageKeys: string[];
   }
   ```
 - **Pure Transformations:**
-  - `addCheckpointToManifest(manifest: AutoSaveManifest, instanceId: string, checkpoint: AutoSaveCheckpointMeta, limits?: { maxCheckpoints?: number; maxInstances?: number }): PruneResult`
+  - `recordCheckpointInManifest(manifest: AutoSaveManifest, options: RecordCheckpointOptions): PruneResult`
+    - Overwrites current checkpoint metadata (timestamp update) if `checkpointId` exists and `isNewBranch` is false.
+    - Creates a new checkpoint when `checkpointId` is missing or when `isNewBranch` is true (non-tail edit/resubmission).
+    - Always bumps the modified instance to the top ($0$-th index).
+    - Enforces $K$ checkpoints per instance (evicting oldest) and $P$ instances (evicting dropped instances).
   - `pruneManifest(manifest: AutoSaveManifest, limits: { maxCheckpoints: number; maxInstances: number }): PruneResult`
-  - Manifest updates always bump the active instance to the top ($0$-th index).
   - Changing limits dynamically in the future applies cleanly on next prune without invalidating existing stored data.
 
 #### 1.2 Checkpoint Storage
 
-- Individual save points are saved under `iter.checkpoint.${instanceId}.${checkpointId}` as raw HTML produced by `stringifyChat(nodes)`.
-- No text summary is stored in the metadata. Preview is derived dynamically from the checkpoint content when needed.
+- Checkpoint payload is saved under `iter.checkpoint.${instanceId}.${checkpointId}` as raw HTML produced by `stringifyChat(nodes)`.
+- No separate text summary is stored in metadata; chronological message preview is parsed on-demand from the raw HTML.
+- Manual file shortcut actions (`mod+s`, `mod+o`, `mod+shift+s`, `mod+shift+o`) do not touch or read this store.
 
 ---
 
@@ -131,98 +156,95 @@
 
 #### Step 1: Pure History Model (`src/storage/auto-save-history.ts` - New File)
 
-- Implement pure domain logic for history representation:
-  - Manifest schema and checkpoint metadata structures.
+- Implement pure domain logic:
+  - Manifest schema and checkpoint metadata.
   - `createEmptyManifest(): AutoSaveManifest`
-  - `addCheckpointToManifest(...)`: Inserts checkpoint, bumps instance to top, prunes according to provided or default $K$ and $P$, returns updated manifest and list of `evictedStorageKeys`.
-  - `pruneManifest(...)`: Prunes instances beyond $P$ and checkpoints per instance beyond $K$, collecting any evicted keys for deletion.
-  - `removeInstanceFromManifest(manifest: AutoSaveManifest, instanceId: string): PruneResult`
+  - `recordCheckpointInManifest(manifest, options)`: Handles checkpoint overwrite by default, new checkpoint creation on first save or branch, instance ranking, and pruning.
+  - `pruneManifest(manifest, limits)`: Prunes checkpoints beyond $K$ and instances beyond $P$, gathering evicted storage keys.
+  - `removeInstanceFromManifest(manifest, instanceId)`
 
 #### Step 2: Unit Testing History & Pruning (`src/storage/auto-save-history.test.ts` - New File)
 
-- Test history model independently without IDB or DOM:
-  - Adding checkpoints and instance ranking (bumping modified instance to top).
+- Test history model independently:
+  - Overwriting existing checkpoint updates timestamp and retains single checkpoint entry without key eviction.
+  - Branching (`isNewBranch: true`) appends a new checkpoint.
   - Enforcing $K$ limit per instance and capturing evicted checkpoint keys.
   - Enforcing $P$ instance limit and capturing all evicted keys of dropped instances.
-  - Pruning with custom/updated limits (e.g. reducing $K$ from 10 to 5 or $P$ from 10 to 3) without data corruption.
-  - Verify parameter values are imported directly from `auto-save-history.ts`.
+  - Dynamic limit adaptation tests using imported constants.
 
 #### Step 3: Auto-Save Engine (`src/storage/auto-save-service.ts` - New File)
 
 - Coordinates serialization and persistence with `idb-keyval`:
   - `isThreadEmpty(nodes: ChatNode[]): boolean`: Returns true if thread has $\le 2$ nodes with empty text and no attachments.
-  - `saveCheckpoint(instanceId: string, nodes: ChatNode[], limits?: { maxCheckpoints?: number; maxInstances?: number }): Promise<boolean>`
-    - Guard: If `isThreadEmpty(nodes)` is true, do not perform save.
-    - Stringifies `nodes` using `stringifyChat`.
-    - Generates checkpoint record and key `iter.checkpoint.${instanceId}.${checkpointId}`.
-    - Updates manifest in IDB.
-    - Writes checkpoint file in IDB.
-    - Deletes all `evictedStorageKeys` from IDB using `delMany` / `del`.
+  - `saveCheckpoint(instanceId: string, currentCheckpointId: string | undefined, isNewBranch: boolean, nodes: ChatNode[]): Promise<{ checkpointId: string } | null>`
+    - Guard: If `isThreadEmpty(nodes)` is true, skip save.
+    - Serializes `nodes` via `stringifyChat`.
+    - Updates IDB manifest via `recordCheckpointInManifest`.
+    - Writes HTML to `iter.checkpoint.${instanceId}.${checkpointId}` in IDB.
+    - Deletes all `evictedStorageKeys` from IDB.
   - `hasCheckpoints(): Promise<boolean>`
 
 #### Step 4: Restore Engine (`src/storage/restore-service.ts` - New File)
 
-- Implements checkpoint retrieval, preview parsing, and download:
+- Implements checkpoint retrieval, chronological preview parsing, and download:
   - `getManifest(): Promise<AutoSaveManifest>`
   - `getCheckpointRaw(storageKey: string): Promise<string | undefined>`
-  - `getCheckpointPreview(storageKey: string): Promise<{ lastMessages: { role: string; content: string }[] }>`: Parses raw HTML and extracts the last two chat messages.
+  - `getCheckpointPreview(storageKey: string): Promise<{ messages: { role: string; content: string }[] }>`: Parses raw HTML and extracts the entire message thread in chronological order.
   - `downloadCheckpointFile(storageKey: string, filename?: string): Promise<void>`: Downloads checkpoint as raw HTML file.
-  - `restoreCheckpointNodes(storageKey: string, preserveIds?: string[]): Promise<ChatNode[]>`: Loads and parses HTML to `ChatNode[]`.
+  - `restoreCheckpointNodes(storageKey: string): Promise<ChatNode[]>`: Loads and parses HTML to `ChatNode[]`.
 
 #### Step 5: Unit Testing Storage Services (`src/storage/auto-save-service.test.ts` & `src/storage/restore-service.test.ts` - New Files)
 
-- Test with mocked `idb-keyval` and DOM parser utilities:
+- Test with mocked `idb-keyval` and DOM parser:
   - Auto-save ignores empty threads.
-  - Auto-save persists raw HTML and deletes evicted keys in IDB.
-  - Restore correctly retrieves raw HTML, parses the last two messages, and restores `ChatNode[]`.
-  - Downloading generates the correct File/Blob payload.
+  - Auto-save correctly overwrites by default and creates new keys on branching.
+  - Restore parses chronological thread preview and restores nodes.
+  - Verifies manual shortcut commands remain completely unaffected.
 
 #### Step 6: Performant React Hook (`src/storage/use-auto-save.ts` - New File)
 
-- High-performance, data-driven hook:
-  - Holds `instanceId` in a `useRef` (stable across lifecycle, unique per window/tab).
-  - Uses `useRef` for save locks (`isSavingRef`) and restore state flags (`isRestoredStateRef`) so background saves do NOT trigger component re-renders.
-  - Tracks `hasRecoveryData` boolean in React state only for the initial empty-thread recovery button visibility (checked on mount and after restores/saves).
+- High-performance hook:
+  - Holds `instanceId` and `activeCheckpointIdRef` in `useRef`.
+  - Holds `isSavingRef` and `isRestoredStateRef` locks.
+  - Tracks `hasRecoveryData` boolean in React state only for the empty-thread "Restore" link button.
   - Exposes:
-    - `save(nodes: ChatNode[]): Promise<void>`
-    - `restore(storageKey: string, currentNodes: ChatNode[]): Promise<ChatNode[]>`
+    - `save(nodes: ChatNode[], isNewBranch: boolean): Promise<void>`
+    - `restore(storageKey: string): Promise<ChatNode[]>`
     - `hasRecoveryData: boolean`
     - `instanceId: string`
 
 #### Step 7: Restore Dialog Component & Styles
 
 - **`src/chat-tree/restore-dialog.css` (New File):**
-  - Master-detail layout styling matching app theme.
+  - Styled consistent with `settings-element.css` (modal layout, field labels, action rows, button styles, scroll areas).
   - Left pane: Instance list (newest first, timestamp, checkpoint count).
-  - Right pane: Active checkpoint viewer with navigation ("Prev", "Next", "X of Y"), preview box showing the last two messages with role tags, and action buttons ("Download", "Load", "Cancel").
+  - Right pane: Checkpoint navigation ("Prev", "Next", "X of Y"), chronological preview container listing all thread messages with role indicators, action buttons ("Download", "Load", "Cancel").
 - **`src/chat-tree/restore-dialog.tsx` (New File):**
-  - Component props: `isOpen: boolean`, `onClose: () => void`, `onRestore: (nodes: ChatNode[]) => void`, `currentNodes: ChatNode[]`.
-  - Displays master list of instances and detail view of checkpoints.
-  - Prev/Next navigation cycles through checkpoints of selected instance.
-  - Detail view renders the last two messages extracted via `getCheckpointPreview`.
-  - "Download" button calls `downloadCheckpointFile` to save raw HTML.
-  - "Load" button loads checkpoint, invokes `onRestore`, and closes dialog.
-  - Closes on `Escape` key and backdrop/cancel actions.
+  - Props: `isOpen: boolean`, `onClose: () => void`, `onRestore: (nodes: ChatNode[]) => void`.
+  - Master-detail view displaying instances and chronological checkpoint messages.
+  - "Download" and "Load" handlers.
+  - Closes on `Escape` key, backdrop click, or Cancel.
 
 #### Step 8: Chat Tree Integration (`src/chat-tree/chat-tree.tsx` & `src/chat-tree/chat-tree.css`)
 
 - **`src/chat-tree/chat-tree.css`:**
-  - Styles for recovery button container positioned at the bottom of the empty message list.
+  - Style for the "Restore" button using the exact text-link style of chat message menu actions:
+    `background: none; border: none; padding: 0; cursor: pointer; color: var(--action-button-rest-color); &:hover, &:focus-visible { color: var(--action-button-hover-color); text-decoration: underline; }`.
 - **`src/chat-tree/chat-tree.tsx`:**
   - Wire `useAutoSave`.
-  - Trigger `save` at the two designated moments in `handleRunNode`:
-    1. **After user prompt submission:** Right after appending user & assistant placeholder nodes.
-    2. **After AI completion:** In `try ... finally` when assistant streaming finishes or encounters error.
-  - Conditionally display the "Restore" button when `isThreadEmpty(treeNodes)` and `hasRecoveryData` are both true.
-  - Clicking "Restore" opens `RestoreDialog`.
-  - Restoring updates `treeNodes` and sets `isRestoredStateRef` so no save is triggered until the next user submission or AI response.
+  - When user runs a prompt:
+    - Determine if target node is the tail of the thread (`node.id === tailNode.id`). If submitting from an earlier node, pass `isNewBranch: true` to `save(...)`.
+    - Trigger `save` right after user submission and after AI streaming finishes.
+  - When `isThreadEmpty(treeNodes)` and `hasRecoveryData` are both true, render the text-link "Restore" button at the bottom of the thread.
+  - Ensure existing key combos (`ctrl+s`, `ctrl+o`, `ctrl+shift+s`, `ctrl+shift+o`) remain untouched and operate purely on manual file I/O.
 
 ---
 
 ### 3. Edge Cases & Verification Plan
 
-- **Dynamic Limit Changes:** If $K$ or $P$ are changed in configuration, subsequent saves prune excess records smoothly without crashes or dangling storage entries.
-- **Pruning Thoroughness:** Both per-instance checkpoints exceeding $K$ and oldest instances exceeding $P$ are pruned from manifest and their corresponding IDB keys are deleted.
-- **Zero UI Lag:** Auto-save operations run in background tasks with no React state re-render cascades.
-- **Accidental Close / Reload:** Opening a new tab shows the empty thread with the "Restore" button; user can inspect the last 2 messages of previous checkpoints and load or download raw HTML.
-- **Regeneration Safety:** Every prompt submission and completion creates a distinct checkpoint, enabling recovery of previous branches.
+- **Manual vs Auto-Save Isolation:** Confirm manual file save/open operations (`mod+s`, `mod+o`, `mod+shift+s`, `mod+shift+o`) have no side-effects on auto-save history or manifest.
+- **Overwrite vs. New Branch Check:** Modifying and completing responses at the tail updates the active checkpoint without spawning redundant checkpoints. Submitting from an intermediate node branches into a new checkpoint.
+- **Chronological Thread Preview:** Detail pane renders all thread messages in chronological sequence.
+- **Visual Consistency:** "Restore" button matches chat message action links; dialog matches the connections settings dialog styling.
+- **Dynamic Limit Changes:** If $K$ or $P$ limits change, excess checkpoints/instances are pruned cleanly on next save without orphaned IndexedDB entries.
+- **Zero UI Lag:** Auto-save operations run in background tasks without causing unwanted component re-renders.
