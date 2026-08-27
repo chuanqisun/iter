@@ -1,0 +1,29 @@
+- Goal
+  - prevent data loss due to (1) accidental close of window, and (2) accidental regeneration of earlier message in the thread
+- Timing
+  - auto-save performed at non-distruptive moments: (1) after user submits a request and (2) after AI finishes responding. The former fills network waiting time, the latter fills user's reaction time.
+  - Do NOT trigger auto-save on empty thread. When user opens the app and reloads a few times, nothing should be saved.
+  - After restoring a save point, do NOT auto-save the newly restored state until user submits or AI finishes responding.
+- User experience
+  - Saving is performed in the background, no visual indication
+  - Recovery is performed via a "Restore" button and a dialog for picking the save point
+- Data modeling
+  - Each app instance has a unique id. This maps to each tab/window in the browser where app script runs
+  - Each app instance has a history save points. We preserve the most recent K (=10 by default) save points per app instance
+  - We preserve the most recent P (=10 by default) app instances. Newer changes would bump the instance to a higher position on the list
+  - The window/tab identity is immutable. Opening a new tab/window creates a new instance, and restoring a closed tab/window means copying the state into the new instance.
+- Data recovery
+  - When user open the app, the initial state is always empty, with two input areas, one for system prompt, one for user prompt. When there is recovery data, we should display it below the bottom of the thread and remove it once the thread has any content in it.
+  - The recovery area is just a single "Restore" button that opens a dialog.
+  - The dialog is a master-detail pattern. Master is a list of app instances (newest first), and detail is the latest save point, with a "Prev" and "Next" button to navigate through the save points.
+  - A "Load" button will copy the selected save point into the current app instance, and close the dialog. The user can then continue to work on the restored state.
+  - Escape key should close the dialog. You can look into the current system menu and borrow its behavior.
+- Storage
+  - Use Indexed DB (via idb-keyval library) to store checkpoints as files. One file per save point. Consider reusing the existing export/import markup file format
+- Testing
+  - Carefully testing the auto-save and restore behavior (without DOM)
+- Refactoring
+  - Implement the full feature, then refactor the code to reduce unnecessary duplication of logic, and ensure high readability and maintainability
+  - Avoid commenting. Instead prefer self-evident naming. Comment is only needed for special hacks/workarounds
+- Styling
+  - Keep the styling consistent with current app
