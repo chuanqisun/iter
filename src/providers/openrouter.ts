@@ -127,6 +127,11 @@ export class OpenRouterProvider implements BaseProvider {
     return model;
   }
 
+  private isRouterModel(model: string): boolean {
+    const resolved = this.getOpenRouterModel(model);
+    return resolved === "openrouter/auto" || resolved === "openrouter/free" || resolved === "openrouter/pareto-code";
+  }
+
   getChatStreamProxy(connection: BaseConnection): ChatStreamProxy {
     if (!this.isOpenRouterConnection(connection)) throw new Error("Invalid connection type");
     const that = this;
@@ -202,7 +207,7 @@ export class OpenRouterProvider implements BaseProvider {
           latencyMs ??= performance.now() - start;
           const outputIndex = (message as any).outputIndex ?? (message as any).output_index;
           yield pacer.process(outputIndex, message.delta);
-        } else if (message.type === "response.completed" || message.type === "response.failed") {
+        } else if ("response" in message && message.response) {
           finalResponse = message.response;
         }
       }
@@ -215,17 +220,16 @@ export class OpenRouterProvider implements BaseProvider {
         }
 
         const finalUsage = finalResponse.usage;
-        if (finalUsage) {
-          const cachedInputTokens =
-            finalUsage.inputTokensDetails?.cachedTokens ?? (finalUsage as any).input_tokens_details?.cached_tokens;
-          const totalOutputTokens = finalUsage.outputTokens ?? (finalUsage as any).output_tokens;
-          config?.onMetadata?.({
-            cachedInputTokens,
-            totalOutputTokens,
-            latencyMs,
-            durationMs: performance.now() - start,
-          });
-        }
+        const cachedInputTokens =
+          finalUsage?.inputTokensDetails?.cachedTokens ?? (finalUsage as any)?.input_tokens_details?.cached_tokens;
+        const totalOutputTokens = finalUsage?.outputTokens ?? (finalUsage as any)?.output_tokens;
+        config?.onMetadata?.({
+          model: that.isRouterModel(connection.model) ? finalResponse.model : undefined,
+          cachedInputTokens,
+          totalOutputTokens,
+          latencyMs,
+          durationMs: performance.now() - start,
+        });
       }
     };
   }

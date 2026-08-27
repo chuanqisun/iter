@@ -2,7 +2,6 @@
 
 - Incremental markdown preview rendering with streamdown
 - Download code block should map lang to file extension
-- Light theme: remove? fix?
 - Drag and drop file as upload
 - Share readable file size algorithm with token counter algorithm
 - Language override for editor
@@ -20,6 +19,8 @@
 
 # DONE
 
+- Removed: light theme support
+- Added: display openrouter chosen model in auto/free/pareto mode
 - Added: auto save and restore from multiple windows
 - Added: service tier options for OpenAI and Gemini models
 - Added: openrouter auto, pareto, and free mode.

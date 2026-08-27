@@ -14,6 +14,7 @@ export function OutputMetadata(props: OutputMetadataProps) {
       if (!dataViewRef.current) return;
       const { tokensPerSecond, totalOutputTokens } = metadata;
       const values = {
+        model: metadata.model ?? "",
         total: totalOutputTokens
           ? `${getReadableNumber(totalOutputTokens)} ${totalOutputTokens === 1 ? "token" : "tokens"}`
           : "",
@@ -35,12 +36,10 @@ export function OutputMetadata(props: OutputMetadataProps) {
 
   return (
     <span className="c-usage-metadata" ref={dataViewRef}>
+      <span className="c-usage-metric" data-model title="model"></span>
       <span className="c-usage-metric" data-total title="total output tokens"></span>
-      <span className="c-usage-separator"> · </span>
       <span className="c-usage-metric" data-cache title="cache read"></span>
-      <span className="c-usage-separator"> · </span>
       <span className="c-usage-metric" data-tps title="tokens per second"></span>
-      <span className="c-usage-separator"> · </span>
       <span className="c-usage-metric" data-latency title="latency"></span>
     </span>
   );

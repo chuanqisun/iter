@@ -90,6 +90,7 @@ export interface RuntimeChatParams extends ModelParams {
 }
 
 export interface GenericMetadata {
+  model?: string;
   totalOutputTokens?: number;
   cachedInputTokens?: number;
   durationMs?: number;

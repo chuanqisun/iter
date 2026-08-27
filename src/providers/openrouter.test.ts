@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { OpenRouterProvider } from "./openrouter";
+import { OpenRouterProvider, type OpenRouterConnection } from "./openrouter";
 import { DEFAULT_MIN_CODING_SCORE, sanitizeParamsFromOptions } from "./shared";
 
 const mockSend = vi.fn().mockImplementation(async () => {
@@ -27,9 +27,9 @@ vi.mock("@openrouter/sdk", () => {
 
 describe("OpenRouterProvider", () => {
   const provider = new OpenRouterProvider();
-  const mockConnection = {
+  const mockConnection: OpenRouterConnection = {
     id: "test-id",
-    type: "openrouter" as const,
+    type: "openrouter",
     displayGroup: "test",
     displayName: "test-model",
     model: "anthropic/claude-3.5-sonnet",
@@ -325,5 +325,84 @@ describe("OpenRouterProvider", () => {
 
     const callArgs = mockSend.mock.calls[0][0].responsesRequest;
     expect(callArgs.model).toBe("openrouter/free");
+  });
+
+  it("passes chosen model from response to onMetadata for router models (auto, free, pareto)", async () => {
+    for (const model of ["auto", "free", "pareto"]) {
+      mockSend.mockImplementationOnce(async () => {
+        return (async function* () {
+          yield { type: "response.output_text.delta", delta: "hello" };
+          yield {
+            type: "response.completed",
+            response: {
+              model: "openai/gpt-4o",
+              output: [],
+              usage: {
+                outputTokens: 42,
+                inputTokensDetails: {
+                  cachedTokens: 10,
+                },
+              },
+            },
+          };
+        })();
+      });
+
+      const onMetadata = vi.fn();
+      const conn: OpenRouterConnection = { ...mockConnection, model };
+      const proxy = provider.getChatStreamProxy(conn);
+      const stream = proxy({
+        messages: [{ role: "user", content: "hi" }],
+        onMetadata,
+      });
+      for await (const _ of stream) {
+      }
+
+      expect(onMetadata).toHaveBeenCalledWith(
+        expect.objectContaining({
+          model: "openai/gpt-4o",
+          totalOutputTokens: 42,
+          cachedInputTokens: 10,
+        }),
+      );
+    }
+  });
+
+  it("does not pass model to onMetadata for non-router models", async () => {
+    mockSend.mockImplementationOnce(async () => {
+      return (async function* () {
+        yield { type: "response.output_text.delta", delta: "hello" };
+        yield {
+          type: "response.completed",
+          response: {
+            model: "openai/gpt-4o",
+            output: [],
+            usage: {
+              outputTokens: 42,
+              inputTokensDetails: {
+                cachedTokens: 10,
+              },
+            },
+          },
+        };
+      })();
+    });
+
+    const onMetadata = vi.fn();
+    const proxy = provider.getChatStreamProxy(mockConnection);
+    const stream = proxy({
+      messages: [{ role: "user", content: "hi" }],
+      onMetadata,
+    });
+    for await (const _ of stream) {
+    }
+
+    expect(onMetadata).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: undefined,
+        totalOutputTokens: 42,
+        cachedInputTokens: 10,
+      }),
+    );
   });
 });

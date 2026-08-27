@@ -792,6 +792,7 @@ export function ChatTree() {
 
         metadata$.next({
           ...metadata$.value,
+          model: metadata.model,
           latencyMs: metadata.latencyMs,
           cachedInputTokens: metadata.cachedInputTokens,
           totalOutputTokens: metadata.totalOutputTokens,

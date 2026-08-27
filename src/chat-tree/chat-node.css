@@ -140,6 +140,7 @@
 
 .c-usage-metadata {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0 4px;
 
@@ -155,7 +156,15 @@
   }
 }
 
-.c-usage-metric:empty,
-.c-usage-separator:has(+ .c-usage-metric:empty) {
+.c-usage-metric:empty {
   display: none;
+}
+
+.c-usage-metric:not(:empty) ~ .c-usage-metric:not(:empty)::before {
+  content: "·";
+  margin-right: 4px;
+  display: inline-block;
+  text-decoration: none;
+  color: var(--action-button-rest-color);
+  pointer-events: none;
 }
