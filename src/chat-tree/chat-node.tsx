@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef } from "react";
+import type { CodeEditorElement } from "../code-editor/code-editor-element";
 import { AttachmentPreview } from "./attachment-preview";
 import "./chat-node.css";
 import { InputMetadata } from "./input-metadata";
@@ -6,7 +7,6 @@ import { getCombo } from "./keyboard";
 import { OutputMetadata } from "./output-metadata";
 import { StreamingEditor } from "./streaming-editor";
 import { StreamingPreview } from "./streaming-preview";
-import { INITIAL_USER_NODE } from "./tree-helper";
 import type { ChatNode } from "./tree-store";
 
 const roleIcon = {
@@ -26,6 +26,8 @@ const roleDislayName: Record<string, string> = {
 
 export interface ChatNodeProps {
   node: ChatNode;
+  autoFocus?: boolean;
+  onAutoFocus?: () => void;
   onAbort: (id: string) => void;
   onAbortAll: () => void;
   onCodeBlockChange: (id: string, current: string, index: number) => void;
@@ -48,6 +50,7 @@ export interface ChatNodeProps {
   onToggleShowMore: (id: string, options?: { toggleAll?: boolean }) => void;
   onToggleViewFormat: (id: string) => void;
   onUploadFiles: (id: string) => void;
+  onRestore?: () => void;
 }
 
 export const ChatNodeMemo = memo(ChatNodeInternal);
@@ -55,6 +58,8 @@ export const ChatNodeMemo = memo(ChatNodeInternal);
 export function ChatNodeInternal(props: ChatNodeProps) {
   const {
     node,
+    autoFocus,
+    onAutoFocus,
     onAbort,
     onAbortAll,
     onCodeBlockChange,
@@ -70,6 +75,7 @@ export function ChatNodeInternal(props: ChatNodeProps) {
     onPasteTextAsAttachment,
     onPreviewDoubleClick,
     onRemoveAttachment,
+    onRestore,
     onRunNode,
     onTextChange,
     onToggleAttachmentType,
@@ -80,6 +86,15 @@ export function ChatNodeInternal(props: ChatNodeProps) {
   } = props;
 
   const tabCyclingContainer = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<CodeEditorElement>(null);
+
+  useEffect(() => {
+    if (autoFocus) {
+      editorRef.current?.focus();
+      editorRef.current?.scrollIntoView();
+      onAutoFocus?.();
+    }
+  }, [autoFocus, onAutoFocus]);
 
   // Manage focus cycling
   useEffect(() => {
@@ -150,6 +165,14 @@ export function ChatNodeInternal(props: ChatNodeProps) {
               <button data-managed-focus="message-action" onClick={() => onDeleteBelow(node.id)}>
                 Trim
               </button>
+              {onRestore ? (
+                <>
+                  <span> · </span>
+                  <button data-managed-focus="message-action" onClick={onRestore}>
+                    Restore
+                  </button>
+                </>
+              ) : null}
               <span className="c-far-group">
                 <InputMetadata metadata$={node.metadata$} />
               </span>
@@ -210,9 +233,10 @@ export function ChatNodeInternal(props: ChatNodeProps) {
           <>
             {node.role === "user" || node.role === "system" ? (
               <code-editor-element
+                ref={editorRef}
                 className="js-focusable"
                 id={node.id}
-                data-autofocus={node.id === INITIAL_USER_NODE.id ? "" : null}
+                data-autofocus={autoFocus ? "" : null}
                 data-collapsed={node.isCollapsed ? "" : null}
                 data-value={node.content}
                 data-lang="md"

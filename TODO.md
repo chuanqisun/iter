@@ -20,6 +20,7 @@
 
 # DONE
 
+- Added: auto save and restore from multiple windows
 - Added: service tier options for OpenAI and Gemini models
 - Added: openrouter auto, pareto, and free mode.
 - Fixed: reasoning gap is missing between adjacent delta texts

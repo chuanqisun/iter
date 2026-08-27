@@ -57,3 +57,32 @@ export function getNextId(currentId: string, nodes: ChatNode[]): string | null {
   if (currentIndex >= 0 && currentIndex < nodes.length - 1) return nodes[currentIndex + 1].id;
   return null;
 }
+
+export function isNodeEmpty(node: ChatNode): boolean {
+  const hasContent = Boolean(node.content && node.content.trim().length > 0);
+  const hasAttachments = Boolean(node.attachments && node.attachments.length > 0);
+  return !hasContent && !hasAttachments;
+}
+
+export function trimTrailingEmptyNodes(nodes: ChatNode[]): ChatNode[] {
+  let endIndex = nodes.length;
+  while (endIndex > 0 && isNodeEmpty(nodes[endIndex - 1])) {
+    endIndex--;
+  }
+  return nodes.slice(0, endIndex);
+}
+
+export function isTail(nodeIndex: number, nodes: ChatNode[]): boolean {
+  if (nodeIndex < 0 || nodeIndex >= nodes.length) return false;
+  return nodeIndex === nodes.length - 1 || nodes.slice(nodeIndex + 1).every(isNodeEmpty);
+}
+
+export function ensureTrailingUserNode(nodes: ChatNode[]): ChatNode[] {
+  if (!nodes || nodes.length === 0) {
+    return [getUserNode(crypto.randomUUID())];
+  }
+  if (nodes[nodes.length - 1]?.role !== "user") {
+    return [...nodes, getUserNode(crypto.randomUUID())];
+  }
+  return nodes;
+}
