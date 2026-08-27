@@ -1,28 +1,43 @@
+# RFC-004: Just-In-Time Branch Detection for Auto-Save
+
+## Goal
+
+The goal of this change is to **correctly determine when to overwrite an existing savepoint vs create a new savepoint (branch)** in `src/storage/use-auto-save.ts`.
+
+When a conversation advances normally (user sends a new prompt, AI streams response), the autosave should overwrite the active checkpoint to avoid cluttering history. However, when history is mutated (e.g., editing an earlier message, mid-thread branch / fork, or pruning previous messages), autosave must detect this divergence and create a new checkpoint branch without overwriting the previous lineage.
+
+---
+
 ### 1. Requirements & Core Principles
 
-1. **Amortized On-Edit Calculation**:
-   - Compute each node's SHA-1 fingerprint asynchronously as the user edits content or modifies attachments.
-   - Store the computed fingerprint on the node (`node.fingerprint`).
-   - At submission time, the fingerprints of all historical nodes are already available in memory ($O(1)$ lookup per node, $0\text{ ms}$ submit overhead).
+1. **Just-In-Time (JIT) Fingerprinting**:
+   - Compute node fingerprints on demand whenever an auto-save operation is triggered.
+   - Keep the `ChatNode` model decoupled from autosave hashing to simplify node lifecycle management.
 
 2. **Browser Built-in `crypto.subtle.digest` (SHA-1)**:
-   - Uses native `window.crypto.subtle.digest("SHA-1", buffer)`.
-   - Truncated or formatted as a hex string (e.g. 8–16 characters or 40-char full hex).
+   - Uses native `window.crypto.subtle.digest("SHA-1", buffer)` for sub-millisecond execution over thread nodes.
+   - Fingerprint is formatted as a compact hex string (16 hex chars).
 
 3. **Order-Insensitive Attachment Hashing**:
-   - Attachments represented as `${name}:${size}:${type}` metadata tokens.
+   - Attachments are represented as `${name}:${size}:${type}` metadata tokens.
    - The token array is sorted alphabetically before joining (`.sort().join(";")`) so attachment reordering does not produce false branches.
 
-4. **Linear Prefix Matching at Submission**:
-   - Compares the pre-computed array of fingerprints against the active checkpoint's saved fingerprints.
+4. **Performance Measurement & Logging**:
+   - Auto-save instruments performance using `performance.now()`.
+   - Measures and logs time spent generating fingerprints as well as time spent checking append vs. branch divergence.
+
+5. **Linear Prefix Matching**:
+   - Compares the just-in-time array of current node fingerprints against the active checkpoint's saved fingerprints.
    - Detects tail deletions, mid-thread forks, and in-place edits cleanly.
 
 ---
 
-### 2. Fingerprint Utility Function
+### 2. Fingerprint Utility Functions
 
 ```ts
-// src/chat-tree/fingerprint.ts (or src/storage/fingerprint.ts)
+// src/storage/fingerprint.ts
+import type { Attachment } from "../chat-tree/attachment";
+import type { ChatNode } from "../chat-tree/tree-store";
 
 export function getAttachmentToken(attachment: Attachment): string {
   const f = attachment.file;
@@ -48,104 +63,110 @@ export async function computeNodeFingerprint(
   const data = encoder.encode(payload);
   const hashBuffer = await crypto.subtle.digest("SHA-1", data);
 
-  // 4. Hex string (e.g. 16 chars or 40 chars)
+  // 4. Hex string (16 chars)
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("")
     .slice(0, 16);
 }
-```
 
----
-
-### 3. On-Edit Lifecycle & Tree Store Integration
-
-#### A. Node Model Update
-
-Add `fingerprint?: string` to `ChatNode`:
-
-```ts
-export interface ChatNode {
-  id: string;
-  role: "system" | "user" | "assistant";
-  content: string;
-  attachments?: Attachment[];
-  fingerprint?: string; // Precomputed SHA-1 fingerprint
-  // ...other fields
+export async function computeThreadFingerprints(nodes: ChatNode[]): Promise<string[]> {
+  return Promise.all(nodes.map((node) => computeNodeFingerprint(node.role, node.content, node.attachments)));
 }
 ```
 
-#### B. Asynchronous Fingerprint Resolution on Changes
-
-Whenever a node is created or modified:
-
-1. **On Node Edit / Content Change / Blur**:
-   - Trigger `computeNodeFingerprint(node.role, node.content, node.attachments)` asynchronously.
-   - Assign the result to `node.fingerprint`.
-2. **On Attachment Add / Remove / Replace**:
-   - Recompute and update `node.fingerprint`.
-3. **On AI Stream Completion**:
-   - Compute fingerprint once when streaming writer closes.
-4. **On Restoring Checkpoint**:
-   - Restored nodes can either carry their fingerprints or compute them in a single batch during hydration.
-
 ---
 
-### 4. Manifest & Checkpoint Model
+### 3. Manifest & Checkpoint Model
 
 `AutoSaveCheckpointMeta` stores the snapshot of node fingerprints at the time of save:
 
 ```ts
+// src/storage/auto-save-history.ts
 export interface AutoSaveCheckpointMeta {
   id: string;
   timestamp: number;
   storageKey: string;
-  fingerprints: string[]; // List of SHA-1 node fingerprints in order
+  fingerprints: string[]; // List of SHA-1 node fingerprints in sequential order
 }
 ```
 
 ---
 
-### 5. Append vs. Branch Decision (Zero-Cost on Submit)
-
-When the user submits a message at `activeUserNodeIndex`:
+### 4. Append vs. Branch Decision Logic
 
 ```ts
+// src/storage/branch-detection.ts
+
+/**
+ * Checks whether the current thread is a sequential continuation (append)
+ * of the saved checkpoint.
+ *
+ * Overwrite condition:
+ * - currentFingerprints length >= savedFingerprints length - 1 (accommodates active assistant node completion / user append)
+ * - All historical indices in savedFingerprints (up to savedFingerprints.length - 1) match currentFingerprints exactly.
+ */
 export function isAppendingOnCheckpoint(
   savedFingerprints: string[] | undefined,
-  currentNodes: ChatNode[],
-  submittedNodeIndex: number,
+  currentFingerprints: string[],
 ): boolean {
   if (!savedFingerprints || savedFingerprints.length === 0) {
-    return false; // No existing checkpoint -> create initial
+    return false; // No existing checkpoint -> create initial checkpoint
   }
 
-  // 1. If user deleted messages, active index is before the saved checkpoint's tail
-  if (submittedNodeIndex < savedFingerprints.length - 1) {
-    return false; // User pruned history -> create new checkpoint
+  // If current thread has fewer nodes than previous historical prefix, user pruned/deleted history -> Branch
+  if (currentFingerprints.length < savedFingerprints.length - 1) {
+    return false;
   }
 
-  // 2. Verify all historical messages match identically
-  for (let i = 0; i < savedFingerprints.length - 1; i++) {
-    const nodeFp = currentNodes[i].fingerprint;
-    // If any prior message was edited, fingerprint won't match
-    if (!nodeFp || nodeFp !== savedFingerprints[i]) {
-      return false; // Mutated history -> create new checkpoint
+  // Verify all historical messages prior to the active tail match identically
+  const prefixLength = savedFingerprints.length - 1;
+  for (let i = 0; i < prefixLength; i++) {
+    if (currentFingerprints[i] !== savedFingerprints[i]) {
+      return false; // Mutated history / mid-thread fork -> Branch
     }
   }
 
-  // Exact prefix match and appending from or beyond tail -> Overwrite existing checkpoint
+  // Exact prefix match -> sequential continuation (Overwrite existing savepoint)
   return true;
 }
 ```
 
 ---
 
+### 5. Integration with `use-auto-save.ts` & Performance Instrumentation
+
+During auto-save execution, perform JIT hashing, evaluate branching, and log performance metrics:
+
+```ts
+// src/storage/use-auto-save.ts (or auto-save-service.ts)
+
+// Inside auto-save routine:
+const t0 = performance.now();
+const currentFingerprints = await computeThreadFingerprints(trimmedNodes);
+const t1 = performance.now();
+
+const activeCheckpoint = getActiveCheckpoint(instanceId, activeCheckpointId);
+const isAppending = isAppendingOnCheckpoint(activeCheckpoint?.fingerprints, currentFingerprints);
+const t2 = performance.now();
+
+const isNewBranch = !isAppending;
+
+console.log(
+  `[auto-save:perf] Fingerprint: ${(t1 - t0).toFixed(2)}ms | Branch check: ${(t2 - t1).toFixed(2)}ms | Result: ${isNewBranch ? "new-branch" : "overwrite"}`,
+);
+
+// Save checkpoint with updated fingerprints snapshot in manifest
+await saveCheckpoint(instanceId, activeCheckpointId, isNewBranch, trimmedNodes, currentFingerprints);
+```
+
+---
+
 ### 6. Summary of Key Benefits
 
-- **Amortized computation**: SHA-1 hashing happens on idle/edit moments; zero latency during the user's submit action.
-- **Fast native hashing**: Uses `crypto.subtle.digest("SHA-1")` directly supported in all modern browsers.
-- **No binary image hashing**: Uses sorted `name:size:type` tokens, keeping image attachment processing instant.
-- **Order-insensitive**: Dragging, reordering, or reorganizing attachments does not trigger unnecessary branches.
-- **Edge cases covered**: Handles tail deletions, previous message edits, mid-thread forks, and regular tail appends precisely.
+- **Decoupled Model**: `ChatNode` remains pure without needing reactive fingerprint maintenance or serialization baggage.
+- **Just-In-Time Simplicity**: Hashing happens only when persisting state; native SHA-1 for tens or hundreds of messages takes < 2ms.
+- **Observability**: Built-in `console.log` timing breakdown for fingerprinting and branch evaluation.
+- **Accurate Branch Detection**: Differentiates sequential appends (overwrite) from mid-tree forks, edits to previous turns, and message deletions (new savepoint).
+- **Order-Insensitive Attachments**: Sorted `${name}:${size}:${type}` tokens prevent false branch creation on attachment reordering.
