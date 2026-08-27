@@ -2,6 +2,7 @@ import { get, set } from "idb-keyval";
 import { useCallback } from "react";
 import { ensureTrailingUserNode } from "../chat-tree/tree-helper";
 import type { ChatNode } from "../chat-tree/tree-store";
+import { formatTimestampSlug } from "./codec";
 import { parseChat, stringifyChat } from "./format";
 
 export function useFileHooks(treeNodes: ChatNode[], setTreeNodes: (value: React.SetStateAction<ChatNode[]>) => void) {
@@ -14,10 +15,7 @@ export function useFileHooks(treeNodes: ChatNode[], setTreeNodes: (value: React.
   const exportChat = useCallback(async () => {
     const raw = await stringifyChat(treeNodes);
 
-    const timestamp = new Date()
-      .toISOString()
-      .split(".")[0]
-      .replace(/[-T:.]/g, "");
+    const timestamp = formatTimestampSlug();
     const htmlFile = new File([raw], `session-${timestamp}`, {
       type: "text/html",
     });

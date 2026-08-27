@@ -59,9 +59,7 @@ export function getNextId(currentId: string, nodes: ChatNode[]): string | null {
 }
 
 export function isNodeEmpty(node: ChatNode): boolean {
-  const hasContent = Boolean(node.content && node.content.trim().length > 0);
-  const hasAttachments = Boolean(node.attachments && node.attachments.length > 0);
-  return !hasContent && !hasAttachments;
+  return !node.content?.trim() && !node.attachments?.length;
 }
 
 export function trimTrailingEmptyNodes(nodes: ChatNode[]): ChatNode[] {
@@ -78,11 +76,8 @@ export function isTail(nodeIndex: number, nodes: ChatNode[]): boolean {
 }
 
 export function ensureTrailingUserNode(nodes: ChatNode[]): ChatNode[] {
-  if (!nodes || nodes.length === 0) {
+  if (!nodes?.length) {
     return [getUserNode(crypto.randomUUID())];
   }
-  if (nodes[nodes.length - 1]?.role !== "user") {
-    return [...nodes, getUserNode(crypto.randomUUID())];
-  }
-  return nodes;
+  return nodes.at(-1)?.role === "user" ? nodes : [...nodes, getUserNode(crypto.randomUUID())];
 }

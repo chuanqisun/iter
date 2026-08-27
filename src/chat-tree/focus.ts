@@ -2,8 +2,7 @@ import { useCallback, useState } from "react";
 import type { ChatNode } from "./tree-store";
 
 export function findLastUserNodeId(nodes: ChatNode[]): string | null {
-  const lastUserNode = [...nodes].reverse().find((n) => n.role === "user") ?? nodes.at(-1);
-  return lastUserNode?.id ?? null;
+  return (nodes.findLast((n) => n.role === "user") ?? nodes.at(-1))?.id ?? null;
 }
 
 export function useAutoFocus(initialTargetNodeId: string | null = null) {

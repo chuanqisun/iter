@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AutoSaveManifest } from "../storage/auto-save-history";
+import { formatTimestampSlug } from "../storage/codec";
 import {
   deleteInstance,
   downloadCheckpointFile,
@@ -7,13 +8,8 @@ import {
   getManifest,
   type CheckpointPreview,
 } from "../storage/restore-service";
+import { getRoleIcon } from "./role-metadata";
 import "./restore-dialog.css";
-
-const roleIcon: Record<string, string> = {
-  system: "⚙️",
-  user: "👤",
-  assistant: "🤖",
-};
 
 export interface RestoreDialogProps {
   isOpen: boolean;
@@ -110,10 +106,7 @@ export function RestoreDialog({ isOpen, onClose, onRestore }: RestoreDialogProps
   const handleExport = useCallback(async () => {
     if (!currentCheckpoint) return;
     try {
-      const timestamp = new Date(currentCheckpoint.timestamp)
-        .toISOString()
-        .split(".")[0]
-        .replace(/[-T:.]/g, "");
+      const timestamp = formatTimestampSlug(currentCheckpoint.timestamp);
       await downloadCheckpointFile(currentCheckpoint.storageKey, `autosave-${timestamp}.html`);
     } catch (err) {
       console.error("[restore] Failed to download checkpoint file:", err);
@@ -222,7 +215,7 @@ export function RestoreDialog({ isOpen, onClose, onRestore }: RestoreDialogProps
                 preview.messages.map((msg, idx) => (
                   <div key={idx} className="preview-message-row">
                     <div className="preview-avatar" title={msg.role}>
-                      {roleIcon[msg.role] ?? msg.role}
+                      {getRoleIcon(msg.role)}
                     </div>
                     <div className="preview-message">
                       <div className="message-body">{msg.content || "(empty message)"}</div>

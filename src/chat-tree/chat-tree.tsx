@@ -88,9 +88,8 @@ export function ChatTree() {
   const handleRestoreSavePoint = useCallback(
     async (storageKey: string) => {
       const restored = await restoreAutoSave(storageKey);
-      const nodes = ensureTrailingUserNode(restored);
-      setTreeNodes(() => nodes);
-      focusLastNode(nodes);
+      setTreeNodes(() => restored);
+      focusLastNode(restored);
       showToast("✅ Restored session");
     },
     [focusLastNode, restoreAutoSave, setTreeNodes],
