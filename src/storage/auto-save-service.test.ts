@@ -2,7 +2,7 @@ import { BehaviorSubject } from "rxjs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChatNode } from "../chat-tree/tree-store";
 import { AUTOSAVE_MANIFEST_KEY, getCheckpointStorageKey } from "./auto-save-history";
-import { hasCheckpoints, isThreadEmpty, saveCheckpoint } from "./auto-save-service";
+import { getActiveCheckpoint, hasCheckpoints, isThreadEmpty, saveCheckpoint } from "./auto-save-service";
 import { stringifyChat } from "./format";
 
 const memoryStore = new Map<string, unknown>();
@@ -157,6 +157,21 @@ describe("auto-save-service", () => {
       // Check that only maxK checkpoints remain in memoryStore
       const checkpointKeys = [...memoryStore.keys()].filter((k) => k.startsWith("iter.checkpoint.inst-1."));
       expect(checkpointKeys).toHaveLength(maxK);
+    });
+
+    it("saves and updates fingerprints correctly", async () => {
+      const nodes1 = [createNode("system", "System"), createNode("user", "Hello")];
+      const res1 = await saveCheckpoint("inst-1", undefined, false, nodes1, ["fp1", "fp2"]);
+      const cpId = res1!.checkpointId;
+
+      const activeCp1 = await getActiveCheckpoint("inst-1", cpId);
+      expect(activeCp1?.fingerprints).toEqual(["fp1", "fp2"]);
+
+      const nodes2 = [...nodes1, createNode("assistant", "Response")];
+      await saveCheckpoint("inst-1", cpId, false, nodes2, ["fp1", "fp2", "fp3"]);
+
+      const activeCp2 = await getActiveCheckpoint("inst-1", cpId);
+      expect(activeCp2?.fingerprints).toEqual(["fp1", "fp2", "fp3"]);
     });
   });
 

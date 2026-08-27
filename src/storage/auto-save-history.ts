@@ -8,6 +8,7 @@ export interface AutoSaveCheckpointMeta {
   id: string;
   timestamp: number;
   storageKey: string;
+  fingerprints: string[];
 }
 
 export interface AutoSaveInstanceSummary {
@@ -25,6 +26,7 @@ export interface RecordCheckpointOptions {
   instanceId: string;
   checkpointId?: string;
   isNewBranch?: boolean;
+  fingerprints?: string[];
   limits?: { maxCheckpoints?: number; maxInstances?: number };
 }
 
@@ -44,35 +46,47 @@ export const createCheckpointMeta = (
   instanceId: string,
   id: string = crypto.randomUUID(),
   timestamp: number = Date.now(),
+  fingerprints: string[] = [],
 ): AutoSaveCheckpointMeta => ({
   id,
   timestamp,
   storageKey: getCheckpointStorageKey(instanceId, id),
+  fingerprints,
 });
 
+export function getCheckpointMeta(
+  manifest: AutoSaveManifest,
+  instanceId: string,
+  checkpointId: string | undefined,
+): AutoSaveCheckpointMeta | undefined {
+  if (!checkpointId) return undefined;
+  const instance = manifest.instances.find((inst) => inst.instanceId === instanceId);
+  return instance?.checkpoints.find((cp) => cp.id === checkpointId);
+}
+
 export function recordCheckpointInManifest(manifest: AutoSaveManifest, options: RecordCheckpointOptions): PruneResult {
-  const { instanceId, checkpointId, isNewBranch, limits } = options;
+  const { instanceId, checkpointId, isNewBranch, fingerprints = [], limits } = options;
   const now = Date.now();
 
   const existingInstance = manifest.instances.find((inst) => inst.instanceId === instanceId);
   const otherInstances = manifest.instances.filter((inst) => inst.instanceId !== instanceId);
+  const checkpoints = existingInstance?.checkpoints ?? [];
 
   const existingCheckpoint =
-    !isNewBranch && checkpointId ? existingInstance?.checkpoints.find((cp) => cp.id === checkpointId) : undefined;
+    !isNewBranch && checkpointId ? checkpoints.find((cp) => cp.id === checkpointId) : undefined;
 
-  let activeCheckpointId: string;
-  let updatedCheckpoints: AutoSaveCheckpointMeta[];
+  const activeCheckpointId = existingCheckpoint?.id ?? crypto.randomUUID();
 
-  if (existingCheckpoint) {
-    activeCheckpointId = existingCheckpoint.id;
-    updatedCheckpoints = (existingInstance?.checkpoints ?? []).map((cp) =>
-      cp.id === activeCheckpointId ? { ...cp, timestamp: now } : cp,
-    );
-  } else {
-    const newCheckpoint = createCheckpointMeta(instanceId, existingInstance ? undefined : checkpointId, now);
-    activeCheckpointId = newCheckpoint.id;
-    updatedCheckpoints = [newCheckpoint, ...(existingInstance?.checkpoints ?? [])];
-  }
+  const updatedCheckpoints = existingCheckpoint
+    ? checkpoints.map((cp) =>
+        cp.id === activeCheckpointId
+          ? { ...cp, timestamp: now, fingerprints: fingerprints.length > 0 ? fingerprints : cp.fingerprints }
+          : cp,
+      )
+    : [
+        createCheckpointMeta(instanceId, existingInstance ? undefined : checkpointId, now, fingerprints),
+        ...checkpoints,
+      ];
 
   const targetInstance: AutoSaveInstanceSummary = {
     instanceId,
@@ -88,7 +102,7 @@ export function recordCheckpointInManifest(manifest: AutoSaveManifest, options: 
 
   return {
     manifest: prunedManifest,
-    activeCheckpointId,
+    activeCheckpointId: existingCheckpoint ? activeCheckpointId : updatedCheckpoints[0].id,
     evictedStorageKeys,
   };
 }

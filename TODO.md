@@ -19,6 +19,7 @@
 
 # DONE
 
+- Fixed: some branching edits are not captured as save points
 - Removed: light theme support
 - Added: display openrouter chosen model in auto/free/pareto mode
 - Added: auto save and restore from multiple windows

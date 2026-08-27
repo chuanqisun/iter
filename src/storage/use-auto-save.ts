@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { trimTrailingEmptyNodes } from "../chat-tree/tree-helper";
 import type { ChatNode } from "../chat-tree/tree-store";
-import { hasCheckpoints, isThreadEmpty, saveCheckpoint } from "./auto-save-service";
+import { getActiveCheckpoint, hasCheckpoints, isThreadEmpty, saveCheckpoint } from "./auto-save-service";
+import { isAppendingOnCheckpoint } from "./branch-detection";
+import { computeThreadFingerprints } from "./fingerprint";
 import { restoreCheckpointNodes } from "./restore-service";
 
 export function useAutoSave() {
@@ -22,13 +25,34 @@ export function useAutoSave() {
     refreshRecoveryData();
   }, [refreshRecoveryData]);
 
-  const save = useCallback(async (nodes: ChatNode[], isNewBranch: boolean = false): Promise<void> => {
-    if (isThreadEmpty(nodes)) return;
+  const save = useCallback(async (nodes: ChatNode[], forceNewBranch?: boolean): Promise<void> => {
+    const trimmedNodes = trimTrailingEmptyNodes(nodes);
+    if (isThreadEmpty(trimmedNodes)) return;
     if (isSavingRef.current) return;
 
     try {
       isSavingRef.current = true;
-      const result = await saveCheckpoint(instanceIdRef.current, activeCheckpointIdRef.current, isNewBranch, nodes);
+      const t0 = performance.now();
+      const currentFingerprints = await computeThreadFingerprints(trimmedNodes);
+      const t1 = performance.now();
+
+      const activeCheckpoint = await getActiveCheckpoint(instanceIdRef.current, activeCheckpointIdRef.current);
+      const isAppending = isAppendingOnCheckpoint(activeCheckpoint?.fingerprints, currentFingerprints);
+      const t2 = performance.now();
+
+      const isNewBranch = forceNewBranch ?? !isAppending;
+
+      console.log(
+        `[auto-save:perf] Fingerprint: ${(t1 - t0).toFixed(2)}ms | Branch check: ${(t2 - t1).toFixed(2)}ms | Result: ${isNewBranch ? "new-branch" : "overwrite"}`,
+      );
+
+      const result = await saveCheckpoint(
+        instanceIdRef.current,
+        activeCheckpointIdRef.current,
+        isNewBranch,
+        trimmedNodes,
+        currentFingerprints,
+      );
 
       if (result?.checkpointId) {
         activeCheckpointIdRef.current = result.checkpointId;

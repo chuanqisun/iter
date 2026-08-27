@@ -68,7 +68,6 @@ import {
   getUserNode,
   INITIAL_NODES,
   INITIAL_USER_NODE,
-  isTail,
   patchNode,
 } from "./tree-helper";
 import { useTreeNodes, type ChatNode } from "./tree-store";
@@ -777,15 +776,13 @@ export function ChatTree() {
       const activeUserNodeIndex = treeNodes$.value.findIndex((n) => n.id === activeUserNodeId);
       if (activeUserNodeIndex === -1) return;
 
-      const isNewBranch = !isTail(activeUserNodeIndex, treeNodes$.value);
-
       // Remove all nodes after activeUserNodeId
       const base = treeNodes$.value.slice(0, activeUserNodeIndex + 1);
       const updatedNodes = [...base, newAssistantNode, newUserNode];
       setTreeNodes(() => updatedNodes);
 
       // Auto-save after user submits request
-      saveAutoSave(updatedNodes, isNewBranch);
+      saveAutoSave(updatedNodes);
 
       const patchMetadata = (metadata: GenericMetadata) => {
         const metadata$ = newAssistantNode.metadata$;

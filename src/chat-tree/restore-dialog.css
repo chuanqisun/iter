@@ -87,10 +87,15 @@
     border-bottom: 1px solid var(--button-border-rest-color);
     gap: 12px;
 
-    .nav-controls {
+    .nav-controls,
+    .nav-actions {
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+
+    .nav-controls button {
+      user-select: none;
     }
 
     .checkpoint-info {
@@ -148,17 +153,10 @@
 
   .detail-actions {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     gap: 8px;
     padding: 12px 16px;
     border-top: 1px solid var(--button-border-rest-color);
     background-color: var(--readonly-text-background);
-
-    .action-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
   }
 }

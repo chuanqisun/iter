@@ -3,6 +3,7 @@ import {
   createEmptyManifest,
   DEFAULT_MAX_CHECKPOINTS_PER_INSTANCE,
   DEFAULT_MAX_INSTANCES,
+  getCheckpointMeta,
   getCheckpointStorageKey,
   pruneManifest,
   recordCheckpointInManifest,
@@ -115,6 +116,7 @@ describe("auto-save-history", () => {
               id,
               timestamp: 100 + index,
               storageKey: getCheckpointStorageKey("inst-1", id),
+              fingerprints: [],
             })),
           },
         ],
@@ -173,15 +175,17 @@ describe("auto-save-history", () => {
           createdAt: 100,
           updatedAt: 200,
           checkpoints: [
-            { id: "cp-1", timestamp: 200, storageKey: getCheckpointStorageKey("inst-1", "cp-1") },
-            { id: "cp-2", timestamp: 100, storageKey: getCheckpointStorageKey("inst-1", "cp-2") },
+            { id: "cp-1", timestamp: 200, storageKey: getCheckpointStorageKey("inst-1", "cp-1"), fingerprints: [] },
+            { id: "cp-2", timestamp: 100, storageKey: getCheckpointStorageKey("inst-1", "cp-2"), fingerprints: [] },
           ],
         },
         {
           instanceId: "inst-2",
           createdAt: 300,
           updatedAt: 300,
-          checkpoints: [{ id: "cp-3", timestamp: 300, storageKey: getCheckpointStorageKey("inst-2", "cp-3") }],
+          checkpoints: [
+            { id: "cp-3", timestamp: 300, storageKey: getCheckpointStorageKey("inst-2", "cp-3"), fingerprints: [] },
+          ],
         },
       ],
     };
@@ -192,5 +196,18 @@ describe("auto-save-history", () => {
       getCheckpointStorageKey("inst-1", "cp-1"),
       getCheckpointStorageKey("inst-1", "cp-2"),
     ]);
+  });
+
+  it("stores and retrieves node fingerprints in checkpoint meta", () => {
+    const manifest = createEmptyManifest();
+    const fingerprints = ["fp1", "fp2", "fp3"];
+    const res = recordCheckpointInManifest(manifest, {
+      instanceId: "inst-1",
+      fingerprints,
+    });
+
+    const meta = getCheckpointMeta(res.manifest, "inst-1", res.activeCheckpointId);
+    expect(meta).toBeDefined();
+    expect(meta?.fingerprints).toEqual(fingerprints);
   });
 });

@@ -20,12 +20,11 @@ export interface RestoreDialogProps {
 export function RestoreDialog({ isOpen, onClose, onRestore }: RestoreDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [manifest, setManifest] = useState<AutoSaveManifest>({ instances: [] });
-  const [selectedInstanceIndex, setSelectedInstanceIndex] = useState<number>(0);
-  const [selectedCheckpointIndex, setSelectedCheckpointIndex] = useState<number>(0);
+  const [selectedInstanceIndex, setSelectedInstanceIndex] = useState(0);
+  const [selectedCheckpointIndex, setSelectedCheckpointIndex] = useState(0);
   const [preview, setPreview] = useState<CheckpointPreview | null>(null);
-  const [loadingPreview, setLoadingPreview] = useState<boolean>(false);
+  const [loadingPreview, setLoadingPreview] = useState(false);
 
-  // Load manifest when dialog opens
   useEffect(() => {
     if (!isOpen) return;
 
@@ -43,31 +42,27 @@ export function RestoreDialog({ isOpen, onClose, onRestore }: RestoreDialogProps
     };
   }, [isOpen]);
 
-  // Sync native dialog open/close
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
 
     if (isOpen) {
-      if (!dialog.open) {
-        dialog.showModal();
-      }
-    } else {
-      if (dialog.open) {
-        dialog.close();
-      }
+      if (!dialog.open) dialog.showModal();
+    } else if (dialog.open) {
+      dialog.close();
     }
   }, [isOpen]);
 
-  const currentInstance = useMemo(() => {
-    return manifest.instances[selectedInstanceIndex];
-  }, [manifest.instances, selectedInstanceIndex]);
+  const currentInstance = useMemo(
+    () => manifest.instances[selectedInstanceIndex],
+    [manifest.instances, selectedInstanceIndex],
+  );
 
-  const currentCheckpoint = useMemo(() => {
-    return currentInstance?.checkpoints[selectedCheckpointIndex];
-  }, [currentInstance, selectedCheckpointIndex]);
+  const currentCheckpoint = useMemo(
+    () => currentInstance?.checkpoints[selectedCheckpointIndex],
+    [currentInstance, selectedCheckpointIndex],
+  );
 
-  // Fetch preview when currentCheckpoint changes
   useEffect(() => {
     if (!currentCheckpoint) {
       setPreview(null);
@@ -79,14 +74,10 @@ export function RestoreDialog({ isOpen, onClose, onRestore }: RestoreDialogProps
 
     getCheckpointPreview(currentCheckpoint.storageKey)
       .then((data) => {
-        if (isSubscribed) {
-          setPreview(data);
-        }
+        if (isSubscribed) setPreview(data);
       })
       .finally(() => {
-        if (isSubscribed) {
-          setLoadingPreview(false);
-        }
+        if (isSubscribed) setLoadingPreview(false);
       });
 
     return () => {
@@ -140,13 +131,9 @@ export function RestoreDialog({ isOpen, onClose, onRestore }: RestoreDialogProps
         const storageKey = e.currentTarget.returnValue;
         e.currentTarget.returnValue = "";
         onClose();
-        if (storageKey) {
-          onRestore(storageKey);
-        }
+        if (storageKey) onRestore(storageKey);
       }}
-      onCancel={() => {
-        onClose();
-      }}
+      onCancel={onClose}
     >
       {isOpen && (
         <div className="restore-layout">
@@ -159,13 +146,12 @@ export function RestoreDialog({ isOpen, onClose, onRestore }: RestoreDialogProps
                   hour: "2-digit",
                   minute: "2-digit",
                 });
-                const isSelected = index === selectedInstanceIndex;
                 return (
                   <button
                     key={instance.instanceId}
                     type="button"
                     className="instance-item"
-                    data-active={isSelected}
+                    data-active={index === selectedInstanceIndex}
                     onClick={() => {
                       setSelectedInstanceIndex(index);
                       setSelectedCheckpointIndex(0);
@@ -173,8 +159,7 @@ export function RestoreDialog({ isOpen, onClose, onRestore }: RestoreDialogProps
                   >
                     <div className="instance-title">{dateStr}</div>
                     <div className="instance-meta">
-                      {instance.checkpoints.length} save point
-                      {instance.checkpoints.length !== 1 ? "s" : ""}
+                      {instance.checkpoints.length} save point{instance.checkpoints.length !== 1 ? "s" : ""}
                     </div>
                   </button>
                 );
@@ -186,6 +171,9 @@ export function RestoreDialog({ isOpen, onClose, onRestore }: RestoreDialogProps
           <div className="detail-pane">
             <div className="checkpoint-nav">
               <div className="nav-controls">
+                <button type="button" onClick={handlePrevCheckpoint} disabled={selectedCheckpointIndex <= 0}>
+                  Newer
+                </button>
                 <button
                   type="button"
                   onClick={handleNextCheckpoint}
@@ -193,16 +181,18 @@ export function RestoreDialog({ isOpen, onClose, onRestore }: RestoreDialogProps
                 >
                   Older
                 </button>
-                <button type="button" onClick={handlePrevCheckpoint} disabled={selectedCheckpointIndex <= 0}>
-                  Newer
-                </button>
                 <span className="checkpoint-info">
                   {totalCheckpoints > 0 ? `${selectedCheckpointIndex + 1}/${totalCheckpoints}` : "0/0"}
                 </span>
               </div>
-              {currentCheckpoint && (
-                <div className="checkpoint-info">{new Date(currentCheckpoint.timestamp).toLocaleTimeString()}</div>
-              )}
+              <div className="nav-actions">
+                <button type="button" onClick={handleExport} disabled={!currentCheckpoint}>
+                  Export
+                </button>
+                <button type="button" onClick={handleDelete} disabled={!currentInstance}>
+                  Delete
+                </button>
+              </div>
             </div>
 
             <div className="preview-content">
@@ -211,8 +201,7 @@ export function RestoreDialog({ isOpen, onClose, onRestore }: RestoreDialogProps
                 <div className="preview-empty">No message preview available</div>
               )}
               {!loadingPreview &&
-                preview &&
-                preview.messages.map((msg, idx) => (
+                preview?.messages.map((msg, idx) => (
                   <div key={idx} className="preview-message-row">
                     <div className="preview-avatar" title={msg.role}>
                       {getRoleIcon(msg.role)}
@@ -225,19 +214,11 @@ export function RestoreDialog({ isOpen, onClose, onRestore }: RestoreDialogProps
             </div>
 
             <div className="detail-actions">
-              <div className="action-group">
-                <button type="button" onClick={handleLoad} disabled={!currentCheckpoint}>
-                  Load
-                </button>
-                <button type="button" onClick={handleExport} disabled={!currentCheckpoint}>
-                  Export
-                </button>
-                <button type="button" onClick={() => dialogRef.current?.close()}>
-                  Cancel
-                </button>
-              </div>
-              <button type="button" onClick={handleDelete} disabled={!currentInstance}>
-                Delete
+              <button type="button" onClick={handleLoad} disabled={!currentCheckpoint}>
+                Load
+              </button>
+              <button type="button" onClick={() => dialogRef.current?.close()}>
+                Cancel
               </button>
             </div>
           </div>
