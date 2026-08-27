@@ -1,6 +1,6 @@
 import type { ModelParamOptions, ModelParams } from "./base";
 
-export const DEFAULT_MAX_TOKENS = 200;
+export const DEFAULT_MAX_TOKENS = 64000;
 export const MAX_TOKENS_LIMIT = 128000;
 export const DEFAULT_MIN_CODING_SCORE = 0.5;
 

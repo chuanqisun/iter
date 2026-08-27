@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampNumber, OutputIndexPacer, sanitizeParamsFromOptions, selectEnum } from "./shared";
+import { clampNumber, DEFAULT_MAX_TOKENS, OutputIndexPacer, sanitizeParamsFromOptions, selectEnum } from "./shared";
 
 describe("OutputIndexPacer", () => {
   it("yields deltas unchanged on initial delta and matching indices", () => {
@@ -106,6 +106,12 @@ describe("sanitizeParamsFromOptions", () => {
     expect(sanitized.verbosity).toBeUndefined();
     expect(sanitized.sort).toBeUndefined();
     expect(sanitized.costTier).toBeUndefined();
+  });
+
+  it("defaults maxTokens to DEFAULT_MAX_TOKENS (64000) when not provided or NaN", () => {
+    expect(DEFAULT_MAX_TOKENS).toBe(64000);
+    const sanitized = sanitizeParamsFromOptions({}, {});
+    expect(sanitized.maxTokens).toBe(64000);
   });
 
   it("handles NaN numeric inputs by falling back to min or default bounds", () => {

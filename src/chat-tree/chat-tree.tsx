@@ -15,6 +15,7 @@ import {
 } from "../artifact/lib/directives";
 import type { CodeEditorElement } from "../code-editor/code-editor-element";
 import { type GenericMessage, type GenericMetadata } from "../providers/base";
+import { DEFAULT_MAX_TOKENS } from "../providers/shared";
 import { useRouteCache } from "../router/use-route-cache";
 import { useRouteParameter } from "../router/use-route-parameter";
 import { useConnections } from "../settings/use-connections";
@@ -114,7 +115,7 @@ export function ChatTree() {
   });
   const maxTokens = useRouteParameter<number | undefined>({
     name: "max_tokens",
-    initial: 200,
+    initial: DEFAULT_MAX_TOKENS,
     encode: String,
     decode: Number,
   });

@@ -18,7 +18,7 @@ import type {
   RuntimeChatParams,
 } from "./base";
 import { formatReferences, type Citation } from "./citation";
-import { OutputIndexPacer } from "./shared";
+import { DEFAULT_MAX_TOKENS, OutputIndexPacer } from "./shared";
 
 export interface AnthropicCredential extends BaseCredential {
   id: string;
@@ -146,7 +146,7 @@ export class AnthropicProvider implements BaseProvider {
       ];
       const stream = client.messages.stream(
         {
-          max_tokens: config?.maxTokens ?? 200,
+          max_tokens: config?.maxTokens ?? DEFAULT_MAX_TOKENS,
           cache_control: {
             type: "ephemeral",
           },
