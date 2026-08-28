@@ -200,10 +200,10 @@ describe("Clipboard extension paste handler", () => {
     expect(event.preventDefault).toHaveBeenCalled();
 
     // Allow async microtasks/promises to complete
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    // After paste: should contain Markdown
-    expect(view.state.doc.toString()).toBe("Start: Hello **world**!");
+    await vi.waitFor(() => {
+      // After paste: should contain Markdown
+      expect(view.state.doc.toString()).toBe("Start: Hello **world**!");
+    });
 
     // Step 1 undo: should revert to Plain Text
     undo(view);
@@ -237,9 +237,9 @@ describe("Clipboard extension paste handler", () => {
     const handled = pasteHandler(event as any, view);
     expect(handled).toBe(true);
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    expect(view.state.doc.toString()).toBe("Prefix: Simple text");
+    await vi.waitFor(() => {
+      expect(view.state.doc.toString()).toBe("Prefix: Simple text");
+    });
 
     // Single undo reverts to pre-paste state
     undo(view);
