@@ -10,7 +10,7 @@ import type {
   RuntimeChatParams,
 } from "./base";
 import { formatReferences, type Citation } from "./citation";
-import { OutputIndexPacer } from "./shared";
+import { OutputIndexPacer, parseModelList } from "./shared";
 
 export interface OpenRouterCredential extends BaseCredential {
   id: string;
@@ -36,16 +36,7 @@ export class OpenRouterProvider implements BaseProvider {
 
   parseNewCredentialForm(formData: FormData): OpenRouterCredential[] {
     const accountName = (formData.get("newAccountName") as string)?.trim() || "openrouter";
-
-    let models = (formData.get("newModels") as string)
-      ?.split(",")
-      .map((deployment) => deployment.trim())
-      .filter(Boolean)
-      .join(",");
-
-    if (!models?.length) {
-      models = OpenRouterProvider.defaultModels.join(",");
-    }
+    const models = parseModelList(formData.get("newModels")) || OpenRouterProvider.defaultModels.join(",");
 
     return [
       {

@@ -80,3 +80,27 @@ export function sanitizeParamsFromOptions(options: ModelParamOptions, params: Mo
     minCodingScore: clampNumber(params.minCodingScore, options.minCodingScore, DEFAULT_MIN_CODING_SCORE),
   };
 }
+
+export function parseEndpoint(val: FormDataEntryValue | string | null | undefined): string | undefined {
+  if (typeof val !== "string") return undefined;
+  const trimmed = val.trim();
+  if (!trimmed) return undefined;
+  try {
+    const url = new URL(trimmed);
+    url.hash = "";
+    url.search = "";
+    url.pathname = url.pathname.replace(/\/+$/, "");
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    return undefined;
+  }
+}
+
+export function parseModelList(val: FormDataEntryValue | string | null | undefined): string | undefined {
+  if (typeof val !== "string") return undefined;
+  const items = val
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return items.length > 0 ? items.join(",") : undefined;
+}

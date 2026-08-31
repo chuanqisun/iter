@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { clampNumber, DEFAULT_MAX_TOKENS, OutputIndexPacer, sanitizeParamsFromOptions, selectEnum } from "./shared";
+import {
+  clampNumber,
+  DEFAULT_MAX_TOKENS,
+  OutputIndexPacer,
+  parseEndpoint,
+  parseModelList,
+  sanitizeParamsFromOptions,
+  selectEnum,
+} from "./shared";
 
 describe("OutputIndexPacer", () => {
   it("yields deltas unchanged on initial delta and matching indices", () => {
@@ -170,5 +178,36 @@ describe("clampNumber & selectEnum helpers", () => {
     expect(selectEnum(undefined, ["low", "medium", "high"])).toBe("low");
     expect(selectEnum("high", undefined)).toBeUndefined();
     expect(selectEnum("high", [])).toBeUndefined();
+  });
+});
+
+describe("parseEndpoint", () => {
+  it("returns normalized endpoint for valid URLs", () => {
+    expect(parseEndpoint("https://api.openai.com/v1/")).toBe("https://api.openai.com/v1");
+    expect(parseEndpoint("  https://custom.endpoint.com:8080/v1///  ")).toBe("https://custom.endpoint.com:8080/v1");
+    expect(parseEndpoint("https://example.com/v1?query=1#hash")).toBe("https://example.com/v1");
+  });
+
+  it("returns undefined for empty, whitespace, null, undefined or invalid inputs", () => {
+    expect(parseEndpoint(undefined)).toBeUndefined();
+    expect(parseEndpoint(null)).toBeUndefined();
+    expect(parseEndpoint("")).toBeUndefined();
+    expect(parseEndpoint("   ")).toBeUndefined();
+    expect(parseEndpoint("not-a-valid-url")).toBeUndefined();
+  });
+});
+
+describe("parseModelList", () => {
+  it("parses comma separated model strings and filters empty entries", () => {
+    expect(parseModelList("gpt-4o, gpt-4o-mini,   claude-3-5 ")).toBe("gpt-4o,gpt-4o-mini,claude-3-5");
+    expect(parseModelList(" single-model ")).toBe("single-model");
+    expect(parseModelList("a, , b,  ,, c ")).toBe("a,b,c");
+  });
+
+  it("returns undefined for empty or non-string inputs", () => {
+    expect(parseModelList(undefined)).toBeUndefined();
+    expect(parseModelList(null)).toBeUndefined();
+    expect(parseModelList("")).toBeUndefined();
+    expect(parseModelList("   , ,  ")).toBeUndefined();
   });
 });

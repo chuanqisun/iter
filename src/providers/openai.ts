@@ -20,13 +20,15 @@ import type {
   RuntimeChatParams,
 } from "./base";
 import { formatReferences, type Citation } from "./citation";
-import { getOpenAIOptions, OutputIndexPacer } from "./shared";
+import { getOpenAIOptions, OutputIndexPacer, parseEndpoint, parseModelList } from "./shared";
 
 export interface OpenAICredential extends BaseCredential {
   id: string;
   type: "openai";
   accountName: string;
   apiKey: string;
+  endpoint?: string;
+  models?: string;
 }
 
 export interface OpenAIConnection extends BaseConnection {
@@ -36,6 +38,7 @@ export interface OpenAIConnection extends BaseConnection {
   displayName: string;
   model: string;
   apiKey: string;
+  endpoint?: string;
 }
 
 export class OpenAIProvider implements BaseProvider {
@@ -44,6 +47,8 @@ export class OpenAIProvider implements BaseProvider {
 
   parseNewCredentialForm(formData: FormData): OpenAICredential[] {
     const accountName = (formData.get("newAccountName") as string)?.trim() || "openai";
+    const endpoint = parseEndpoint(formData.get("newEndpoint"));
+    const models = parseModelList(formData.get("newModels"));
 
     return [
       {
@@ -51,6 +56,8 @@ export class OpenAIProvider implements BaseProvider {
         type: "openai",
         accountName,
         apiKey: formData.get("newKey") as string,
+        ...(endpoint ? { endpoint } : {}),
+        ...(models ? { models } : {}),
       },
     ];
   }
@@ -58,7 +65,14 @@ export class OpenAIProvider implements BaseProvider {
   credentialToConnections(credential: BaseCredential): OpenAIConnection[] {
     if (!this.isOpenAICredential(credential)) throw new Error("Invalid credential type");
 
-    return OpenAIProvider.defaultModels.map(
+    const models = credential.models
+      ? credential.models
+          .split(",")
+          .map((model) => model.trim())
+          .filter(Boolean)
+      : OpenAIProvider.defaultModels;
+
+    return models.map(
       (model) =>
         ({
           id: `${model}:${credential.id}`,
@@ -67,6 +81,7 @@ export class OpenAIProvider implements BaseProvider {
           displayName: model,
           model,
           apiKey: credential.apiKey,
+          ...(credential.endpoint ? { endpoint: credential.endpoint } : {}),
         }) satisfies OpenAIConnection,
     );
   }
@@ -74,10 +89,13 @@ export class OpenAIProvider implements BaseProvider {
   getCredentialSummary(credential: BaseCredential) {
     if (!this.isOpenAICredential(credential)) throw new Error("Invalid credential type");
 
+    const models = credential.models || OpenAIProvider.defaultModels.join(",");
+    const features = credential.endpoint ? `${models} · ${credential.endpoint}` : models;
+
     return {
       title: credential.accountName,
       tagLine: credential.type,
-      features: OpenAIProvider.defaultModels.join(","),
+      features,
     };
   }
 
@@ -95,7 +113,20 @@ export class OpenAIProvider implements BaseProvider {
       const OpenAI = await import("openai").then((res) => res.OpenAI);
       const client = new OpenAI({
         apiKey: connection.apiKey,
+        ...(connection.endpoint ? { baseURL: connection.endpoint } : {}),
         dangerouslyAllowBrowser: true,
+        /** remove telemetry */
+        defaultHeaders: {
+          "x-stainless-lang": null,
+          "x-stainless-package-version": null,
+          "x-stainless-os": null,
+          "x-stainless-arch": null,
+          "x-stainless-runtime": null,
+          "x-stainless-runtime-version": null,
+          "x-stainless-retry-count": null,
+          "x-stainless-timeout": null,
+          "x-stainless-helper-method": null,
+        } as any,
       });
 
       const options = that.getOptions(connection);
