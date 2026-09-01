@@ -1,18 +1,17 @@
 import { AnthropicProvider } from "./anthropic";
-import { AzureOpenAIProvider } from "./aoai";
+import type { BaseProvider } from "./base";
 import { CerebrasProvider } from "./cerebras";
 import { GoogleGenAIProvider } from "./google-gen-ai";
 import { InceptionProvider } from "./inception";
 import { OpenAIProvider } from "./openai";
 import { OpenRouterProvider } from "./openrouter";
+import { UnknownProvider } from "./unknown";
 import { XAIProvider } from "./xai";
 
-export function createProvider(type: string) {
+export function createProvider(type: string): BaseProvider {
   switch (type) {
     case OpenAIProvider.type:
       return new OpenAIProvider();
-    case AzureOpenAIProvider.type:
-      return new AzureOpenAIProvider();
     case AnthropicProvider.type:
       return new AnthropicProvider();
     case CerebrasProvider.type:
@@ -26,6 +25,6 @@ export function createProvider(type: string) {
     case InceptionProvider.type:
       return new InceptionProvider();
     default:
-      throw new Error(`Unknown provider type: ${type}`);
+      return new UnknownProvider(type);
   }
 }

@@ -1,6 +1,5 @@
 # TODO
 
-- Deprecate Azure OpenAI provider
 - Incremental markdown preview rendering with streamdown
 - Download code block should map lang to file extension
 - Drag and drop file as upload
@@ -20,6 +19,7 @@
 
 # DONE
 
+- Removed: Azure OpenAI provider
 - Added: openai compatible API support
 - Added: undo to plaintext after rich format pasting
 - Fixed: some branching edits are not captured as save points
