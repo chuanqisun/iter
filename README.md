@@ -31,8 +31,8 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ GPT-5.5-pro
   - ✅ GPT-5.5
 - Anthropic
+  - ✅ Claude Fable 5.1
   - ✅ Claude Opus 5
-  - ✅ Claude Fable 5
   - ✅ Claude Sonnet 5
   - ✅ Claude Haiku 4.5
 - Google Generative AI
