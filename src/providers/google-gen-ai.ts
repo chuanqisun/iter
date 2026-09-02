@@ -94,6 +94,7 @@ export class GoogleGenAIProvider implements BaseProvider {
   }
 
   private getReasoningEffortConfig(model: string): string[] | undefined {
+    if (model.startsWith("gemini-3.8")) return ["low", "medium", "high"];
     if (model.startsWith("gemini-3.7")) return ["low", "medium", "high"];
     if (model.startsWith("gemini-3.1-pro")) return ["low", "medium", "high"];
     if (model.startsWith("gemini-3")) return ["minimal", "low", "medium", "high"];
