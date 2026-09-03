@@ -24,7 +24,7 @@ Recreate the UI of Airbnb with a single screenshot
 
 ## Supported model providers
 
-- OpenAI\*
+- OpenAI
   - ✅ GPT-5.6 Sol
   - ✅ GPT-5.6 Terra
   - ✅ GPT-5.6 Luna
@@ -54,9 +54,8 @@ Recreate the UI of Airbnb with a single screenshot
   - All chat models
   - Auto/free/pareto modes
 
-\*See detailed support matrix for [Azure OpenAI](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/responses?tabs=python-secure#responses-api)  
-\*\*xAI models do not support PDF document
-\*\*\*Inception models are text only
+\*xAI models do not support PDF document
+\*\*Inception models are text only
 
 ## Keyboard shortcuts
 
