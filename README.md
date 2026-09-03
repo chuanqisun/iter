@@ -40,21 +40,21 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ Gemini 3.7 Flash
   - ✅ Gemini 3.5 Flash Lite
   - ✅ Gemini 3.1 Pro Preview
-- xAI\*\*
+- xAI\*
   - ✅ Grok 4.6
   - ✅ Grok 4.5
 - Cerebras
   - ✅ Gemma 4 31B
   - ✅ GPT OSS 120B
   - ✅ GLM 4.7
-- Inception\*\*\*
+- Inception\*\*
   - ✅ Mercury 2
   - ✅ Mercury Coder
 - OpenRouter
   - All chat models
   - Auto/free/pareto modes
 
-\*xAI models do not support PDF document
+\*xAI models do not support PDF document  
 \*\*Inception models are text only
 
 ## Keyboard shortcuts
