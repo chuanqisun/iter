@@ -18,9 +18,10 @@ export class OutputIndexPacer {
 }
 
 export function getOpenAIOptions(model: string): ModelParamOptions {
-  const isTemperatureSupported = model.startsWith("gpt") && !model.startsWith("gpt-5");
   const reasoningOptions = [];
-  if (model.startsWith("gpt-5.6")) {
+  if (model.startsWith("gpt-6")) {
+    reasoningOptions.push("low", "medium", "high", "xhigh", "max");
+  } else if (model.startsWith("gpt-5.6")) {
     reasoningOptions.push("none", "low", "medium", "high", "xhigh", "max");
   } else if (model.endsWith("gpt-5.5-pro")) {
     reasoningOptions.push("medium", "high", "xhigh");
@@ -28,13 +29,9 @@ export function getOpenAIOptions(model: string): ModelParamOptions {
     reasoningOptions.push("none", "low", "medium", "high", "xhigh");
   }
 
-  const verbosityOptions = [];
-  if (model.startsWith("gpt-5")) {
-    verbosityOptions.push("low", "medium", "high");
-  }
+  const verbosityOptions = ["low", "medium", "high"];
 
   return {
-    temperature: isTemperatureSupported ? { max: 2 } : undefined,
     reasoningEffort: reasoningOptions.length > 0 ? reasoningOptions : undefined,
     verbosity: verbosityOptions.length > 0 ? verbosityOptions : undefined,
     serviceTier: ["auto", "fast", "flex"],

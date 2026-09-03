@@ -26,12 +26,12 @@
     "devDependencies": {
         "@types/dom-speech-recognition": "^0.0.12",
         "@types/react": "^19.2.18",
-        "@types/react-dom": "^19.2.5",
+        "@types/react-dom": "^19.2.7",
         "@vitejs/plugin-react": "^6.1.1",
         "prettier": "^3.9.6",
         "typescript": "^7.0.2",
         "vite": "^8.2.2",
-        "vitest": "^4.1.11"
+        "vitest": "^5.0.0"
     },
     "dependencies": {
         "@anthropic-ai/sdk": "^0.123.0",
@@ -41,9 +41,9 @@
         "@codemirror/language": "^6.12.4",
         "@codemirror/language-data": "^6.5.2",
         "@codemirror/state": "^6.7.2",
-        "@codemirror/view": "^6.43.10",
-        "@google/genai": "^2.20.0",
-        "@openrouter/sdk": "^1.2.93",
+        "@codemirror/view": "^6.43.11",
+        "@google/genai": "^2.21.0",
+        "@openrouter/sdk": "^1.2.102",
         "@uiw/codemirror-theme-github": "^4.25.11",
         "gpt-tokenizer": "^4.0.0",
         "hast-util-to-string": "^3.0.1",
@@ -52,7 +52,7 @@
         "marked": "^18.0.11",
         "marked-shiki": "^1.2.1",
         "mermaid": "^11.17.2",
-        "openai": "^7.9.0",
+        "openai": "^7.10.0",
         "react": "^19.2.8",
         "react-dom": "^19.2.8",
         "rehype-parse": "^9.0.1",
