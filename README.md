@@ -45,9 +45,8 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ Grok 4.6
   - ✅ Grok 4.5
 - Cerebras
-  - ✅ Gemma 4 31B
+  - ✅ Qwen 3.8 27B
   - ✅ GPT OSS 120B
-  - ✅ GLM 4.7
 - Inception\*\*
   - ✅ Mercury 2
   - ✅ Mercury Coder

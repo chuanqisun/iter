@@ -36,7 +36,18 @@ export interface CerebrasConnection extends BaseConnection {
 
 export class CerebrasProvider implements BaseProvider {
   static type = "cerebras";
-  static defaultModels = ["gpt-oss-120b", "gemma-4-31b", "zai-glm-4.7"];
+  static cerebrasModels = {
+    "gpt-oss-120b": {
+      maxTokens: 40_000,
+      reasoningEffort: ["medium", "low", "high"],
+    },
+    "qwen-3.8-27b": {
+      maxTokens: 40_000,
+      reasoningEffort: ["none", "low", "medium", "high"],
+    },
+  };
+
+  static defaultModels = Object.keys(CerebrasProvider.cerebrasModels);
 
   parseNewCredentialForm(formData: FormData): CerebrasCredential[] {
     const accountName = (formData.get("newAccountName") as string)?.trim() || "cerebras";
@@ -80,18 +91,13 @@ export class CerebrasProvider implements BaseProvider {
   getOptions(connection: BaseConnection): ModelParamOptions {
     if (!this.isCerebrasConnection(connection)) throw new Error("Invalid connection type");
 
-    const reasoningEffort =
-      connection.model === "gpt-oss-120b"
-        ? ["medium", "low", "high"]
-        : connection.model === "gemma-4-31b"
-          ? ["none", "low", "medium", "high"]
-          : connection.model === "zai-glm-4.7"
-            ? ["default", "none"]
-            : undefined;
+    const modelConfig =
+      CerebrasProvider.cerebrasModels[connection.model as keyof typeof CerebrasProvider.cerebrasModels];
 
     return {
       temperature: { max: 2 },
-      reasoningEffort,
+      reasoningEffort: modelConfig?.reasoningEffort ? [...modelConfig.reasoningEffort] : undefined,
+      maxTokens: modelConfig?.maxTokens ? { max: modelConfig.maxTokens } : undefined,
     };
   }
 
