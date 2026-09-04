@@ -56,6 +56,10 @@
     }
   }
 
+  img {
+    max-width: 100%;
+  }
+
   /* General table styling */
   table {
     width: 100%;
