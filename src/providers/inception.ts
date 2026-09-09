@@ -44,7 +44,9 @@ interface InceptionChatCompletionRequest {
   max_tokens?: number;
   temperature?: number;
   top_p?: number;
+  reasoning_effort?: "instant" | "low" | "medium" | "high";
   stream?: boolean;
+  realtime?: boolean;
   stream_options?: {
     include_usage?: boolean;
   };
@@ -65,7 +67,7 @@ interface InceptionStreamChunk {
 
 export class InceptionProvider implements BaseProvider {
   static type = "inception";
-  static defaultModels = ["mercury-2", "mercury-coder"];
+  static defaultModels = ["mercury-2.5"];
 
   parseNewCredentialForm(formData: FormData): InceptionCredential[] {
     const accountName = (formData.get("newAccountName") as string)?.trim() || "inception";
@@ -89,7 +91,7 @@ export class InceptionProvider implements BaseProvider {
           id: `${model}:${credential.id}`,
           type: "inception",
           displayGroup: credential.accountName,
-          displayName: model === "mercury-2" ? "Mercury 2" : "Mercury Coder",
+          displayName: "Mercury 2.5",
           model,
           apiKey: credential.apiKey,
         }) satisfies InceptionConnection,
@@ -111,7 +113,8 @@ export class InceptionProvider implements BaseProvider {
 
     return {
       temperature: { min: 0.5, max: 1.0 },
-      maxTokens: { min: 1, max: 16384 },
+      maxTokens: { min: 1, max: 65536 },
+      reasoningEffort: ["instant", "low", "medium", "high"],
     };
   }
 
@@ -134,17 +137,24 @@ export class InceptionProvider implements BaseProvider {
           ? that.clamp(config.temperature, options.temperature.min ?? 0.5, options.temperature.max)
           : undefined;
 
-      // Clamp maxTokens to the allowed range (1-16384)
+      // Clamp maxTokens to the allowed range (1-65536)
       const resolvedMaxTokens =
         config?.maxTokens !== undefined && options.maxTokens
           ? that.clamp(config.maxTokens, options.maxTokens.min ?? 1, options.maxTokens.max)
           : 1000;
+
+      const resolvedReasoningEffort =
+        config?.reasoningEffort !== undefined && options.reasoningEffort?.includes(config.reasoningEffort)
+          ? config.reasoningEffort
+          : options.reasoningEffort?.at(0);
 
       const requestBody: InceptionChatCompletionRequest = {
         model: connection.model,
         messages: that.getInceptionMessages(messages),
         max_tokens: resolvedMaxTokens,
         temperature: resolvedTemperature,
+        reasoning_effort: resolvedReasoningEffort as InceptionChatCompletionRequest["reasoning_effort"],
+        realtime: true,
         stream: true,
         stream_options: {
           include_usage: true,
