@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { get, set } from "idb-keyval";
 import { getStoredModelParams, setStoredModelParams } from "./model-parameter-store";
 
 const memoryStore = new Map<string, unknown>();
@@ -49,12 +50,15 @@ describe("model-parameter-store", () => {
     expect(await getStoredModelParams("array")).toBeNull();
   });
 
-  it("handles storage exceptions gracefully without crashing", async () => {
-    const { get, set } = await import("idb-keyval");
-    (get as any).mockRejectedValueOnce(new Error("IndexedDB read error"));
-    (set as any).mockRejectedValueOnce(new Error("IndexedDB write error"));
+  it("handles storage write exceptions gracefully without crashing", async () => {
+    vi.mocked(set).mockRejectedValueOnce(new Error("IndexedDB write error"));
 
-    await expect(setStoredModelParams("error-conn", { temperature: 0.5 })).resolves.toBeUndefined();
-    await expect(getStoredModelParams("error-conn")).resolves.toBeNull();
+    await expect(setStoredModelParams("error-write-conn", { temperature: 0.5 })).resolves.toBeUndefined();
+  });
+
+  it("handles storage read exceptions gracefully without crashing", async () => {
+    vi.mocked(get).mockRejectedValueOnce(new Error("IndexedDB read error"));
+
+    await expect(getStoredModelParams("error-read-conn")).resolves.toBeNull();
   });
 });
