@@ -103,6 +103,8 @@ beforeAll(() => {
 
   const mockWin: any = {
     document: mockDoc,
+    setTimeout: (cb: any, ms?: number) => setTimeout(cb, ms),
+    clearTimeout: (id: any) => clearTimeout(id),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     requestAnimationFrame: (cb: any) => setTimeout(cb, 0),
