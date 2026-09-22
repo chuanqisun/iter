@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import { get, set } from "idb-keyval";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getStoredModelParams, setStoredModelParams } from "./model-parameter-store";
 
 const memoryStore = new Map<string, unknown>();
