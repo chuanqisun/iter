@@ -29,12 +29,7 @@ describe("AnthropicProvider", () => {
       apiKey: "test-api-key",
     };
     const connections = provider.credentialToConnections(credential);
-    expect(connections.map((c) => c.model)).toEqual([
-      "claude-fable-5-1",
-      "claude-opus-5-5",
-      "claude-sonnet-5",
-      "claude-haiku-4-5",
-    ]);
+    expect(connections.map((c) => c.model)).toEqual(AnthropicProvider.defaultModels);
   });
 
   it("returns adaptive thinking options for claude-opus-5-5", () => {
