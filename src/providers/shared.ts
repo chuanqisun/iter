@@ -19,14 +19,10 @@ export class OutputIndexPacer {
 
 export function getOpenAIOptions(model: string): ModelParamOptions {
   const reasoningOptions = [];
-  if (model.startsWith("gpt-6")) {
+  if (model.startsWith("gpt-6-astra")) {
     reasoningOptions.push("low", "medium", "high", "xhigh", "max");
-  } else if (model.startsWith("gpt-5.6")) {
+  } else if (model.startsWith("gpt-6")) {
     reasoningOptions.push("none", "low", "medium", "high", "xhigh", "max");
-  } else if (model.endsWith("gpt-5.5-pro")) {
-    reasoningOptions.push("medium", "high", "xhigh");
-  } else if (model.startsWith("gpt-5.5")) {
-    reasoningOptions.push("none", "low", "medium", "high", "xhigh");
   }
 
   const verbosityOptions = ["low", "medium", "high"];

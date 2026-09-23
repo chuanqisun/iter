@@ -26,11 +26,9 @@ Recreate the UI of Airbnb with a single screenshot
 
 - OpenAI
   - ✅ GPT-6 Astra
-  - ✅ GPT-5.6 Sol
-  - ✅ GPT-5.6 Terra
-  - ✅ GPT-5.6 Luna
-  - ✅ GPT-5.5-pro
-  - ✅ GPT-5.5
+  - ✅ GPT-6 Sol
+  - ✅ GPT-6 Terra
+  - ✅ GPT-6 Luna
 - Anthropic
   - ✅ Claude Fable 5.1
   - ✅ Claude Opus 5.5
