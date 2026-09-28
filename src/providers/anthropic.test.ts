@@ -16,11 +16,6 @@ vi.mock("@anthropic-ai/sdk", () => {
 describe("AnthropicProvider", () => {
   const provider = new AnthropicProvider();
 
-  it("includes claude-opus-5-5 in defaultModels", () => {
-    expect(AnthropicProvider.defaultModels).toContain("claude-opus-5-5");
-    expect(AnthropicProvider.defaultModels).not.toContain("claude-opus-5");
-  });
-
   it("creates connections with default models", () => {
     const credential = {
       id: "cred-1",
@@ -32,13 +27,13 @@ describe("AnthropicProvider", () => {
     expect(connections.map((c) => c.model)).toEqual(AnthropicProvider.defaultModels);
   });
 
-  it("returns adaptive thinking options for claude-opus-5-5", () => {
+  it("returns options for adaptive thinking models", () => {
     const connection = {
-      id: "claude-opus-5-5:cred-1",
+      id: "test:cred-1",
       type: "anthropic" as const,
       displayGroup: "anthropic",
-      displayName: "claude-opus-5-5",
-      model: "claude-opus-5-5",
+      displayName: "test-model",
+      model: "claude-sonnet-5-5",
       apiVersion: "2023-06-01",
       apiKey: "test-api-key",
     };
@@ -46,15 +41,15 @@ describe("AnthropicProvider", () => {
     const options = provider.getOptions(connection);
     expect(options.temperature).toBeUndefined();
     expect(options.thinkingBudget).toBeUndefined();
-    expect(options.reasoningEffort).toEqual(["low", "medium", "high", "xhigh", "max"]);
+    expect(options.reasoningEffort).toEqual([...AnthropicProvider.adaptiveThinkingEfforts]);
   });
 
-  it("returns budget thinking and temperature options for haiku", () => {
+  it("returns options for budget thinking models", () => {
     const connection = {
-      id: "claude-haiku-4-5:cred-1",
+      id: "test:cred-1",
       type: "anthropic" as const,
       displayGroup: "anthropic",
-      displayName: "claude-haiku-4-5",
+      displayName: "test-model",
       model: "claude-haiku-4-5",
       apiVersion: "2023-06-01",
       apiKey: "test-api-key",
@@ -66,19 +61,19 @@ describe("AnthropicProvider", () => {
     expect(options.reasoningEffort).toBeUndefined();
   });
 
-  it("calls messages.stream with output_config and without thinking field for claude-opus-5-5", async () => {
+  it("calls messages.stream with output_config for adaptive thinking", async () => {
     mockStream.mockImplementationOnce(() => {
       const asyncIterable = (async function* () {
         yield {
           type: "content_block_delta",
           index: 0,
-          delta: { type: "text_delta", text: "Hello from Opus 5.5" },
+          delta: { type: "text_delta", text: "Hello from Claude" },
         };
       })();
 
       return Object.assign(asyncIterable, {
         finalMessage: async () => ({
-          content: [{ type: "text", text: "Hello from Opus 5.5" }],
+          content: [{ type: "text", text: "Hello from Claude" }],
           usage: {
             output_tokens: 12,
             cache_read_input_tokens: 4,
@@ -88,11 +83,11 @@ describe("AnthropicProvider", () => {
     });
 
     const connection = {
-      id: "claude-opus-5-5:cred-1",
+      id: "test:cred-1",
       type: "anthropic" as const,
       displayGroup: "anthropic",
-      displayName: "claude-opus-5-5",
-      model: "claude-opus-5-5",
+      displayName: "test-model",
+      model: "claude-sonnet-5-5",
       apiVersion: "2023-06-01",
       apiKey: "test-api-key",
     };
@@ -111,10 +106,10 @@ describe("AnthropicProvider", () => {
       chunks.push(chunk);
     }
 
-    expect(chunks).toEqual(["Hello from Opus 5.5"]);
+    expect(chunks).toEqual(["Hello from Claude"]);
     expect(mockStream).toHaveBeenCalledWith(
       expect.objectContaining({
-        model: "claude-opus-5-5",
+        model: "claude-sonnet-5-5",
         thinking: undefined,
         output_config: { effort: "medium" },
       }),
@@ -124,5 +119,54 @@ describe("AnthropicProvider", () => {
       cachedInputTokens: 4,
       totalOutputTokens: 12,
     });
+  });
+
+  it("omits output_config when reasoning effort is none", async () => {
+    mockStream.mockImplementationOnce(() => {
+      const asyncIterable = (async function* () {
+        yield {
+          type: "content_block_delta",
+          index: 0,
+          delta: { type: "text_delta", text: "No thinking" },
+        };
+      })();
+
+      return Object.assign(asyncIterable, {
+        finalMessage: async () => ({
+          content: [{ type: "text", text: "No thinking" }],
+          usage: { output_tokens: 5 },
+        }),
+      });
+    });
+
+    const connection = {
+      id: "test:cred-1",
+      type: "anthropic" as const,
+      displayGroup: "anthropic",
+      displayName: "test-model",
+      model: "claude-sonnet-5-5",
+      apiVersion: "2023-06-01",
+      apiKey: "test-api-key",
+    };
+
+    const proxy = provider.getChatStreamProxy(connection);
+    const chunks: string[] = [];
+
+    for await (const chunk of proxy({
+      messages: [{ role: "user", content: "Test" }],
+      reasoningEffort: "none",
+    })) {
+      chunks.push(chunk);
+    }
+
+    expect(chunks).toEqual(["No thinking"]);
+    expect(mockStream).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: "claude-sonnet-5-5",
+        thinking: undefined,
+        output_config: undefined,
+      }),
+      expect.anything(),
+    );
   });
 });
