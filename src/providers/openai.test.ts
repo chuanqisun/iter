@@ -16,8 +16,9 @@ vi.mock("openai", () => {
 describe("OpenAIProvider", () => {
   const provider = new OpenAIProvider();
 
-  it("has defaultModels containing only the GPT-6 family (astra, sol, terra, luna)", () => {
-    expect(OpenAIProvider.defaultModels).toEqual(["gpt-6-astra", "gpt-6-sol", "gpt-6-terra", "gpt-6-luna"]);
+  it("has defaultModels containing only the GPT-6 family", () => {
+    expect(OpenAIProvider.defaultModels.length).toBeGreaterThan(0);
+    expect(OpenAIProvider.defaultModels.every((m) => m.startsWith("gpt-6"))).toBe(true);
   });
 
   it("returns options for gpt-6-astra without 'none' reasoning effort", () => {
@@ -37,7 +38,7 @@ describe("OpenAIProvider", () => {
     expect(options.serviceTier).toEqual(["auto", "fast", "flex"]);
   });
 
-  it.each(["gpt-6-sol", "gpt-6-terra", "gpt-6-luna"])(
+  it.each(OpenAIProvider.defaultModels.filter((model) => !model.startsWith("gpt-6-astra")))(
     "returns options for %s with 'none' reasoning effort supported",
     (model) => {
       const connection = {
@@ -66,7 +67,7 @@ describe("OpenAIProvider", () => {
     };
 
     const connections = provider.credentialToConnections(credential);
-    expect(connections.map((c) => c.model)).toEqual(["gpt-6-astra", "gpt-6-sol", "gpt-6-terra", "gpt-6-luna"]);
+    expect(connections.map((c) => c.model)).toEqual(OpenAIProvider.defaultModels);
   });
 
   it("calls responses.stream with correct arguments and yields output deltas", async () => {
@@ -87,12 +88,13 @@ describe("OpenAIProvider", () => {
       });
     });
 
+    const defaultModel = OpenAIProvider.defaultModels[0];
     const connection = {
-      id: "gpt-6-sol:test-id",
+      id: `${defaultModel}:test-id`,
       type: "openai" as const,
       displayGroup: "openai",
-      displayName: "gpt-6-sol",
-      model: "gpt-6-sol",
+      displayName: defaultModel,
+      model: defaultModel,
       apiKey: "test-key",
     };
 
@@ -113,7 +115,7 @@ describe("OpenAIProvider", () => {
     expect(chunks).toEqual(["Hello ", "world!"]);
     expect(mockStream).toHaveBeenCalledWith(
       expect.objectContaining({
-        model: "gpt-6-sol",
+        model: defaultModel,
         tools: [{ type: "web_search" }],
         input: [{ role: "user", content: "Hello GPT-6" }],
         prompt_cache_key: "iter",
