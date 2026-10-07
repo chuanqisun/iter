@@ -39,7 +39,7 @@ export interface AnthropicConnection extends BaseConnection {
 
 export class AnthropicProvider implements BaseProvider {
   static type = "anthropic";
-  static defaultModels = ["claude-opus-5-5", "claude-fable-5-1", "claude-sonnet-5-5", "claude-haiku-4-5"];
+  static defaultModels = ["claude-opus-5-5", "claude-fable-5-1", "claude-sonnet-5-5", "claude-haiku-5-5"];
   static adaptiveThinkingEfforts = ["low", "medium", "high", "xhigh", "max"] as const;
 
   parseNewCredentialForm(formData: FormData): AnthropicCredential[] {
@@ -85,12 +85,8 @@ export class AnthropicProvider implements BaseProvider {
   getOptions(connection: BaseConnection): ModelParamOptions {
     if (!this.isAnthropicConnection(connection)) throw new Error("Invalid connection type");
 
-    const supportsAdaptiveThinking = this.supportsAdaptiveThinking(connection.model);
-
     return {
-      temperature: this.supportsSampling(connection.model) ? { max: 1 } : undefined,
-      reasoningEffort: supportsAdaptiveThinking ? [...AnthropicProvider.adaptiveThinkingEfforts] : undefined,
-      thinkingBudget: supportsAdaptiveThinking ? undefined : { max: 32000 },
+      reasoningEffort: [...AnthropicProvider.adaptiveThinkingEfforts],
     };
   }
 
@@ -108,24 +104,10 @@ export class AnthropicProvider implements BaseProvider {
       const options = that.getOptions(connection);
 
       const { system, messages: anthropicMessages } = that.getAnthropicMessages(messages);
-      const supportsAdaptiveThinking = that.supportsAdaptiveThinking(connection.model);
       const resolvedReasoningEffort = options.reasoningEffort
         ? (config.reasoningEffort ?? options.reasoningEffort.at(0))
         : undefined;
       const isAdaptiveThinkingEnabled = resolvedReasoningEffort !== undefined && resolvedReasoningEffort !== "none";
-
-      // ref: https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking#important-considerations-when-using-extended-thinking
-      const resolvedThinkingBudget = options.thinkingBudget
-        ? (config?.thinkingBudget ?? 0) > 0
-          ? Math.max(1024, config.thinkingBudget ?? 0)
-          : undefined
-        : undefined;
-
-      const resolvedTemperature = options.temperature
-        ? resolvedThinkingBudget === undefined
-          ? Math.min(config?.temperature ?? 0.7, options.temperature.max)
-          : 1
-        : undefined;
 
       const start = performance.now();
       let latencyMs: number | undefined;
@@ -150,17 +132,9 @@ export class AnthropicProvider implements BaseProvider {
           cache_control: {
             type: "ephemeral",
           },
-          temperature: resolvedTemperature,
           system,
-          thinking: supportsAdaptiveThinking
-            ? undefined
-            : resolvedThinkingBudget
-              ? { type: "enabled", budget_tokens: resolvedThinkingBudget }
-              : undefined,
-          output_config: supportsAdaptiveThinking
-            ? isAdaptiveThinkingEnabled
-              ? ({ effort: resolvedReasoningEffort } as never)
-              : undefined
+          output_config: isAdaptiveThinkingEnabled
+            ? ({ effort: resolvedReasoningEffort } as never)
             : undefined,
           messages: anthropicMessages,
           model: connection.model,
@@ -214,13 +188,6 @@ export class AnthropicProvider implements BaseProvider {
     return connection.type === "anthropic";
   }
 
-  private supportsAdaptiveThinking(model: string) {
-    return !model.includes("haiku");
-  }
-
-  private supportsSampling(model: string) {
-    return !this.supportsAdaptiveThinking(model);
-  }
 
   private getAnthropicMessages(messages: GenericMessage[]): {
     system?: string;

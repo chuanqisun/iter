@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AnthropicProvider } from "./anthropic";
 
 const mockStream = vi.fn();
@@ -15,6 +15,10 @@ vi.mock("@anthropic-ai/sdk", () => {
 
 describe("AnthropicProvider", () => {
   const provider = new AnthropicProvider();
+
+  beforeEach(() => {
+    mockStream.mockClear();
+  });
 
   it("creates connections with default models", () => {
     const credential = {
@@ -44,21 +48,21 @@ describe("AnthropicProvider", () => {
     expect(options.reasoningEffort).toEqual([...AnthropicProvider.adaptiveThinkingEfforts]);
   });
 
-  it("returns options for budget thinking models", () => {
+  it("returns options for claude-haiku-5-5", () => {
     const connection = {
       id: "test:cred-1",
       type: "anthropic" as const,
       displayGroup: "anthropic",
       displayName: "test-model",
-      model: "claude-haiku-4-5",
+      model: "claude-haiku-5-5",
       apiVersion: "2023-06-01",
       apiKey: "test-api-key",
     };
 
     const options = provider.getOptions(connection);
-    expect(options.temperature?.max).toBe(1);
-    expect(options.thinkingBudget?.max).toBe(32000);
-    expect(options.reasoningEffort).toBeUndefined();
+    expect(options.temperature).toBeUndefined();
+    expect(options.thinkingBudget).toBeUndefined();
+    expect(options.reasoningEffort).toEqual([...AnthropicProvider.adaptiveThinkingEfforts]);
   });
 
   it("calls messages.stream with output_config for adaptive thinking", async () => {
@@ -110,11 +114,12 @@ describe("AnthropicProvider", () => {
     expect(mockStream).toHaveBeenCalledWith(
       expect.objectContaining({
         model: "claude-sonnet-5-5",
-        thinking: undefined,
         output_config: { effort: "medium" },
       }),
       expect.anything(),
     );
+    expect(mockStream.mock.calls[0][0].thinking).toBeUndefined();
+    expect(mockStream.mock.calls[0][0].temperature).toBeUndefined();
     expect(metadata).toMatchObject({
       cachedInputTokens: 4,
       totalOutputTokens: 12,
@@ -163,10 +168,62 @@ describe("AnthropicProvider", () => {
     expect(mockStream).toHaveBeenCalledWith(
       expect.objectContaining({
         model: "claude-sonnet-5-5",
-        thinking: undefined,
         output_config: undefined,
       }),
       expect.anything(),
     );
+    expect(mockStream.mock.calls[0][0].thinking).toBeUndefined();
+    expect(mockStream.mock.calls[0][0].temperature).toBeUndefined();
+  });
+
+  it("calls messages.stream with output_config for claude-haiku-5-5", async () => {
+    mockStream.mockImplementationOnce(() => {
+      const asyncIterable = (async function* () {
+        yield {
+          type: "content_block_delta",
+          index: 0,
+          delta: { type: "text_delta", text: "Hello from Haiku 5.5" },
+        };
+      })();
+
+      return Object.assign(asyncIterable, {
+        finalMessage: async () => ({
+          content: [{ type: "text", text: "Hello from Haiku 5.5" }],
+          usage: { output_tokens: 10 },
+        }),
+      });
+    });
+
+    const connection = {
+      id: "test:cred-1",
+      type: "anthropic" as const,
+      displayGroup: "anthropic",
+      displayName: "test-model",
+      model: "claude-haiku-5-5",
+      apiVersion: "2023-06-01",
+      apiKey: "test-api-key",
+    };
+
+    const proxy = provider.getChatStreamProxy(connection);
+    const chunks: string[] = [];
+
+    for await (const chunk of proxy({
+      messages: [{ role: "user", content: "Hi" }],
+      reasoningEffort: "low",
+    })) {
+      chunks.push(chunk);
+    }
+
+    expect(chunks).toEqual(["Hello from Haiku 5.5"]);
+    expect(mockStream).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: "claude-haiku-5-5",
+        output_config: { effort: "low" },
+      }),
+      expect.anything(),
+    );
+    const lastCall = mockStream.mock.calls.at(-1)![0];
+    expect(lastCall.thinking).toBeUndefined();
+    expect(lastCall.temperature).toBeUndefined();
   });
 });
