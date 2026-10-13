@@ -29,7 +29,7 @@ export interface GoogleGenAIConnection extends BaseConnection {
 
 export class GoogleGenAIProvider implements BaseProvider {
   static type = "google-gen-ai";
-  static defaultModels = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash-lite", "gemini-3.1-pro-preview"];
+  static defaultModels = ["gemini-4-argon", "gemini-3.8-flash", "gemini-3.5-flash-lite"];
 
   parseNewCredentialForm(formData: FormData): GoogleGenAICredential[] {
     const accountName = (formData.get("newAccountName") as string)?.trim() || "google-gen-ai";
@@ -76,13 +76,8 @@ export class GoogleGenAIProvider implements BaseProvider {
     // ref: https://ai.google.dev/gemini-api/docs/thinking
     return {
       reasoningEffort: this.getReasoningEffortConfig(connection.model),
-      temperature: this.supportsTemperature(connection.model) ? { max: 2 } : undefined,
       serviceTier: ["auto", "flex", "priority"],
     };
-  }
-
-  private supportsTemperature(model: string): boolean {
-    return !model.startsWith("gemini-3");
   }
 
   private extractCitationsFromAnnotations(annotations?: Array<any>): Citation[] {
@@ -94,27 +89,15 @@ export class GoogleGenAIProvider implements BaseProvider {
   }
 
   private getReasoningEffortConfig(model: string): string[] | undefined {
-    if (model.startsWith("gemini-3.8")) return ["low", "medium", "high"];
-    if (model.startsWith("gemini-3.7")) return ["low", "medium", "high"];
-    if (model.startsWith("gemini-3.1-pro")) return ["low", "medium", "high"];
-    if (model.startsWith("gemini-3")) return ["minimal", "low", "medium", "high"];
-    return undefined;
+    if (model.startsWith("gemini-3.5-flash-lite")) return ["minimal", "low", "medium", "high"];
+
+    return ["low", "medium", "high"];
   }
 
-  private getFinalThinkingLevel(model: string, inputLevel?: string) {
-    if (model.startsWith("gemini-3") && model.includes("-pro")) {
-      const supported = ["low", "high"];
-      const level = supported.includes(inputLevel!) ? inputLevel : "low";
-      return level as "low" | "high";
-    }
-
-    if (model.startsWith("gemini-3") && model.includes("-flash")) {
-      const supported = ["minimal", "low", "medium", "high"];
-      const level = supported.includes(inputLevel!) ? inputLevel : "minimal";
-      return level as "minimal" | "low" | "medium" | "high";
-    }
-
-    return undefined;
+  private getFinalThinkingLevel(inputLevel?: string) {
+    const supported = ["minimal", "low", "medium", "high"];
+    const level = supported.includes(inputLevel!) ? inputLevel : "minimal";
+    return level as "minimal" | "low" | "medium" | "high";
   }
 
   getChatStreamProxy(connection: BaseConnection): ChatStreamProxy {
@@ -147,7 +130,7 @@ export class GoogleGenAIProvider implements BaseProvider {
           tools: tools.length ? [...tools] : undefined,
           service_tier: serviceTier && serviceTier !== "auto" ? serviceTier : undefined,
           generation_config: {
-            thinking_level: that.getFinalThinkingLevel(connection.model, config.reasoningEffort),
+            thinking_level: that.getFinalThinkingLevel(config.reasoningEffort),
             max_output_tokens: config?.maxTokens,
             ...(options.temperature !== undefined && config?.temperature !== undefined
               ? { temperature: config.temperature }
