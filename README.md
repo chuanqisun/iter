@@ -44,7 +44,7 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ Qwen 3.8 27B
   - ✅ GPT OSS 120B
 - Inception\*\*
-  - ✅ Mercury 2.5
+  - ✅ Mercury 3
 - OpenRouter
   - All chat models
   - Auto/free/pareto modes
