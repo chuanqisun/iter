@@ -4,11 +4,11 @@ import { InceptionProvider } from "./inception";
 describe("InceptionProvider", () => {
   const provider = new InceptionProvider();
 
-  it("defines defaultModels as mercury-2.5", () => {
-    expect(InceptionProvider.defaultModels).toEqual(["mercury-2.5"]);
+  it("defines defaultModels as mercury-3", () => {
+    expect(InceptionProvider.defaultModels).toEqual(["mercury-3"]);
   });
 
-  it("creates connection with Mercury 2.5 displayName", () => {
+  it("creates connection with Mercury displayName", () => {
     const credential = {
       id: "test-cred-id",
       type: "inception" as const,
@@ -19,11 +19,11 @@ describe("InceptionProvider", () => {
     const connections = provider.credentialToConnections(credential);
     expect(connections).toEqual([
       {
-        id: "mercury-2.5:test-cred-id",
+        id: "mercury-3:test-cred-id",
         type: "inception",
         displayGroup: "my-account",
-        displayName: "Mercury 2.5",
-        model: "mercury-2.5",
+        displayName: "Mercury 3",
+        model: "mercury-3",
         apiKey: "test-key",
       },
     ]);
@@ -31,11 +31,11 @@ describe("InceptionProvider", () => {
 
   it("returns options with reasoningEffort, maxTokens, and temperature", () => {
     const connection = {
-      id: "mercury-2.5:test-cred-id",
+      id: "mercury-3:test-cred-id",
       type: "inception" as const,
       displayGroup: "my-account",
-      displayName: "Mercury 2.5",
-      model: "mercury-2.5",
+      displayName: "Mercury 3",
+      model: "mercury-3",
       apiKey: "test-key",
     };
 
