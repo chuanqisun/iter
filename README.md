@@ -30,7 +30,7 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ GPT-6.1 Terra
   - ✅ GPT-6 Luna
 - Anthropic
-  - ✅ Claude Fable 5.1
+  - ✅ Claude Fable 5.2
   - ✅ Claude Opus 5.5
   - ✅ Claude Sonnet 5.5
   - ✅ Claude Haiku 5.5

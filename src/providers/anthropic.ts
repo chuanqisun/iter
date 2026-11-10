@@ -39,7 +39,7 @@ export interface AnthropicConnection extends BaseConnection {
 
 export class AnthropicProvider implements BaseProvider {
   static type = "anthropic";
-  static defaultModels = ["claude-opus-5-5", "claude-fable-5-1", "claude-sonnet-5-5", "claude-haiku-5-5"];
+  static defaultModels = ["claude-fable-5-2", "claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"];
   static adaptiveThinkingEfforts = ["low", "medium", "high", "xhigh", "max"] as const;
 
   parseNewCredentialForm(formData: FormData): AnthropicCredential[] {
@@ -133,9 +133,7 @@ export class AnthropicProvider implements BaseProvider {
             type: "ephemeral",
           },
           system,
-          output_config: isAdaptiveThinkingEnabled
-            ? ({ effort: resolvedReasoningEffort } as never)
-            : undefined,
+          output_config: isAdaptiveThinkingEnabled ? ({ effort: resolvedReasoningEffort } as never) : undefined,
           messages: anthropicMessages,
           model: connection.model,
           tools: tools.length ? [...tools] : undefined,
@@ -187,7 +185,6 @@ export class AnthropicProvider implements BaseProvider {
   private isAnthropicConnection(connection: BaseConnection): connection is AnthropicConnection {
     return connection.type === "anthropic";
   }
-
 
   private getAnthropicMessages(messages: GenericMessage[]): {
     system?: string;
