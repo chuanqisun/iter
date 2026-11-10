@@ -29,7 +29,7 @@ export interface GoogleGenAIConnection extends BaseConnection {
 
 export class GoogleGenAIProvider implements BaseProvider {
   static type = "google-gen-ai";
-  static defaultModels = ["gemini-4-argon", "gemini-3.8-flash", "gemini-3.5-flash-lite"];
+  static defaultModels = ["gemini-4-carbon", "gemini-4-argon", "gemini-3.8-flash", "gemini-3.5-flash-lite"];
 
   parseNewCredentialForm(formData: FormData): GoogleGenAICredential[] {
     const accountName = (formData.get("newAccountName") as string)?.trim() || "google-gen-ai";
