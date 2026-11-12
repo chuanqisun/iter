@@ -29,7 +29,7 @@ export interface GoogleGenAIConnection extends BaseConnection {
 
 export class GoogleGenAIProvider implements BaseProvider {
   static type = "google-gen-ai";
-  static defaultModels = ["gemini-4-carbon", "gemini-4-argon", "gemini-3.8-flash", "gemini-3.5-flash-lite"];
+  static defaultModels = ["gemini-4-carbon", "gemini-4-argon", "gemini-4-hydrogen", "gemini-3.8-flash"];
 
   parseNewCredentialForm(formData: FormData): GoogleGenAICredential[] {
     const accountName = (formData.get("newAccountName") as string)?.trim() || "google-gen-ai";
@@ -89,15 +89,15 @@ export class GoogleGenAIProvider implements BaseProvider {
   }
 
   private getReasoningEffortConfig(model: string): string[] | undefined {
-    if (model.startsWith("gemini-3.5-flash-lite")) return ["minimal", "low", "medium", "high"];
+    // hydrogen: minimal/thinking_budget return HTTP 400; default is high, xhigh is supported
+    if (model.startsWith("gemini-4-hydrogen")) return ["low", "medium", "high", "xhigh"];
 
     return ["low", "medium", "high"];
   }
 
-  private getFinalThinkingLevel(inputLevel?: string) {
-    const supported = ["minimal", "low", "medium", "high"];
-    const level = supported.includes(inputLevel!) ? inputLevel : "minimal";
-    return level as "minimal" | "low" | "medium" | "high";
+  private getFinalThinkingLevel(model: string, inputLevel?: string) {
+    const supported = this.getReasoningEffortConfig(model) ?? [];
+    return supported.includes(inputLevel!) ? inputLevel! : supported.includes("minimal") ? "minimal" : supported[0];
   }
 
   getChatStreamProxy(connection: BaseConnection): ChatStreamProxy {
@@ -130,7 +130,7 @@ export class GoogleGenAIProvider implements BaseProvider {
           tools: tools.length ? [...tools] : undefined,
           service_tier: serviceTier && serviceTier !== "auto" ? serviceTier : undefined,
           generation_config: {
-            thinking_level: that.getFinalThinkingLevel(config.reasoningEffort),
+            thinking_level: that.getFinalThinkingLevel(connection.model, config.reasoningEffort),
             max_output_tokens: config?.maxTokens,
             ...(options.temperature !== undefined && config?.temperature !== undefined
               ? { temperature: config.temperature }
