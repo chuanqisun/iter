@@ -31,7 +31,7 @@
         "prettier": "^3.10.1",
         "typescript": "^7.0.2",
         "vite": "^8.3.8",
-        "vitest": "^5.1.0"
+        "vitest": "^5.1.1"
     },
     "dependencies": {
         "@anthropic-ai/sdk": "^1.10.0",
@@ -42,8 +42,8 @@
         "@codemirror/language-data": "^6.5.2",
         "@codemirror/state": "^6.7.6",
         "@codemirror/view": "^6.43.15",
-        "@google/genai": "^3.4.0",
-        "@openrouter/sdk": "^1.5.111",
+        "@google/genai": "^3.6.0",
+        "@openrouter/sdk": "^1.5.115",
         "@uiw/codemirror-theme-github": "^4.25.12",
         "gpt-tokenizer": "^4.1.2",
         "hast-util-to-string": "^3.0.1",
@@ -52,7 +52,7 @@
         "marked": "^18.2.1",
         "marked-shiki": "^1.2.1",
         "mermaid": "^12.3.0",
-        "openai": "^7.59.0",
+        "openai": "^7.60.0",
         "react": "^19.3.1",
         "react-dom": "^19.3.1",
         "rehype-parse": "^9.0.1",

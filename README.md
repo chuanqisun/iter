@@ -35,10 +35,10 @@ Recreate the UI of Airbnb with a single screenshot
   - ✅ Claude Sonnet 5.5
   - ✅ Claude Haiku 5.5
 - Google Generative AI
+  - ✅ Gemini 4 Neon
   - ✅ Gemini 4 Carbon
   - ✅ Gemini 4 Argon
   - ✅ Gemini 4 Hydrogen
-  - ✅ Gemini 3.8 Flash
 - xAI\*
   - ✅ Grok 4.6
   - ✅ Grok 4.5

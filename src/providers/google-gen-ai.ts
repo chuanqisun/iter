@@ -27,9 +27,22 @@ export interface GoogleGenAIConnection extends BaseConnection {
   apiKey: string;
 }
 
+const OFFICE_AND_OPENDOCUMENT_MIME_TYPES = new Set([
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.template",
+  "application/msword",
+  "application/vnd.oasis.opendocument.text",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.oasis.opendocument.presentation",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-excel",
+  "application/vnd.oasis.opendocument.spreadsheet",
+]);
+
 export class GoogleGenAIProvider implements BaseProvider {
   static type = "google-gen-ai";
-  static defaultModels = ["gemini-4-carbon", "gemini-4-argon", "gemini-4-hydrogen", "gemini-3.8-flash"];
+  static defaultModels = ["gemini-4-carbon", "gemini-4-neon", "gemini-4-argon", "gemini-4-hydrogen"];
 
   parseNewCredentialForm(formData: FormData): GoogleGenAICredential[] {
     const accountName = (formData.get("newAccountName") as string)?.trim() || "google-gen-ai";
@@ -89,8 +102,10 @@ export class GoogleGenAIProvider implements BaseProvider {
   }
 
   private getReasoningEffortConfig(model: string): string[] | undefined {
-    // hydrogen: minimal/thinking_budget return HTTP 400; default is high, xhigh is supported
-    if (model.startsWith("gemini-4-hydrogen")) return ["low", "medium", "high", "xhigh"];
+    // neon & hydrogen: minimal/thinking_budget return HTTP 400; default is high, xhigh is supported
+    if (model.startsWith("gemini-4-neon") || model.startsWith("gemini-4-hydrogen")) {
+      return ["low", "medium", "high", "xhigh"];
+    }
 
     return ["low", "medium", "high"];
   }
@@ -108,7 +123,7 @@ export class GoogleGenAIProvider implements BaseProvider {
       const GoogleGenAI = await import("@google/genai").then((res) => res.GoogleGenAI);
       const client = new GoogleGenAI({ apiKey: connection.apiKey });
 
-      const { system, steps } = that.getGoogleGenAIMessages(messages);
+      const { system, steps } = that.getGoogleGenAIMessages(messages, connection.model);
 
       const options = that.getOptions(connection);
       const tools = [
@@ -145,6 +160,8 @@ export class GoogleGenAIProvider implements BaseProvider {
 
       const pacer = new OutputIndexPacer();
       let citations: Citation[] = [];
+      let totalCachedTokens: number | undefined;
+      let totalOutputTokens: number | undefined;
       for await (const event of stream) {
         if (event.event_type === "step.delta" && event.delta) {
           if (event.delta.type === "text" && event.delta.text) {
@@ -159,12 +176,20 @@ export class GoogleGenAIProvider implements BaseProvider {
         if (event.event_type === "interaction.completed") {
           const interaction = event.interaction;
           if (interaction?.usage) {
-            config.onMetadata?.({
-              cachedInputTokens: interaction.usage.total_cached_tokens,
-              totalOutputTokens: interaction.usage.total_output_tokens,
-              latencyMs,
-              durationMs: performance.now() - start,
-            });
+            if (interaction.usage.total_cached_tokens !== undefined) {
+              totalCachedTokens = (totalCachedTokens ?? 0) + interaction.usage.total_cached_tokens;
+            }
+            if (interaction.usage.total_output_tokens !== undefined) {
+              totalOutputTokens = (totalOutputTokens ?? 0) + interaction.usage.total_output_tokens;
+            }
+            if (interaction.status !== "requires_continuation") {
+              config.onMetadata?.({
+                cachedInputTokens: totalCachedTokens,
+                totalOutputTokens,
+                latencyMs,
+                durationMs: performance.now() - start,
+              });
+            }
           }
           if (interaction?.steps) {
             for (const step of interaction.steps) {
@@ -195,7 +220,14 @@ export class GoogleGenAIProvider implements BaseProvider {
     return connection.type === "google-gen-ai";
   }
 
-  private getGoogleGenAIMessages(messages: GenericMessage[]): {
+  private supportsOfficeDocuments(model: string): boolean {
+    return model.startsWith("gemini-4-neon");
+  }
+
+  private getGoogleGenAIMessages(
+    messages: GenericMessage[],
+    model: string,
+  ): {
     system?: string;
     steps: Array<{ type: "user_input" | "model_output"; content: any[] }>;
   } {
@@ -229,7 +261,10 @@ export class GoogleGenAIProvider implements BaseProvider {
                 mime_type: inline.mimeType,
                 data: inline.data,
               });
-            } else if (part.type === "application/pdf") {
+            } else if (
+              part.type === "application/pdf" ||
+              (this.supportsOfficeDocuments(model) && OFFICE_AND_OPENDOCUMENT_MIME_TYPES.has(part.type))
+            ) {
               const inline = this.dataUrlToInlineDataPart(part.url);
               convertedContent.push({
                 type: "document",
