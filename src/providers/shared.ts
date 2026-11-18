@@ -19,7 +19,8 @@ export class OutputIndexPacer {
 
 export function getOpenAIOptions(model: string): ModelParamOptions {
   const reasoningOptions = [];
-  if (model.startsWith("gpt-6-astra")) {
+  // GPT-6 Astra and the GPT-6.2 family do not support "none" reasoning effort
+  if (model.startsWith("gpt-6-astra") || model.startsWith("gpt-6.2")) {
     reasoningOptions.push("low", "medium", "high", "xhigh", "max");
   } else if (model.startsWith("gpt-6")) {
     reasoningOptions.push("none", "low", "medium", "high", "xhigh", "max");

@@ -21,13 +21,15 @@ describe("OpenAIProvider", () => {
     expect(OpenAIProvider.defaultModels.every((m) => m.startsWith("gpt-6"))).toBe(true);
   });
 
-  it("returns options for gpt-6-astra without 'none' reasoning effort", () => {
+  const noNoneEffortModels = ["gpt-6-astra", "gpt-6.2-astra", "gpt-6.2-sol"];
+
+  it.each(noNoneEffortModels)("returns options for %s without 'none' reasoning effort", (model) => {
     const connection = {
-      id: "gpt-6-astra:test-id",
+      id: `${model}:test-id`,
       type: "openai" as const,
       displayGroup: "openai",
-      displayName: "gpt-6-astra",
-      model: "gpt-6-astra",
+      displayName: model,
+      model,
       apiKey: "test-key",
     };
 
@@ -38,7 +40,7 @@ describe("OpenAIProvider", () => {
     expect(options.serviceTier).toEqual(["auto", "fast", "flex"]);
   });
 
-  it.each(OpenAIProvider.defaultModels.filter((model) => !model.startsWith("gpt-6-astra")))(
+  it.each(OpenAIProvider.defaultModels.filter((model) => !noNoneEffortModels.includes(model)))(
     "returns options for %s with 'none' reasoning effort supported",
     (model) => {
       const connection = {
